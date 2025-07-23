@@ -1,0 +1,113 @@
+---
+import BaseHead from '@components/ui/BaseHead.astro';
+import BlobMask from '@islands/BlobMask';
+---
+
+<style>
+  body {
+    margin: 0;
+  }
+  .panel {
+    position: absolute;
+    inset: 0;
+    height: 100dvh;
+    z-index: -1;
+  }
+  .panel::before{
+    position: fixed;
+    inset: 0;
+    content: "";
+    height: 100%;
+    width: 100%;
+    opacity: 0.1;
+    background-image: url('/manga/naruto/pain_bw_2k.webp');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+  }
+  .reveal-layer {
+    position: fixed;
+    inset: 0;
+    background-color: var(--background-color);
+    mask: url(#blob-mask);
+    -webkit-mask: url(#blob-mask);
+  }
+
+  .reveal-layer::before {
+    position: fixed;
+    inset: 0;
+    content: "";
+    height: 100%;
+    width: 100%;
+    background-image: url('/manga/naruto/pain_color_2k.webp');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    pointer-events: none;
+    opacity: 0.25;
+    filter: saturate(2);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .panel::before { background-image: url('/manga/naruto/pain_inverted_2k.webp'); opacity: 0.25; }
+    }
+  @media (prefers-reduced-motion: reduce){
+    .reveal-layer{ display: none; }
+  }
+
+  .hero {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 1em;
+    max-width: 720px;
+    display: grid;
+    grid-template-rows: 1fr;
+    gap: 1em;
+  }
+
+  .main-info {
+    display: grid;
+    grid-template-rows: 1fr;
+    gap: 1em;
+  }
+
+  .links {
+    display: grid;
+    grid-template-rows: 1fr;
+    gap: 0.5em;
+  }
+</style>
+
+<!doctype html>
+<html lang="en">
+  <BaseHead title="Aleksandar Gjoreski" description="..." />
+  <body>
+    <div class="panel">
+        <div class="reveal-layer" aria-hidden="true" />
+        <BlobMask client:only />
+    </div>
+    <main class="hero">
+        <div class="main-info">
+            <h1>Aleksandar Gjoreski</h1>
+            <p>Frontend Engineer @ -</p>
+        </div>
+        <div class="intro">
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Expedita soluta dolores ratione placeat. Ipsa accusantium harum omnis voluptas! Nobis repudiandae laboriosam voluptate unde tenetur eum. Dicta nobis vel expedita neque!
+        </div>
+        <!-- <div class="links">
+            <a href="/blog">
+                <span>[ ]</span>
+                <span>Blog</span>
+            </a>
+            <a href="/about">
+                <span>[ ]</span>
+                <span>About</span>
+            </a>
+        </div> -->
+    </main>
+  </body>
+</html>

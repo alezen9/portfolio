@@ -1,0 +1,104 @@
+:root {
+  --light: rgb(229, 233, 240);
+  --dark: rgb(15, 18, 25);
+  --background-color: var(--light);
+  --text-color: var(--dark);
+}
+
+@font-face {
+  font-family: "Atkinson";
+  src: url("/fonts/atkinson-regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Atkinson";
+  src: url("/fonts/atkinson-bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  font-family: "Atkinson", sans-serif;
+  margin: 0;
+  padding: 0;
+  margin: 0;
+  background-color: var(--background-color);
+  text-align: left;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  color: var(--text-color);
+  font-size: 20px;
+  line-height: 1.7;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span {
+  margin: 0;
+  line-height: 1;
+  /* margin: 0 0 0.5rem 0; */
+  /* line-height: 1.2; */
+}
+h1 {
+  font-size: 3.052em;
+}
+h2 {
+  font-size: 2.441em;
+}
+h3 {
+  font-size: 1.953em;
+}
+h4 {
+  font-size: 1.563em;
+}
+h5 {
+  font-size: 1.25em;
+}
+strong,
+b {
+  font-weight: 700;
+}
+
+a {
+  display: inline-block;
+  text-decoration: none;
+  width: fit-content;
+}
+a.active {
+  font-weight: bolder;
+  text-decoration: underline;
+}
+
+.sr-only {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  /* IE6, IE7 - a 0 height clip, off to the bottom right of the visible 1px box */
+  clip: rect(1px 1px 1px 1px);
+  /* maybe deprecated but we need to support legacy browsers */
+  clip: rect(1px, 1px, 1px, 1px);
+  /* modern browsers, clip-path works inwards from each corner */
+  clip-path: inset(50%);
+  /* added line to stop words getting smushed together (as they go onto separate lines and some screen readers do not understand line feeds as a space */
+  white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: var(--dark);
+    --text-color: var(--light);
+  }
+}
