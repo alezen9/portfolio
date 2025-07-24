@@ -4,6 +4,9 @@ import BlobMask from "@islands/BlobMask";
 import MangaPanelBackground from "@components/MangaPanelBackground.astro";
 import MangaPanelRotator from "@components/islands/mangaPanelRotator";
 import panels from "@content/other/manga-panels.json" assert { type: "json" };
+import IconLinkedIn from "@components/ui/IconLinkedIn.astro";
+import IconGitHub from "@components/ui/IconGitHub.astro";
+import IconX from "@components/ui/IconX.astro";
 ---
 
 <style>
@@ -62,37 +65,6 @@ import panels from "@content/other/manga-panels.json" assert { type: "json" };
     display: inline-block;
   }
 
-  .icon-link svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-
-  .icon-link svg {
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 8;
-    stroke-dasharray: 1000;
-    stroke-dashoffset: 1000;
-    animation: animateDash 1.5s ease-in-out forwards;
-  }
-
-  @keyframes animateDash {
-    to {
-      stroke-dashoffset: 0;
-    }
-  }
-
-  .icon-link svg.github-svg {
-    width: 1.75em;
-  }
-
-  .icon-link svg.x-svg {
-    width: 1.25em;
-    stroke-width: 48;
-  }
-
   .icon-link::before,
   .icon-link::after {
     display: none;
@@ -129,8 +101,9 @@ import panels from "@content/other/manga-panels.json" assert { type: "json" };
       </div>
 
       <div class="nav-links">
-        <a href="/blog">Blog</a>
-        <a href="/about">About me</a>
+        <a href="/portfolio/blog">Blog</a>
+        <a href="/portfolio/projects">Projects</a>
+        <a href="/portfolio/about">About me</a>
       </div>
       <div class="personal-links">
         <a
@@ -138,59 +111,13 @@ import panels from "@content/other/manga-panels.json" assert { type: "json" };
           href="https://www.linkedin.com/in/aleksandar-d-gjoreski/"
           target="_blank"
         >
-          <svg
-            class="linkedin-svg"
-            viewBox="0 0 192 192"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-          >
-            <rect
-              width="132"
-              height="132"
-              x="30"
-              y="30"
-              stroke="currentColor"
-              stroke-width="12"
-              rx="16"></rect>
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="12"
-              d="M66 86v44"></path>
-            <circle cx="66" cy="64" r="8" fill="currentColor"></circle>
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-width="12"
-              d="M126 130v-26c0-9.941-8.059-18-18-18v0c-9.941 0-18 8.059-18 18v26"
-            ></path>
-          </svg>
+          <IconLinkedIn />
         </a>
         <a class="icon-link" href="https://github.com/alezen9" target="_blank">
-          <svg
-            class="github-svg"
-            viewBox="0 0 192 192"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            ><path
-              d="M120.755 170c.03-4.669.059-20.874.059-27.29 0-9.272-3.167-15.339-6.719-18.41 22.051-2.464 45.201-10.863 45.201-49.067 0-10.855-3.824-19.735-10.175-26.683 1.017-2.516 4.413-12.63-.987-26.32 0 0-8.296-2.672-27.202 10.204-7.912-2.213-16.371-3.308-24.784-3.352-8.414.044-16.872 1.14-24.785 3.352C52.457 19.558 44.162 22.23 44.162 22.23c-5.4 13.69-2.004 23.804-.987 26.32C36.824 55.498 33 64.378 33 75.233c0 38.204 23.149 46.603 45.2 49.067-3.551 3.071-6.719 9.138-6.719 18.41 0 6.416.03 22.621.059 27.29M27 130c9.939.703 15.67 9.735 15.67 9.735 8.834 15.199 23.178 10.803 28.815 8.265"
-            ></path></svg
-          >
+          <IconGitHub />
         </a>
         <a class="icon-link" href="https://x.com/aleksgjoreski" target="_blank">
-          <svg
-            viewBox="0 0 768 773"
-            xmlns="http://www.w3.org/2000/svg"
-            class="x-svg"
-          >
-            <path
-              d="M314.594 440.792L314.886 441.198L315.698 440.614L315.406 440.208L314.594 440.792ZM430 302.5L429.595 302.793L429.975 303.318L430.386 302.817L430 302.5ZM677.886 1.31725C678.062 1.10381 678.031 0.788746 677.817 0.613536C677.604 0.438325 677.289 0.469315 677.114 0.682753L677.886 1.31725ZM315 440.5L315.406 440.208L14.0749 21.2145L13.669 21.5064L13.2631 21.7983L314.594 440.792L315 440.5ZM23.4112 2.5V3H183.421V2.5V2H23.4112V2.5ZM229.569 26.0428L229.164 26.3363L429.595 302.793L430 302.5L430.405 302.207L229.973 25.7494L229.569 26.0428ZM430 302.5L430.386 302.817L677.886 1.31725L677.5 1L677.114 0.682753L429.614 302.183L430 302.5ZM183.421 2.5V3C201.527 3 218.536 11.6775 229.164 26.3363L229.569 26.0428L229.973 25.7494C219.158 10.8311 201.847 2 183.421 2V2.5ZM13.669 21.5064L14.0749 21.2145C8.60363 13.6068 14.0404 3 23.4112 3V2.5V2C13.2255 2 7.31602 13.5291 13.2631 21.7983L13.669 21.5064Z"
-            ></path>
-            <path
-              d="M429.906 301.208L429.613 300.802L428.802 301.387L429.094 301.792L429.906 301.208ZM314.885 440.5L315.291 440.208L314.912 439.68L314.499 440.183L314.885 440.5ZM42.1134 772.183C41.9383 772.396 41.9694 772.711 42.1829 772.887C42.3963 773.062 42.7114 773.031 42.8866 772.817L42.1134 772.183ZM753.796 751.484L753.39 751.776L753.796 751.484ZM429.5 301.5L429.094 301.792L753.39 751.776L753.796 751.484L754.201 751.192L429.906 301.208L429.5 301.5ZM744.06 770.5V770H581.232V770.5V771H744.06V770.5ZM534.942 746.761L535.349 746.469L315.291 440.208L314.885 440.5L314.479 440.792L534.536 747.052L534.942 746.761ZM314.885 440.5L314.499 440.183L42.1134 772.183L42.5 772.5L42.8866 772.817L315.272 440.817L314.885 440.5ZM581.232 770.5V770C563.041 770 545.963 761.242 535.349 746.469L534.942 746.761L534.536 747.052C545.339 762.087 562.719 771 581.232 771V770.5ZM753.796 751.484L753.39 751.776C758.872 759.383 753.436 770 744.06 770V770.5V771C754.252 771 760.16 759.46 754.201 751.192L753.796 751.484Z"
-            ></path>
-          </svg>
+          <IconX />
         </a>
       </div>
     </main>
