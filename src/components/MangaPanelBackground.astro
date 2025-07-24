@@ -1,0 +1,70 @@
+---
+type Props = {
+  bwSrc: string;
+  colorSrc: string;
+};
+
+const { bwSrc, colorSrc } = Astro.props;
+---
+
+<style>
+  .panel {
+    position: absolute;
+    inset: 0;
+    height: 100dvh;
+    z-index: -1;
+  }
+  .panel::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: var(--bw-img);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    opacity: 0.1;
+    pointer-events: none;
+  }
+  .reveal-layer {
+    position: fixed;
+    inset: 0;
+    background-color: var(--background-color, transparent);
+    mask-image: url("#blob-mask");
+    -webkit-mask-image: url("#blob-mask");
+  }
+  .reveal-layer::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: var(--color-img);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    opacity: 0.5;
+    filter: saturate(2);
+  }
+  @media (prefers-color-scheme: dark) {
+    .panel::before {
+      opacity: 0.025;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-layer {
+      display: none;
+    }
+  }
+</style>
+
+<div
+  class="panel"
+  style={`
+    --bw-img: url(${bwSrc});
+    --color-img: url(${colorSrc});
+`}
+>
+  <div class="reveal-layer" aria-hidden="true"></div>
+  <slot />
+</div>

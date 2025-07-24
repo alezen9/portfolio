@@ -1,78 +1,60 @@
 ---
-import BaseHead from '@components/ui/BaseHead.astro';
-import BlobMask from '@islands/BlobMask';
+import BaseHead from "@components/ui/BaseHead.astro";
+import BlobMask from "@islands/BlobMask";
+import MangaPanelBackground from "@components/MangaPanelBackground.astro";
+import panels from "@content/other/manga-panels.json" assert { type: "json" };
+
+const randomPanel = panels[Math.floor(Math.random() * panels.length)];
 ---
 
 <style>
-  body {
-    margin: 0;
-  }
-  .panel {
-    position: absolute;
-    inset: 0;
-    height: 100dvh;
-    z-index: -1;
-  }
-  .panel::before{
-    position: fixed;
-    inset: 0;
-    content: "";
-    height: 100%;
-    width: 100%;
-    opacity: 0.1;
-    background-image: url('/manga/naruto/pain_bw_2k.webp');
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-  }
-  .reveal-layer {
-    position: fixed;
-    inset: 0;
-    background-color: var(--background-color);
-    mask: url(#blob-mask);
-    -webkit-mask: url(#blob-mask);
-  }
-
-  .reveal-layer::before {
-    position: fixed;
-    inset: 0;
-    content: "";
-    height: 100%;
-    width: 100%;
-    background-image: url('/manga/naruto/pain_color_2k.webp');
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-    pointer-events: none;
-    opacity: 0.25;
-    filter: saturate(2);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .panel::before { background-image: url('/manga/naruto/pain_inverted_2k.webp'); opacity: 0.25; }
-    }
-  @media (prefers-reduced-motion: reduce){
-    .reveal-layer{ display: none; }
-  }
-
   .hero {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 1em;
-    max-width: 720px;
+    box-sizing: border-box;
+    height: 100dvh;
+    padding: 5em 10em 5em 2em;
+    max-width: 35vw;
     display: grid;
     grid-template-rows: 1fr;
+    gap: 2em;
+    background: linear-gradient(
+      to right,
+      var(--background-color),
+      75%,
+      transparent
+    );
+  }
+
+  .presentation {
+    display: flex;
+    flex-direction: column;
+    gap: 2em;
+    max-width: 720px;
+  }
+
+  .name-role {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .name {
+    display: flex;
     gap: 1em;
   }
 
-  .main-info {
+  .name h1 {
+    margin-bottom: 0;
+  }
+
+  .role {
+    font-size: 1.1em;
+  }
+
+  .intro {
     display: grid;
     grid-template-rows: 1fr;
-    gap: 1em;
+    font-weight: 200;
+    font-size: 0.75em;
   }
 
   .links {
@@ -80,34 +62,58 @@ import BlobMask from '@islands/BlobMask';
     grid-template-rows: 1fr;
     gap: 0.5em;
   }
+
+  .initial {
+    position: relative;
+    display: inline-block;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 0.1em;
+    font-size: 1.25em;
+    -webkit-text-stroke: 0.5px currentColor;
+  }
 </style>
 
-<!doctype html>
 <html lang="en">
   <BaseHead title="Aleksandar Gjoreski" description="..." />
   <body>
-    <div class="panel">
-        <div class="reveal-layer" aria-hidden="true" />
-        <BlobMask client:only />
-    </div>
+    <MangaPanelBackground {...randomPanel}>
+      <BlobMask client:only />
+    </MangaPanelBackground>
     <main class="hero">
-        <div class="main-info">
-            <h1>Aleksandar Gjoreski</h1>
-            <p>Frontend Engineer @ -</p>
+      <div class="presentation">
+        <div class="name-role">
+          <div class="name">
+            <h1>Aleksandar</h1>
+            <h1>Gjoreski</h1>
+          </div>
+          <p class="role">Senior Frontend Engineer</p>
         </div>
         <div class="intro">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Expedita soluta dolores ratione placeat. Ipsa accusantium harum omnis voluptas! Nobis repudiandae laboriosam voluptate unde tenetur eum. Dicta nobis vel expedita neque!
+          <p>
+            Forever tweaking pixels, some days a WebGL scene, other days nudging
+            a plain CSS button or trimming a React bundle.
+          </p>
+          <p>
+            I chase quick loads and smooth frames, polishing the details no one
+            notices...until they do.
+          </p>
+          <p>
+            Whenever the code finally behaves, I write down the path so the next
+            wanderer (often future-me) can skip the detours.
+          </p>
         </div>
-        <!-- <div class="links">
-            <a href="/blog">
-                <span>[ ]</span>
-                <span>Blog</span>
-            </a>
-            <a href="/about">
-                <span>[ ]</span>
-                <span>About</span>
-            </a>
-        </div> -->
+      </div>
+
+      <div class="links">
+        <a href="/blog">
+          <span>✍🏻</span>
+          <span>Blog</span>
+        </a>
+        <a href="/about">
+          <span>🙍🏻</span>
+          <span>About</span>
+        </a>
+      </div>
     </main>
   </body>
 </html>

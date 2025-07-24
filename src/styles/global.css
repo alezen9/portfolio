@@ -1,80 +1,107 @@
+@font-face {
+  font-family: "RobotoMono";
+  src: url("/fonts/RobotoMono-VariableFont_wght.woff2") format("woff2");
+}
+
 :root {
-  --light: rgb(229, 233, 240);
-  --dark: rgb(15, 18, 25);
+  --light: rgb(180, 180, 180);
+  --dark: rgb(15, 15, 15);
   --background-color: var(--light);
   --text-color: var(--dark);
+
+  --font-sans: "RobotoMono", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrainsMono", "SFMono-Regular", monospace;
+
+  /* 2. Fluid type scale: 14-18 px base */
+  --step--1: clamp(0.79rem, 0.76rem + 0.13vw, 0.89rem); /* small UI */
+  --step-0: clamp(0.97rem, 0.94rem + 0.18vw, 1.13rem); /* body */
+  --step-1: clamp(1.25rem, 1.2rem + 0.25vw, 1.44rem); /* h5 */
+  --step-2: clamp(1.56rem, 1.5rem + 0.31vw, 1.8rem); /* h4 */
+  --step-3: clamp(1.95rem, 1.88rem + 0.39vw, 2.25rem); /* h3 */
+  --step-4: clamp(2.44rem, 2.35rem + 0.49vw, 2.81rem); /* h2 */
+  --step-5: clamp(3.05rem, 2.94rem + 0.61vw, 3.52rem); /* h1 */
+
+  /* 3. Vertical rhythm */
+  --space-s: 0.5rem;
+  --space-m: 1rem;
+  --space-l: 2rem;
 }
 
-@font-face {
-  font-family: "Atkinson";
-  src: url("/fonts/atkinson-regular.woff") format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Atkinson";
-  src: url("/fonts/atkinson-bold.woff") format("woff");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
+* {
+  margin: 0;
 }
 
 body {
-  font-family: "Atkinson", sans-serif;
   margin: 0;
   padding: 0;
   margin: 0;
   background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: var(--font-sans);
+  font-size: var(--step-0);
+  line-height: 1.5;
   text-align: left;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  color: var(--text-color);
-  font-size: 20px;
-  line-height: 1.7;
+  min-width: 100dvw;
+  min-height: 100dvh;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-span {
-  margin: 0;
-  line-height: 1;
-  /* margin: 0 0 0.5rem 0; */
-  /* line-height: 1.2; */
-}
 h1 {
-  font-size: 3.052em;
+  font-size: var(--step-5);
+  line-height: 1.15;
+  margin-bottom: var(--space-m);
 }
 h2 {
-  font-size: 2.441em;
+  font-size: var(--step-4);
+  line-height: 1.2;
+  margin-top: var(--space-l);
+  margin-bottom: var(--space-s);
 }
 h3 {
-  font-size: 1.953em;
+  font-size: var(--step-3);
+  line-height: 1.25;
+  margin-top: var(--space-l);
+  margin-bottom: var(--space-s);
 }
 h4 {
-  font-size: 1.563em;
+  font-size: var(--step-2);
+  line-height: 1.3;
+  margin-top: var(--space-m);
+  margin-bottom: var(--space-s);
 }
-h5 {
-  font-size: 1.25em;
+h5,
+h6 {
+  font-size: var(--step-1);
+  line-height: 1.35;
+  margin-top: var(--space-m);
+  margin-bottom: var(--space-s);
 }
+
 strong,
 b {
   font-weight: 700;
 }
 
+/* 5. Paragraphs & lists */
+p,
+ul,
+ol {
+  margin-bottom: var(--space-m);
+  max-width: 60ch;
+}
+
+/* 6. Links */
 a {
-  display: inline-block;
+  color: #ffc857;
   text-decoration: none;
-  width: fit-content;
+  font-weight: 500;
+}
+a:hover {
+  text-decoration: underline;
 }
 a.active {
-  font-weight: bolder;
+  font-weight: 700;
   text-decoration: underline;
 }
 
