@@ -1,11 +1,11 @@
 [
   {
-    "bwSrc": "/manga/one_piece/roger_bw.webp",
-    "colorSrc": "/manga/one_piece/roger_color.webp"
-  },
-  {
     "bwSrc": "/manga/naruto/pain_bw.webp",
     "colorSrc": "/manga/naruto/pain_color.webp"
+  },
+  {
+    "bwSrc": "/manga/one_piece/roger_bw.webp",
+    "colorSrc": "/manga/one_piece/roger_color.webp"
   },
   {
     "bwSrc": "/manga/bleach/yamamoto_bw.webp",

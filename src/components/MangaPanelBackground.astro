@@ -1,10 +1,11 @@
 ---
 type Props = {
+  id: string;
   bwSrc: string;
   colorSrc: string;
 };
 
-const { bwSrc, colorSrc } = Astro.props;
+const { id, bwSrc, colorSrc } = Astro.props;
 ---
 
 <style>
@@ -19,10 +20,6 @@ const { bwSrc, colorSrc } = Astro.props;
     position: fixed;
     inset: 0;
     background-image: var(--bw-img);
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
     opacity: 0.1;
     pointer-events: none;
   }
@@ -39,16 +36,22 @@ const { bwSrc, colorSrc } = Astro.props;
     inset: 0;
     pointer-events: none;
     background-image: var(--color-img);
+    opacity: 0.5;
+    filter: saturate(1.5) contrast(1.5);
+  }
+
+  .background::before {
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
     background-attachment: fixed;
-    opacity: 0.5;
-    filter: saturate(2);
+    transition: background-image 0.5s ease-in-out;
+    will-change: background-image;
   }
+
   @media (prefers-color-scheme: dark) {
     .panel::before {
-      opacity: 0.025;
+      opacity: 0.15;
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -59,12 +62,13 @@ const { bwSrc, colorSrc } = Astro.props;
 </style>
 
 <div
-  class="panel"
+  id={id}
+  class="panel background"
   style={`
     --bw-img: url(${bwSrc});
     --color-img: url(${colorSrc});
 `}
 >
-  <div class="reveal-layer" aria-hidden="true"></div>
+  <div class="reveal-layer background" aria-hidden="true"></div>
   <slot />
 </div>

@@ -2,9 +2,8 @@
 import BaseHead from "@components/ui/BaseHead.astro";
 import BlobMask from "@islands/BlobMask";
 import MangaPanelBackground from "@components/MangaPanelBackground.astro";
+import MangaPanelRotator from "@components/islands/mangaPanelRotator";
 import panels from "@content/other/manga-panels.json" assert { type: "json" };
-
-const randomPanel = panels[Math.floor(Math.random() * panels.length)];
 ---
 
 <style>
@@ -76,8 +75,9 @@ const randomPanel = panels[Math.floor(Math.random() * panels.length)];
 <html lang="en">
   <BaseHead title="Aleksandar Gjoreski" description="..." />
   <body>
-    <MangaPanelBackground {...randomPanel}>
+    <MangaPanelBackground id="manga-panel-bg" {...panels[0]}>
       <BlobMask client:only />
+      <MangaPanelRotator client:only panelId="manga-panel-bg" panels={panels} />
     </MangaPanelBackground>
     <main class="hero">
       <div class="presentation">
