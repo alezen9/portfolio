@@ -10,8 +10,8 @@ import panels from "@content/other/manga-panels.json" assert { type: "json" };
   .hero {
     box-sizing: border-box;
     height: 100dvh;
-    padding: 5em 10em 5em 2em;
-    max-width: 35vw;
+    padding: 5em 0 5em 2em;
+    max-width: 720px;
     display: grid;
     grid-template-rows: 1fr;
     gap: 2em;
@@ -27,7 +27,6 @@ import panels from "@content/other/manga-panels.json" assert { type: "json" };
     display: flex;
     flex-direction: column;
     gap: 2em;
-    max-width: 720px;
   }
 
   .name-role {
@@ -62,13 +61,59 @@ import panels from "@content/other/manga-panels.json" assert { type: "json" };
     gap: 0.5em;
   }
 
-  .initial {
+  a {
+    width: fit-content;
+    color: #05af4e;
+    text-decoration: none;
     position: relative;
-    display: inline-block;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: 0.1em;
-    font-size: 1.25em;
-    -webkit-text-stroke: 0.5px currentColor;
+    padding: 2px 2px;
+    transition: all 0.2s ease-out;
+  }
+  a:after {
+    content: " ";
+    width: 100%;
+    height: 1px;
+    background: #05af4e;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    transition: all 0.2s ease-out;
+  }
+  a:before {
+    content: " ";
+    width: 4px;
+    height: 4px;
+    background: #05af4e;
+    position: absolute;
+    right: -4px;
+    bottom: 0;
+    opacity: 0;
+  }
+  a:hover {
+    background: rgba(57, 255, 20, 0.1);
+    transition: all 0.1s ease-out;
+    padding: 2px 8px;
+  }
+  a:hover:after {
+    width: 0px;
+    transition: all 0.1s ease-out;
+  }
+  a:hover:before {
+    opacity: 1;
+    animation: blink 0.4s infinite 0.1s;
+    transition: all 0.1s ease-out;
+  }
+
+  @keyframes blink {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
   }
 </style>
 
@@ -82,10 +127,11 @@ import panels from "@content/other/manga-panels.json" assert { type: "json" };
     <main class="hero">
       <div class="presentation">
         <div class="name-role">
-          <div class="name">
+          <!-- <div class="name">
             <h1>Aleksandar</h1>
             <h1>Gjoreski</h1>
-          </div>
+          </div> -->
+          <h1>Aleksandar Gjoreski</h1>
           <p class="role">Senior Frontend Engineer</p>
         </div>
         <div class="intro">
@@ -105,14 +151,8 @@ import panels from "@content/other/manga-panels.json" assert { type: "json" };
       </div>
 
       <div class="links">
-        <a href="/blog">
-          <span>✍🏻</span>
-          <span>Blog</span>
-        </a>
-        <a href="/about">
-          <span>🙍🏻</span>
-          <span>About</span>
-        </a>
+        <a href="/blog"> Blog </a>
+        <a href="/about"> About </a>
       </div>
     </main>
   </body>

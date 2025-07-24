@@ -43,8 +43,8 @@ const rotatePanels = ({ panelId, panels, intervalMs = 15000 }: Props) => {
   const onShiftArrow = (e: KeyboardEvent) => {
     if (!e.shiftKey) return;
     if (e.code !== "ArrowRight") return;
-    showNextPanel();
     interval.reset();
+    showNextPanel();
   };
 
   window.addEventListener("keydown", onShiftArrow);

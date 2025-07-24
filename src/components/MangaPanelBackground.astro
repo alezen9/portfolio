@@ -37,7 +37,7 @@ const { id, bwSrc, colorSrc } = Astro.props;
     pointer-events: none;
     background-image: var(--color-img);
     opacity: 0.5;
-    filter: saturate(1.5) contrast(1.5);
+    filter: contrast(1.5);
   }
 
   .background::before {
@@ -51,7 +51,7 @@ const { id, bwSrc, colorSrc } = Astro.props;
 
   @media (prefers-color-scheme: dark) {
     .panel::before {
-      opacity: 0.15;
+      opacity: 0.05;
     }
   }
   @media (prefers-reduced-motion: reduce) {
