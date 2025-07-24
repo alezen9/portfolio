@@ -3,6 +3,11 @@
   src: url("/fonts/RobotoMono-VariableFont_wght.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "RedHatText";
+  src: url("/fonts/RedHatText-VariableFont_wght.woff2") format("woff2");
+}
+
 :root {
   --bg-light: rgb(220, 220, 220);
   --bg-dark: rgb(15, 15, 15);
@@ -14,7 +19,6 @@
   --font-sans: "RobotoMono", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrainsMono", "SFMono-Regular", monospace;
 
-  /* 2. Fluid type scale: 14-18 px base */
   --step--1: clamp(0.79rem, 0.76rem + 0.13vw, 0.89rem); /* small UI */
   --step-0: clamp(0.97rem, 0.94rem + 0.18vw, 1.13rem); /* body */
   --step-1: clamp(1.25rem, 1.2rem + 0.25vw, 1.44rem); /* h5 */
@@ -23,7 +27,6 @@
   --step-4: clamp(2.44rem, 2.35rem + 0.49vw, 2.81rem); /* h2 */
   --step-5: clamp(3.05rem, 2.94rem + 0.61vw, 3.52rem); /* h1 */
 
-  /* 3. Vertical rhythm */
   --space-s: 0.5rem;
   --space-m: 1rem;
   --space-l: 2rem;
@@ -85,7 +88,6 @@ b {
   font-weight: 700;
 }
 
-/* 5. Paragraphs & lists */
 p,
 ul,
 ol {
@@ -93,18 +95,50 @@ ol {
   max-width: 60ch;
 }
 
-/* 6. Links */
 a {
-  color: #ffc857;
+  position: relative;
+  width: fit-content;
+  color: var(--text-color);
   text-decoration: none;
+  font-family: "RedHatText";
+  letter-spacing: 3px;
   font-weight: 500;
 }
-a:hover {
-  text-decoration: underline;
+
+a::before {
+  position: absolute;
+  content: "";
+  bottom: 0;
+  left: 0;
+  width: 0;
+  transition: width 0.2s ease-in-out;
+  will-change: width;
+  height: 1px;
+  background-color: var(--text-color);
 }
-a.active {
-  font-weight: 700;
-  text-decoration: underline;
+
+a::after {
+  --size: 4px;
+  position: absolute;
+  content: "";
+  bottom: calc((var(--size) / 2) * -1);
+  right: -10%;
+  transform: rotate(45deg);
+  border-top: 1px solid;
+  border-right: 1px solid;
+  width: var(--size);
+  height: var(--size);
+  opacity: 0;
+  will-change: opacity;
+}
+
+a:hover::before {
+  width: 110%;
+}
+
+a:hover::after {
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out 0.2s;
 }
 
 .sr-only {
