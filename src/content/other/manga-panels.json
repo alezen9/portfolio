@@ -1,18 +1,18 @@
 [
   {
-    "bwSrc": "/manga/naruto/pain_bw.webp",
-    "colorSrc": "/manga/naruto/pain_color.webp"
+    "bwSrc": "/portfolio/manga/naruto/pain_bw.webp",
+    "colorSrc": "/portfolio/manga/naruto/pain_color.webp"
   },
   {
-    "bwSrc": "/manga/one_piece/roger_bw.webp",
-    "colorSrc": "/manga/one_piece/roger_color.webp"
+    "bwSrc": "/portfolio/manga/one_piece/roger_bw.webp",
+    "colorSrc": "/portfolio/manga/one_piece/roger_color.webp"
   },
   {
-    "bwSrc": "/manga/bleach/yamamoto_bw.webp",
-    "colorSrc": "/manga/bleach/yamamoto_color.webp"
+    "bwSrc": "/portfolio/manga/bleach/yamamoto_bw.webp",
+    "colorSrc": "/portfolio/manga/bleach/yamamoto_color.webp"
   },
   {
-    "bwSrc": "/manga/jojo/jlo_zeppeli_bw.webp",
-    "colorSrc": "/manga/jojo/jlo_zeppeli_color.webp"
+    "bwSrc": "/portfolio/manga/jojo/jlo_zeppeli_bw.webp",
+    "colorSrc": "/portfolio/manga/jojo/jlo_zeppeli_color.webp"
   }
 ]
