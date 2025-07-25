@@ -17,7 +17,7 @@ const { title, description } = Astro.props;
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/svg+xml" href="/portfolio/favicon.svg" />
 <link rel="sitemap" href="/sitemap-index.xml" />
 <link
   rel="alternate"
@@ -28,6 +28,13 @@ const { title, description } = Astro.props;
 <meta name="generator" content={Astro.generator} />
 
 <!-- Font preloads -->
+<link
+  rel="preload"
+  href="/portfolio/fonts/RedHatText-VariableFont_wght.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
 <link
   rel="preload"
   href="/portfolio/fonts/RobotoMono-VariableFont_wght.woff2"
@@ -57,3 +64,5 @@ const { title, description } = Astro.props;
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
 <!-- <meta property="twitter:image" content={new URL(image.src, Astro.url)} /> -->
+
+<slot />

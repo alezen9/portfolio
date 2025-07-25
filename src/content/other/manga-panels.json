@@ -1,5 +1,9 @@
 [
   {
+    "bwSrc": "/portfolio/manga/dragon_ball/goku_bw.webp",
+    "colorSrc": "/portfolio/manga/dragon_ball/goku_color.webp"
+  },
+  {
     "bwSrc": "/portfolio/manga/naruto/pain_bw.webp",
     "colorSrc": "/portfolio/manga/naruto/pain_color.webp"
   },
@@ -14,5 +18,9 @@
   {
     "bwSrc": "/portfolio/manga/jojo/jlo_zeppeli_bw.webp",
     "colorSrc": "/portfolio/manga/jojo/jlo_zeppeli_color.webp"
+  },
+  {
+    "bwSrc": "/portfolio/manga/one_piece/jaya_bw.webp",
+    "colorSrc": "/portfolio/manga/one_piece/jaya_color.webp"
   }
 ]

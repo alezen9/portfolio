@@ -72,9 +72,12 @@ import IconX from "@components/ui/IconX.astro";
 </style>
 
 <html lang="en">
-  <BaseHead title="Aleksandar Gjoreski" description="..." />
+  <BaseHead title="Aleksandar Gjoreski" description="...">
+    <link rel="preload" href={panels[0].bwSrc} as="image" />
+    <link rel="preload" href={panels[0].colorSrc} as="image" />
+  </BaseHead>
   <body>
-    <MangaPanelBackground id="manga-panel-bg" {...panels[0]}>
+    <MangaPanelBackground id="manga-panel-bg" firstPanel={panels[0]}>
       <BlobMask client:only />
       <MangaPanelRotator client:only panelId="manga-panel-bg" panels={panels} />
     </MangaPanelBackground>
@@ -86,16 +89,16 @@ import IconX from "@components/ui/IconX.astro";
         </div>
         <div class="intro">
           <p>
-            Forever tweaking pixels, some days a WebGL scene, other days nudging
-            a plain CSS button or trimming a React bundle.
+            Pixels keep me busy, WebGL one day, plain CSS the next and sometimes
+            just trimming a React bundle.
           </p>
           <p>
-            I chase quick loads and smooth frames, polishing the details no one
-            notices...until they do.
+            I go after quick loads and steady frames, polishing the details no
+            one notices...until they do.
           </p>
           <p>
-            Whenever the code finally behaves, I write down the path so the next
-            wanderer (often future-me) can skip the detours.
+            When something clicks, I write down the path so the next wanderer,
+            often future-me, can skip the detours.
           </p>
         </div>
       </div>

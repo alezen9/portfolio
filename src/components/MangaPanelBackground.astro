@@ -1,11 +1,15 @@
 ---
-type Props = {
-  id: string;
+type Panel = {
   bwSrc: string;
   colorSrc: string;
 };
 
-const { id, bwSrc, colorSrc } = Astro.props;
+type Props = {
+  id: string;
+  firstPanel: Panel;
+};
+
+const { id, firstPanel } = Astro.props;
 ---
 
 <style>
@@ -36,7 +40,7 @@ const { id, bwSrc, colorSrc } = Astro.props;
     inset: 0;
     pointer-events: none;
     background-image: var(--color-img);
-    opacity: 0.5;
+    opacity: 0.75;
     filter: contrast(1.5);
   }
 
@@ -53,6 +57,11 @@ const { id, bwSrc, colorSrc } = Astro.props;
     .panel::before {
       opacity: 0.05;
     }
+
+    .reveal-layer::before {
+      opacity: 0.5;
+      filter: contrast(1.25);
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     .reveal-layer {
@@ -65,8 +74,8 @@ const { id, bwSrc, colorSrc } = Astro.props;
   id={id}
   class="panel background"
   style={`
-    --bw-img: url(${bwSrc});
-    --color-img: url(${colorSrc});
+    --bw-img: url("${firstPanel.bwSrc}");
+    --color-img: url("${firstPanel.colorSrc}");
 `}
 >
   <div class="reveal-layer background" aria-hidden="true"></div>
