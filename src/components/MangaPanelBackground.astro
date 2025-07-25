@@ -63,7 +63,17 @@ const { id, firstPanel } = Astro.props;
       filter: contrast(1.25);
     }
   }
+
   @media (prefers-reduced-motion: reduce) {
+    .background::before {
+      transition: none;
+    }
+    .reveal-layer {
+      display: none;
+    }
+  }
+
+  @media (pointer: coarse) {
     .reveal-layer {
       display: none;
     }

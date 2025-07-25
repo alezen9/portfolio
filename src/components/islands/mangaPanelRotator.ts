@@ -7,7 +7,6 @@ type Props = {
 };
 
 let currentPanelIdx = 0;
-
 const fetched = new Set();
 
 const prefetch = (url: string) => {
@@ -38,6 +37,8 @@ const rotatePanels = ({ panelId, panels, intervalMs = 15000 }: Props) => {
   const panelEl = document.getElementById(panelId);
   if (!panelEl) return;
 
+  const { matches: hasMouseCursor } = window.matchMedia("(pointer: fine)");
+
   const initialPanel = panels[currentPanelIdx];
   if (initialPanel) {
     fetched.add(initialPanel.bwSrc);
@@ -50,7 +51,8 @@ const rotatePanels = ({ panelId, panels, intervalMs = 15000 }: Props) => {
     if (!nextPanel) return;
 
     panelEl.style.setProperty("--bw-img", `url("${nextPanel.bwSrc}")`);
-    panelEl.style.setProperty("--color-img", `url("${nextPanel.colorSrc}")`);
+    if (hasMouseCursor)
+      panelEl.style.setProperty("--color-img", `url("${nextPanel.colorSrc}")`);
 
     currentPanelIdx = nextPanelIdx;
   };
@@ -60,7 +62,7 @@ const rotatePanels = ({ panelId, panels, intervalMs = 15000 }: Props) => {
     const nextPanel = panels[nextPanelIdx];
     if (!nextPanel) return;
     prefetch(nextPanel.bwSrc);
-    prefetch(nextPanel.colorSrc);
+    if (hasMouseCursor) prefetch(nextPanel.colorSrc);
   };
 
   const interval = createInterval(() => {

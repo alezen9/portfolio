@@ -7,12 +7,14 @@ import panels from "@content/other/manga-panels.json" assert { type: "json" };
 import IconLinkedIn from "@components/ui/IconLinkedIn.astro";
 import IconGitHub from "@components/ui/IconGitHub.astro";
 import IconX from "@components/ui/IconX.astro";
+
+const firstPanel = panels[0];
 ---
 
 <style>
   .hero {
     box-sizing: border-box;
-    height: 100dvh;
+    min-height: 100dvh;
     padding: 5em 0 5em 2em;
     max-width: 720px;
     display: grid;
@@ -42,14 +44,14 @@ import IconX from "@components/ui/IconX.astro";
 
   .intro {
     display: grid;
-    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
     font-weight: 200;
     font-size: 0.75em;
   }
 
   .nav-links {
     display: grid;
-    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
     gap: 0.5em;
   }
 
@@ -65,19 +67,30 @@ import IconX from "@components/ui/IconX.astro";
     display: inline-block;
   }
 
+  .disclaimer {
+    font-size: 0.7rem;
+    opacity: 0.6;
+    font-family: "RedHatText";
+    font-weight: 300;
+  }
+
+  .disclaimer a {
+    letter-spacing: 1px;
+    font-weight: 300;
+  }
+
   .icon-link::before,
-  .icon-link::after {
+  .icon-link::after,
+  .disclaimer a::before,
+  .disclaimer a::after {
     display: none;
   }
 </style>
 
 <html lang="en">
-  <BaseHead title="Aleksandar Gjoreski" description="...">
-    <link rel="preload" href={panels[0].bwSrc} as="image" />
-    <link rel="preload" href={panels[0].colorSrc} as="image" />
-  </BaseHead>
+  <BaseHead title="Aleksandar Gjoreski" description="..." />
   <body>
-    <MangaPanelBackground id="manga-panel-bg" firstPanel={panels[0]}>
+    <MangaPanelBackground id="manga-panel-bg" firstPanel={firstPanel}>
       <BlobMask client:only />
       <MangaPanelRotator client:only panelId="manga-panel-bg" panels={panels} />
     </MangaPanelBackground>
@@ -123,6 +136,14 @@ import IconX from "@components/ui/IconX.astro";
           <IconX />
         </a>
       </div>
+      <p class="disclaimer">
+        Personal hobby showcase, no commercial use.<br />
+        If you own any referenced IP and want an asset removed, email me at
+        <a href="mailto:aleksandar.d.gjoreski@gmail.com"
+          >aleksandar.d.gjoreski@gmail.com</a
+        >
+        and I'll take action immediately.
+      </p>
     </main>
   </body>
 </html>
