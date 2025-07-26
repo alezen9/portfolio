@@ -18,8 +18,8 @@
   --text-dark: rgb(15, 15, 15);
   --text-color: var(--text-dark);
 
-  --font-sans: "RobotoMono", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrainsMono", "SFMono-Regular", monospace;
+  --font-sans: "RedHatText", system-ui, -apple-system, sans-serif;
+  --font-mono: "RobotoMono", "SFMono-Regular", monospace;
 
   --step--1: clamp(0.79rem, 0.76rem + 0.13vw, 0.89rem); /* small UI */
   --step-0: clamp(0.97rem, 0.94rem + 0.18vw, 1.13rem); /* body */
@@ -102,7 +102,7 @@ a {
   width: fit-content;
   color: var(--text-color);
   text-decoration: none;
-  font-family: "RedHatText";
+  font-family: var(--font-mono);
   letter-spacing: 3px;
   font-weight: 500;
 }

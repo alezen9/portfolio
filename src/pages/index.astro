@@ -31,6 +31,7 @@ const firstPanel = panels[0];
   .header {
     display: flex;
     flex-direction: column;
+    font-family: var(--font-mono);
   }
 
   .footer {
@@ -47,9 +48,6 @@ const firstPanel = panels[0];
     width: fit-content;
     font-size: 0.85em;
     font-weight: 300;
-  }
-
-  .cursor {
   }
 
   .typewriter {
@@ -94,7 +92,6 @@ const firstPanel = panels[0];
   .disclaimer {
     font-size: 0.7rem;
     opacity: 0.6;
-    font-family: "RedHatText";
     font-weight: 300;
     margin-bottom: 0;
   }
@@ -145,6 +142,10 @@ const firstPanel = panels[0];
 
     .typewriter {
       font-size: 0.85em;
+    }
+
+    .disclaimer {
+      display: none;
     }
   }
 </style>
