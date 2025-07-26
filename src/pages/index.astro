@@ -15,11 +15,11 @@ const firstPanel = panels[0];
   .hero {
     box-sizing: border-box;
     min-height: 100dvh;
-    padding: 5em 0 5em 2em;
-    max-width: 720px;
-    display: grid;
-    grid-template-rows: 1fr;
-    gap: 2em;
+    padding: 5em 0 2em 2em;
+    max-width: min(750px, 100dvw);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     background: linear-gradient(
       to right,
       var(--background-color),
@@ -28,21 +28,45 @@ const firstPanel = panels[0];
     );
   }
 
-  .presentation {
+  .header {
     display: flex;
     flex-direction: column;
-    gap: 1em;
   }
 
-  .name {
-    margin-bottom: 0;
+  .footer {
+    display: flex;
+    flex-direction: column;
+    gap: 2em;
   }
 
-  .role {
-    font-size: 1.1em;
+  .tagline {
+    margin-bottom: 0.1em;
+  }
+
+  .signature {
+    width: fit-content;
+    font-size: 0.85em;
+    font-weight: 300;
+  }
+
+  .cursor {
+  }
+
+  .typewriter {
+    /* --chars: 46;
+    --real-steps: calc(var(--chars) * 3); */
+    position: relative;
+    border-right: 1ch solid var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    animation:
+      typewriterProgression 1.5s 1s 1 normal both,
+      blinkingCursor 0.75s infinite normal;
+    animation-timing-function: linear; /* or use steps(var(--real-steps)) and tweak multiplier */
   }
 
   .intro {
+    margin-top: 2em;
     display: grid;
     grid-template-columns: 1fr;
     font-weight: 200;
@@ -72,6 +96,7 @@ const firstPanel = panels[0];
     opacity: 0.6;
     font-family: "RedHatText";
     font-weight: 300;
+    margin-bottom: 0;
   }
 
   .disclaimer a {
@@ -85,6 +110,43 @@ const firstPanel = panels[0];
   .disclaimer a::after {
     display: none;
   }
+  @keyframes typewriterProgression {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+  @keyframes blinkingCursor {
+    from {
+      border-right-color: var(--text-color);
+    }
+    to {
+      border-right-color: transparent;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .typewriter {
+      animation: none;
+      border: none;
+    }
+  }
+
+  @media screen and (max-width: 480px) {
+    .hero {
+      padding: 4em 1.5em;
+    }
+
+    .tagline {
+      font-size: 2.25em;
+    }
+
+    .typewriter {
+      font-size: 0.85em;
+    }
+  }
 </style>
 
 <html lang="en">
@@ -95,10 +157,10 @@ const firstPanel = panels[0];
       <MangaPanelRotator client:only panelId="manga-panel-bg" panels={panels} />
     </MangaPanelBackground>
     <main class="hero">
-      <div class="presentation">
-        <div>
-          <h1 class="name">Aleksandar Gjoreski</h1>
-          <p class="role">Senior Frontend Engineer</p>
+      <div class="header">
+        <h1 class="tagline">Pixels set in motion</h1>
+        <div class="signature">
+          <p class="typewriter">Aleksandar Gjoreski | Sr. Frontend Engineer</p>
         </div>
         <div class="intro">
           <p>
@@ -115,35 +177,44 @@ const firstPanel = panels[0];
           </p>
         </div>
       </div>
-
-      <div class="nav-links">
-        <a href="/portfolio/blog">Blog</a>
-        <a href="/portfolio/projects">Projects</a>
-        <a href="/portfolio/about">About me</a>
+      <div class="footer">
+        <div class="nav-links">
+          <a href="/portfolio/blog">Blog</a>
+          <a href="/portfolio/projects">Projects</a>
+          <a href="/portfolio/about">About me</a>
+        </div>
+        <div class="personal-links">
+          <a
+            class="icon-link"
+            href="https://www.linkedin.com/in/aleksandar-d-gjoreski/"
+            target="_blank"
+          >
+            <IconLinkedIn />
+          </a>
+          <a
+            class="icon-link"
+            href="https://github.com/alezen9"
+            target="_blank"
+          >
+            <IconGitHub />
+          </a>
+          <a
+            class="icon-link"
+            href="https://x.com/aleksgjoreski"
+            target="_blank"
+          >
+            <IconX />
+          </a>
+        </div>
+        <p class="disclaimer">
+          Personal hobby showcase, no commercial use.<br />
+          If you own any referenced IP and want an asset removed, email me at
+          <a href="mailto:aleksandar.d.gjoreski@gmail.com"
+            >aleksandar.d.gjoreski@gmail.com</a
+          >
+          and I'll take action immediately.
+        </p>
       </div>
-      <div class="personal-links">
-        <a
-          class="icon-link"
-          href="https://www.linkedin.com/in/aleksandar-d-gjoreski/"
-          target="_blank"
-        >
-          <IconLinkedIn />
-        </a>
-        <a class="icon-link" href="https://github.com/alezen9" target="_blank">
-          <IconGitHub />
-        </a>
-        <a class="icon-link" href="https://x.com/aleksgjoreski" target="_blank">
-          <IconX />
-        </a>
-      </div>
-      <p class="disclaimer">
-        Personal hobby showcase, no commercial use.<br />
-        If you own any referenced IP and want an asset removed, email me at
-        <a href="mailto:aleksandar.d.gjoreski@gmail.com"
-          >aleksandar.d.gjoreski@gmail.com</a
-        >
-        and I'll take action immediately.
-      </p>
     </main>
   </body>
 </html>
