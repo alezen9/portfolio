@@ -7,6 +7,7 @@ import panels from "@content/other/manga-panels.json" assert { type: "json" };
 import IconLinkedIn from "@components/ui/IconLinkedIn.astro";
 import IconGitHub from "@components/ui/IconGitHub.astro";
 import IconX from "@components/ui/IconX.astro";
+import WordSwap from "@components/ui/WordSwap.astro";
 
 const firstPanel = panels[0];
 ---
@@ -161,11 +162,13 @@ const firstPanel = panels[0];
       <div class="header">
         <h1 class="tagline">Pixels set in motion</h1>
         <div class="signature">
-          <p class="typewriter">Aleksandar Gjoreski | Sr. Frontend Engineer</p>
+          <p class="typewriter">
+            Aleksandar Gjoreski | Creative Frontend Engineer
+          </p>
         </div>
         <div class="intro">
           <p>
-            Pixels keep me busy, WebGL one day, plain CSS the next and sometimes
+            Pixels keep me busy, <WordSwap /> one day, plain CSS the next and sometimes
             just trimming a React bundle.
           </p>
           <p>

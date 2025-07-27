@@ -1,0 +1,38 @@
+<style>
+  .word-swap {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    flex-direction: column;
+    width: max-content;
+    height: 1lh;
+    text-align: center;
+    will-change: transform;
+  }
+
+  @keyframes slide {
+    0%,
+    45% {
+      transform: translateY(0);
+    }
+    47% {
+      transform: translateY(0.2lh);
+    }
+    53% {
+      transform: translateY(-1.15lh);
+    }
+    55%,
+    100% {
+      transform: translateY(-0.95lh);
+    }
+  }
+
+  .word-swap > .word {
+    animation: slide 5s infinite ease-in-out;
+  }
+</style>
+
+<span class="word-swap">
+  <span class="word">WebGL</span>
+  <span class="word">WebGPU</span>
+</span>
