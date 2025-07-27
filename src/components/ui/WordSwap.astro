@@ -1,38 +1,64 @@
 <style>
   .word-swap {
     position: relative;
-    overflow: hidden;
-    display: inline-flex;
-    flex-direction: column;
-    width: max-content;
+    --r: 20px;
+    --time: 10s;
+    perspective: 800px;
+    display: inline-block;
+    width: 6ch;
     height: 1lh;
-    text-align: center;
-    will-change: transform;
+    overflow: hidden;
+    vertical-align: middle;
   }
 
-  @keyframes slide {
-    0%,
-    45% {
-      transform: translateY(0);
+  .face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform-origin: 50% 50% calc(-1 * var(--r));
+    backface-visibility: hidden;
+  }
+
+  .face.webgl {
+    transform: rotateX(0);
+  }
+
+  .face.webgpu {
+    transform: rotateX(-180deg);
+  }
+
+  .rotor {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform-origin: 50% 50% calc(-1 * var(--r));
+    animation: spin ease-in-out infinite;
+    animation-duration: var(--time);
+  }
+  @keyframes spin {
+    5% {
+      transform: rotateX(0deg);
     }
-    47% {
-      transform: translateY(0.2lh);
+    50% {
+      transform: rotateX(0deg);
     }
-    53% {
-      transform: translateY(-1.15lh);
+    55% {
+      transform: rotateX(-180deg);
     }
-    55%,
+    95% {
+      transform: rotateX(-180deg);
+    }
     100% {
-      transform: translateY(-0.95lh);
+      transform: rotateX(-360deg);
     }
-  }
-
-  .word-swap > .word {
-    animation: slide 5s infinite ease-in-out;
   }
 </style>
 
 <span class="word-swap">
-  <span class="word">WebGL</span>
-  <span class="word">WebGPU</span>
+  <span class="rotor">
+    <span class="face webgl">WebGL</span>
+    <span class="face webgpu">WebGPU</span>
+  </span>
 </span>
