@@ -1,14 +1,14 @@
 <style>
   .word-swap {
     position: relative;
-    --r: 20px;
-    --time: 10s;
+    --r: 15px;
+    --time: 15s;
     perspective: 800px;
     display: inline-block;
     width: 6ch;
     height: 1lh;
+    transform: translateY(0.25lh);
     overflow: hidden;
-    vertical-align: middle;
   }
 
   .face {
@@ -21,11 +21,11 @@
     backface-visibility: hidden;
   }
 
-  .face.webgl {
+  .face.webgpu {
     transform: rotateX(0);
   }
 
-  .face.webgpu {
+  .face.webgl {
     transform: rotateX(-180deg);
   }
 
@@ -37,17 +37,41 @@
     animation: spin ease-in-out infinite;
     animation-duration: var(--time);
   }
-  @keyframes spin {
-    5% {
+
+  /* @keyframes spin {
+    0%,
+    10% {
       transform: rotateX(0deg);
     }
-    50% {
-      transform: rotateX(0deg);
+
+    15%,
+    35% {
+      transform: rotateX(-90deg);
     }
-    55% {
+
+    40%,
+    60% {
       transform: rotateX(-180deg);
     }
-    95% {
+
+    65%,
+    85% {
+      transform: rotateX(-270deg);
+    }
+
+    90%,
+    100% {
+      transform: rotateX(-360deg);
+    }
+  } */
+
+  @keyframes spin {
+    0%,
+    49% {
+      transform: rotateX(0deg);
+    }
+    51%,
+    98% {
       transform: rotateX(-180deg);
     }
     100% {
@@ -58,7 +82,7 @@
 
 <span class="word-swap">
   <span class="rotor">
-    <span class="face webgl">WebGL</span>
     <span class="face webgpu">WebGPU</span>
+    <span class="face webgl">WebGL</span>
   </span>
 </span>
