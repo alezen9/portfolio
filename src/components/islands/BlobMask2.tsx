@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "preact/hooks";
 
 const CONFIG = {
-  baseRadiusPx: 150, // 220 px diameter → 110 px radius
+  baseRadiusPx: 300,
   springStiffness: 0.75, // how fast it chases the pointer
   springDamping: 0.9, // velocity decay (0 = elastic, 1 = critically damped)
   maxStretchFactor: 1.35, // 35 % “squash & stretch” cap
 };
 
-export default function BlobMask() {
+export default function BlobMask2() {
   const circleRef = useRef<SVGCircleElement | null>(null);
 
   useEffect(() => {
@@ -62,13 +62,17 @@ export default function BlobMask() {
       aria-hidden="true"
     >
       <defs>
+        <radialGradient id="myGradient">
+          <stop offset="1%" stop-color="white" />
+          <stop offset="95%" stop-color="black" />
+        </radialGradient>
         <mask id="blob-mask" mask-type="luminance" maskUnits="userSpaceOnUse">
           <circle
             ref={circleRef}
-            fill="white"
-            r={CONFIG.baseRadiusPx}
             cx={window.innerWidth / 2}
             cy={window.innerHeight / 2}
+            r={CONFIG.baseRadiusPx}
+            fill="url('#myGradient')"
           />
         </mask>
       </defs>

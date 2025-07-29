@@ -1,0 +1,155 @@
+---
+import LightsaberExclamation from "@components/ui/LightsaberExclamation.astro";
+import Layout from "src/layouts/Layout.astro";
+---
+
+<style>
+  .wrapper {
+    box-sizing: border-box;
+    height: 100%;
+    width: fit-content;
+    max-width: min(1000px, 90dvw);
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: 2em;
+    display: flex;
+    flex-direction: column;
+    gap: 4em;
+  }
+
+  .tagline {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    margin-bottom: 1em;
+  }
+
+  .tagline span.right-aligned {
+    text-align: right;
+  }
+
+  section {
+    position: relative;
+  }
+
+  section::before {
+    position: absolute;
+    content: "";
+    top: -1em;
+    left: -1em;
+    width: calc(100% + 2em);
+    height: calc(100% + 2em);
+    opacity: 0.8;
+    background-color: var(--background-color);
+    border-radius: 0.25em;
+    z-index: -1;
+  }
+
+  section p {
+    font-size: 0.9em;
+    text-align: justify;
+  }
+
+  .title {
+    position: relative;
+    font-weight: 600;
+    font-size: 1.25em;
+    margin-bottom: 1em;
+  }
+
+  .title::before {
+    position: absolute;
+    content: "";
+    background-color: var(--text-color);
+    bottom: -0.25em;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    z-index: -1;
+    opacity: 0.5;
+  }
+
+  .grayscale {
+    filter: grayscale(50%);
+  }
+
+  @media screen and (max-width: 480px) {
+    .wrapper {
+      padding: 2em;
+      max-width: 100dvw;
+    }
+
+    .section::before {
+      opacity: 1;
+    }
+
+    .tagline {
+      font-size: 2.2em;
+    }
+  }
+</style>
+<Layout title="About Me" description="Lorem ipsum dolor sit amet">
+  <main class="wrapper">
+    <h1 class="tagline">
+      <span>Hello there!</span>
+      <span class="right-aligned">General Kenobi<LightsaberExclamation /></span>
+    </h1>
+
+    <section>
+      <h2 class="title">TL;DR</h2>
+      <p>
+        Hi, I'm Aleksandar, originally from North Macedonia, living in northern
+        Italy since I was young.
+      </p>
+      <p>
+        I enjoy tinkering with tech, mainly for the web: building fast, reliable
+        applications, crafting visuals, and creating immersive 3D experiences.
+      </p>
+      <p>
+        Evenings are usually football, friends and family, and a stack of other
+        hobbies.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="title">Expanded intro</h2>
+      <p>
+        I stepped into tech back in 2017, building server-rendered
+        <code>Node + Pug</code> sites. Soon after I went deep into
+        <code>React</code>, shipping a steady stream of data-heavy SaaS and
+        marketplace dashboards.
+      </p>
+      <p>
+        Along the way I picked up graphics work, raw <code>WebGL</code>,
+        <code>WebGPU</code>, and the maths that makes 3D tick, both with and
+        without <code>Three.js</code>, and more recently inside
+        <code>Godot</code> as well.
+      </p>
+      <p>The open-ended nature of graphics keeps me learning every day.</p>
+      <p>
+        I like to join projects early: sketching an MVP, spotting pitfalls, and
+        agreeing on trade-offs with designers, back-end devs, QA, and everyone
+        else in the loop. Lining up the basics first makes the initial build
+        smoother and lets us iterate on real user feedback instead of re-doing
+        avoidable mistakes.
+      </p>
+      <p>
+        A few edge cases still slip through, but each one becomes a lesson for
+        next time.
+      </p>
+      <p>
+        Below you'll find a concise career timeline, a snapshot of my toolkit,
+        and a quick way to reach me if you'd like the full résumé.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="title">Professional journey</h2>
+      <p>
+        Here my career path... Lorem, ipsum dolor sit amet consectetur
+        adipisicing elit. Similique architecto repellendus consequatur
+        voluptatibus dolore fugiat esse voluptatum, optio praesentium eum ex
+        placeat nemo nesciunt dolorum ipsum sapiente, quisquam dolorem dicta.
+      </p>
+    </section>
+  </main>
+</Layout>
