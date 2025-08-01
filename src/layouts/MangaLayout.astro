@@ -9,65 +9,67 @@ const firstPanel = panels[0];
 const { title, description } = Astro.props;
 ---
 
-<style>
-  .panel {
-    position: absolute;
-    inset: 0;
-    height: 100dvh;
-    z-index: -1;
-  }
-  .panel::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background-image: var(--bw-img);
-    opacity: 0.1;
-    pointer-events: none;
-  }
-  .reveal-layer {
-    position: fixed;
-    inset: 0;
-    background-color: var(--background-color, transparent);
-    mask-image: url("#blob-mask");
-    -webkit-mask-image: url("#blob-mask");
-  }
-  .reveal-layer::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background-image: var(--color-img);
-    opacity: 0.75;
-    filter: contrast(1.5);
-  }
-
-  .background::before {
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-    transition: background-image 0.5s ease-in-out;
-    will-change: background-image;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .background::before {
-      transition: none;
-    }
-    .reveal-layer {
-      display: none;
-    }
-  }
-
-  @media (pointer: coarse) {
-    .reveal-layer {
-      display: none;
-    }
-  }
-</style>
-
 <html lang="en">
-  <BaseHead title={title} description={description} />
+  <head>
+    <BaseHead title={title} description={description} />
+
+    <style>
+      .panel {
+        position: absolute;
+        inset: 0;
+        height: 100dvh;
+        z-index: -1;
+      }
+      .panel::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: var(--bw-img);
+        opacity: 0.1;
+        pointer-events: none;
+      }
+      .reveal-layer {
+        position: fixed;
+        inset: 0;
+        background-color: var(--background-color, transparent);
+        mask-image: url("#blob-mask");
+        -webkit-mask-image: url("#blob-mask");
+      }
+      .reveal-layer::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image: var(--color-img);
+        opacity: 0.75;
+        filter: contrast(1.5);
+      }
+
+      .background::before {
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-attachment: fixed;
+        transition: background-image 0.5s ease-in-out;
+        will-change: background-image;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .background::before {
+          transition: none;
+        }
+        .reveal-layer {
+          display: none;
+        }
+      }
+
+      @media (pointer: coarse) {
+        .reveal-layer {
+          display: none;
+        }
+      }
+    </style>
+  </head>
   <body>
     <div
       id="manga-panel-bg"
