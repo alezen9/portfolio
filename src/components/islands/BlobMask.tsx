@@ -1,14 +1,20 @@
 import { useEffect, useRef } from "preact/hooks";
 
 const CONFIG = {
-  baseRadiusPx: 150, // 220 px diameter → 110 px radius
   springStiffness: 0.75, // how fast it chases the pointer
   springDamping: 0.9, // velocity decay (0 = elastic, 1 = critically damped)
   maxStretchFactor: 1.35, // 35 % “squash & stretch” cap
 };
 
-export default function BlobMask() {
+type Props = {
+  radius?: number;
+  gradient?: number; // 1 = full gradient, 0 sharp circle
+};
+
+const BlobMask = (props: Props) => {
+  const { radius = 150, gradient = 0 } = props;
   const circleRef = useRef<SVGCircleElement | null>(null);
+  const gradientPercentage = (1 - gradient) * 100;
 
   useEffect(() => {
     if (!circleRef.current) return;
@@ -20,10 +26,7 @@ export default function BlobMask() {
     function drawBlob(stretchFactor: number) {
       circleRef.current!.setAttribute("cx", position.x.toFixed(1));
       circleRef.current!.setAttribute("cy", position.y.toFixed(1));
-      circleRef.current!.setAttribute(
-        "r",
-        (CONFIG.baseRadiusPx * stretchFactor).toFixed(1),
-      );
+      circleRef.current!.setAttribute("r", (radius * stretchFactor).toFixed(1));
     }
 
     const animate: FrameRequestCallback = () => {
@@ -62,16 +65,22 @@ export default function BlobMask() {
       aria-hidden="true"
     >
       <defs>
+        <radialGradient id="myGradient">
+          <stop offset={`${gradientPercentage}%`} stop-color="white" />
+          <stop offset="95%" stop-color="black" />
+        </radialGradient>
         <mask id="blob-mask" mask-type="luminance" maskUnits="userSpaceOnUse">
           <circle
             ref={circleRef}
-            fill="white"
-            r={CONFIG.baseRadiusPx}
             cx={window.innerWidth / 2}
             cy={window.innerHeight / 2}
+            r={radius}
+            fill="url('#myGradient')"
           />
         </mask>
       </defs>
     </svg>
   );
-}
+};
+
+export default BlobMask;

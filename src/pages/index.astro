@@ -1,15 +1,10 @@
 ---
-import BaseHead from "@components/ui/BaseHead.astro";
-import BlobMask from "@islands/BlobMask";
-import MangaPanelBackground from "@components/MangaPanelBackground.astro";
-import MangaPanelRotator from "@components/islands/mangaPanelRotator";
-import panels from "@content/other/manga-panels.json" assert { type: "json" };
-import IconLinkedIn from "@components/ui/IconLinkedIn.astro";
-import IconGitHub from "@components/ui/IconGitHub.astro";
-import IconX from "@components/ui/IconX.astro";
+import IconLinkedIn from "@components/icons/IconLinkedIn.astro";
+import IconGitHub from "@components/icons/IconGitHub.astro";
+import IconX from "@components/icons/IconX.astro";
 import WordSwap from "@components/ui/WordSwap.astro";
-
-const firstPanel = panels[0];
+import MangaLayout from "src/layouts/MangaLayout.astro";
+import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
 ---
 
 <style>
@@ -91,22 +86,16 @@ const firstPanel = panels[0];
     display: inline-block;
   }
 
-  .disclaimer {
-    font-size: 0.7rem;
-    opacity: 0.6;
-    font-weight: 300;
-    margin-bottom: 0;
+  .icon-github {
+    width: 1.75em;
   }
 
-  .disclaimer a {
-    letter-spacing: 1px;
-    font-weight: 300;
+  .icon-x {
+    width: 1.25em;
   }
 
   .icon-link::before,
-  .icon-link::after,
-  .disclaimer a::before,
-  .disclaimer a::after {
+  .icon-link::after {
     display: none;
   }
   @keyframes typewriterProgression {
@@ -145,81 +134,55 @@ const firstPanel = panels[0];
     .typewriter {
       font-size: 0.85em;
     }
-
-    .disclaimer {
-      display: none;
-    }
   }
 </style>
 
-<html lang="en">
-  <BaseHead title="Aleksandar Gjoreski" description="..." />
-  <body>
-    <MangaPanelBackground id="manga-panel-bg" firstPanel={firstPanel}>
-      <BlobMask client:only />
-      <MangaPanelRotator client:only panelId="manga-panel-bg" panels={panels} />
-    </MangaPanelBackground>
-    <main class="hero">
-      <div class="header">
-        <h1 class="tagline">Pixels set in motion</h1>
-        <div class="signature">
-          <p class="typewriter">
-            Aleksandar Gjoreski | Creative Frontend Engineer
-          </p>
-        </div>
-        <div class="intro">
-          <p>
-            Pixels keep me busy, <WordSwap /> one day, plain CSS the next and sometimes
-            just trimming a React bundle.
-          </p>
-          <p>
-            I go after quick loads and steady frames, polishing the details no
-            one notices...until they do.
-          </p>
-          <p>
-            When something clicks, I write down the path so the next wanderer,
-            often future-me, can skip the detours.
-          </p>
-        </div>
-      </div>
-      <div class="footer">
-        <div class="nav-links">
-          <a href="/portfolio/blog">Blog</a>
-          <a href="/portfolio/projects">Projects</a>
-          <a href="/portfolio/about-me">About me</a>
-        </div>
-        <div class="personal-links">
-          <a
-            class="icon-link"
-            href="https://www.linkedin.com/in/aleksandar-d-gjoreski/"
-            target="_blank"
-          >
-            <IconLinkedIn />
-          </a>
-          <a
-            class="icon-link"
-            href="https://github.com/alezen9"
-            target="_blank"
-          >
-            <IconGitHub />
-          </a>
-          <a
-            class="icon-link"
-            href="https://x.com/aleksgjoreski"
-            target="_blank"
-          >
-            <IconX />
-          </a>
-        </div>
-        <p class="disclaimer">
-          Personal hobby showcase, no commercial use.<br />
-          If you own any referenced IP and want an asset removed, email me at
-          <a href="mailto:aleksandar.d.gjoreski@gmail.com"
-            >aleksandar.d.gjoreski@gmail.com</a
-          >
-          and I'll take action immediately.
+<MangaLayout>
+  <main class="hero">
+    <div class="header">
+      <h1 class="tagline">Pixels set in motion</h1>
+      <div class="signature">
+        <p class="typewriter">
+          Aleksandar Gjoreski | Creative Frontend Engineer
         </p>
       </div>
-    </main>
-  </body>
-</html>
+      <div class="intro">
+        <p>
+          Pixels keep me busy, <WordSwap /> one day, plain CSS the next and sometimes
+          just trimming a React bundle.
+        </p>
+        <p>
+          I go after quick loads and steady frames, polishing the details no one
+          notices...until they do.
+        </p>
+        <p>
+          When something clicks, I write down the path so the next wanderer,
+          often future-me, can skip the detours.
+        </p>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="nav-links">
+        <a href="/portfolio/blog">Blog</a>
+        <a href="/portfolio/projects">Projects</a>
+        <a href="/portfolio/about-me">About me</a>
+      </div>
+      <div class="personal-links">
+        <a
+          class="icon-link"
+          href="https://www.linkedin.com/in/aleksandar-d-gjoreski/"
+          target="_blank"
+        >
+          <IconLinkedIn class:list={["animate"]} />
+        </a>
+        <a class="icon-link" href="https://github.com/alezen9" target="_blank">
+          <IconGitHub class:list={["animate", "icon-github"]} />
+        </a>
+        <a class="icon-link" href="https://x.com/aleksgjoreski" target="_blank">
+          <IconX class:list={["animate", "icon-x"]} />
+        </a>
+      </div>
+      <CopyrightsDisclaimer />
+    </div>
+  </main>
+</MangaLayout>

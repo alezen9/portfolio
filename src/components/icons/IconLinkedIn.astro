@@ -1,4 +1,6 @@
-<style></style>
+---
+const { class: className, ...rest } = Astro.props;
+---
 
 <svg
   viewBox="0 0 192 192"
@@ -10,7 +12,8 @@
   stroke-width="8"
   aria-label="LinkedIn"
   role="img"
-  class="icon animate"
+  class:list={["icon", className]}
+  {...rest}
 >
   <rect width="132" height="132" x="30" y="30" rx="16"></rect>
   <path d="M66 86v44"></path>

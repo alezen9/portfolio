@@ -1,15 +1,12 @@
 ---
-type Panel = {
-  bwSrc: string;
-  colorSrc: string;
-};
+import BaseHead from "@components/ui/BaseHead.astro";
+import BlobMask from "@components/islands/BlobMask";
+import MangaPanelRotator from "@components/islands/mangaPanelRotator";
+import panels from "@content/other/manga-panels.json" assert { type: "json" };
 
-type Props = {
-  id: string;
-  firstPanel: Panel;
-};
+const firstPanel = panels[0];
 
-const { id, firstPanel } = Astro.props;
+const { title, description } = Astro.props;
 ---
 
 <style>
@@ -53,17 +50,6 @@ const { id, firstPanel } = Astro.props;
     will-change: background-image;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .panel::before {
-      opacity: 0.05;
-    }
-
-    .reveal-layer::before {
-      opacity: 0.5;
-      filter: contrast(1.25);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .background::before {
       transition: none;
@@ -80,14 +66,21 @@ const { id, firstPanel } = Astro.props;
   }
 </style>
 
-<div
-  id={id}
-  class="panel background"
-  style={`
+<html lang="en">
+  <BaseHead title={title} description={description} />
+  <body>
+    <div
+      id="manga-panel-bg"
+      class="panel background"
+      style={`
     --bw-img: url("${firstPanel.bwSrc}");
     --color-img: url("${firstPanel.colorSrc}");
 `}
->
-  <div class="reveal-layer background" aria-hidden="true"></div>
-  <slot />
-</div>
+    >
+      <div class="reveal-layer background" aria-hidden="true"></div>
+      <BlobMask client:only />
+      <MangaPanelRotator client:only panelId="manga-panel-bg" panels={panels} />
+    </div>
+    <slot />
+  </body>
+</html>
