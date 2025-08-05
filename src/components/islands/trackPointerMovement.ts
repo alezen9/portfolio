@@ -18,10 +18,10 @@ const trackPointerMovement = () => {
     updatePointerPosition(xP, yP);
   };
 
-  window.addEventListener("mousemove", onMouseMove);
+  window.addEventListener("pointermove", onMouseMove, { passive: true });
 
   return () => {
-    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("pointermove", onMouseMove);
   };
 };
 

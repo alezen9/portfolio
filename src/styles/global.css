@@ -11,9 +11,10 @@
 }
 
 :root {
-  --bg-light: rgb(220, 220, 220);
-  --bg-dark: rgb(15, 15, 15);
-  --background-color: var(--bg-light);
+  --bg-light: 220, 220, 220;
+  --bg-dark: 15, 15, 15;
+  --bg-raw: var(--bg-light);
+  --background-color: rgb(var(--bg-raw));
   --text-light: rgb(180, 180, 180);
   --text-dark: rgb(15, 15, 15);
   --text-color: var(--text-dark);
@@ -183,6 +184,16 @@ ul {
   padding-inline-start: 1.25em;
 }
 
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar-button {
+  display: none;
+}
+
 @keyframes animateDash {
   to {
     stroke-dashoffset: 0;
@@ -209,7 +220,7 @@ ul {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background-color: var(--bg-dark);
+    --bg-raw: var(--bg-dark);
     --text-color: var(--text-light);
   }
 
