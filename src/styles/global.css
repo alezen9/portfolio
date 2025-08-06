@@ -194,6 +194,27 @@ ul {
   display: none;
 }
 
+.icon-link {
+  position: relative;
+  width: 2em;
+  aspect-ratio: 1/1;
+  display: grid;
+  place-content: center;
+  transform-origin: bottom center;
+  transform: scale(1);
+  will-change: transform;
+  transition: transform 0.2s cubic-bezier(0, 0.49, 0.94, 1.98);
+}
+
+.icon-link:hover {
+  transform: scale(1.1);
+}
+
+.icon-link::before,
+.icon-link::after {
+  display: none;
+}
+
 @keyframes animateDash {
   to {
     stroke-dashoffset: 0;
@@ -226,5 +247,15 @@ ul {
 
   .highlight {
     color: color-mix(in srgb, var(--text-accent) 30%, var(--text-color));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-link {
+    will-change: none;
+    transition: none;
+  }
+  .icon-link:hover {
+    transform: none;
   }
 }

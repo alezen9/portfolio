@@ -15,8 +15,6 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     --text-accent: rgb(146, 41, 41);
     box-sizing: border-box;
     width: 100dvw;
-    height: 100vh;
-    display: flex;
     flex-direction: column;
   }
 
@@ -86,81 +84,170 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     will-change: filter, visibility, opacity;
   }
 
-  .intro .content {
+  .intro {
     display: grid;
     place-content: center;
   }
 
-  .project .content::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position-x: 30%;
-    background-position-y: center;
-    background-image: var(--img);
-    pointer-events: none;
-    filter: grayscale(0.5);
+  .project {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
+    padding: 2em;
+    gap: 2em;
   }
 
-  .revo-realms {
-    --img: url(/portfolio/projects/revo-realms.webp);
+  .project .mosaic {
+    display: grid;
+    gap: 0.25em;
+    padding: 5.5em 0 0 0;
   }
 
-  .zanka-no-tachi {
-    --img: url(/portfolio/projects/zanka-no-tachi.webp);
-  }
-
-  .unshaken {
-    --img: url(/portfolio/projects/unshaken.webp);
-  }
-
-  .cosmic-canvas {
-    --img: url(/portfolio/projects/cosmic-canvas.webp);
-  }
-
-  .content .hero {
-    --gradient-color: var(--background-color);
-    position: absolute;
-    top: 0;
-    left: 0;
-    box-sizing: border-box;
-    height: 100dvh;
-    padding: 5em 0 2em 2em;
+  .project .mosaic div {
+    --border-radius: 0.75em;
     width: 100%;
-    max-width: min(750px, 100dvw);
+    height: 100%;
+    background-image: var(--img);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .revo-realms .mosaic {
+    grid-template-areas:
+      ". d d b b"
+      "c c . b b"
+      "c c a a a"
+      "c c a a a"
+      ". . a a a";
+  }
+
+  .revo-realms .mosaic div {
+    background-position-y: top;
+  }
+
+  .revo-realms .mosaic div:first-of-type {
+    grid-area: a;
+    border-radius: var(--border-radius);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+
+  .revo-realms .mosaic div:nth-of-type(2) {
+    grid-area: b;
+    border-top-right-radius: var(--border-radius);
+  }
+
+  .revo-realms .mosaic div:nth-of-type(3) {
+    grid-area: c;
+    border-top-left-radius: var(--border-radius);
+    border-bottom-left-radius: var(--border-radius);
+  }
+
+  .revo-realms .mosaic div:nth-of-type(4) {
+    grid-area: d;
+    border-top-left-radius: var(--border-radius);
+  }
+
+  .zanka-no-tachi .mosaic {
+    grid-template-areas:
+      ". . b b b"
+      ". . b b b"
+      "a a a a ."
+      "a a a a ."
+      "a a a a .";
+  }
+
+  .zanka-no-tachi .mosaic div:first-of-type {
+    grid-area: a;
+    border-radius: var(--border-radius);
+    border-top-right-radius: 0;
+  }
+
+  .zanka-no-tachi .mosaic div:nth-of-type(2) {
+    grid-area: b;
+    border-radius: var(--border-radius);
+    border-bottom-left-radius: 0;
+  }
+
+  .unshaken .mosaic {
+    grid-template-areas:
+      ". a a a a"
+      "c a a a a"
+      "c a a a a"
+      "c b b . ."
+      ". b b . .";
+  }
+
+  .unshaken .mosaic div:first-of-type {
+    grid-area: a;
+    border-radius: var(--border-radius);
+    border-bottom-left-radius: 0;
+  }
+
+  .unshaken .mosaic div:nth-of-type(2) {
+    grid-area: b;
+    border-bottom-right-radius: var(--border-radius);
+    border-bottom-left-radius: var(--border-radius);
+  }
+
+  .unshaken .mosaic div:nth-of-type(3) {
+    grid-area: c;
+    border-top-left-radius: var(--border-radius);
+    border-bottom-left-radius: var(--border-radius);
+  }
+
+  .cosmic-canvas .mosaic {
+    grid-template-areas:
+      "a a a . ."
+      "a a a b b"
+      "c c c b b"
+      "c c c b b"
+      "c c c . .";
+  }
+
+  .cosmic-canvas .mosaic div:first-of-type {
+    grid-area: a;
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+  }
+
+  .cosmic-canvas .mosaic div:nth-of-type(2) {
+    grid-area: b;
+    border-top-right-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+  }
+
+  .cosmic-canvas .mosaic div:nth-of-type(3) {
+    grid-area: c;
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+  }
+
+  .project .hero {
+    background-color: var(--background-color);
+    height: 100%;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     z-index: 1;
   }
 
-  .content .hero::before {
-    position: absolute;
-    display: block;
-    content: "";
-    inset: -30% -50%;
-    z-index: -1;
-    background-color: var(--background-color);
-    filter: blur(150px);
-    -webkit-filter: blur(150px);
+  .revo-realms .hero {
+    --text-accent: rgb(143, 116, 87);
   }
 
-  .revo-realms .hero::before {
-    right: 0%;
+  .zanka-no-tachi .hero {
+    --text-accent: rgb(217, 101, 48);
   }
 
-  .zanka-no-tachi .hero::before {
-    right: 0%;
+  .unshaken .hero {
+    --text-accent: rgb(212, 25, 54);
   }
 
-  .unshaken .hero::before {
-    right: 0%;
-  }
-
-  .cosmic-canvas .hero::before {
-    right: 20%;
+  .cosmic-canvas .hero {
+    --text-accent: var(--text-color);
   }
 
   .content .title {
@@ -168,6 +255,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     font-weight: 600;
     line-height: 1.15;
     margin: 0;
+    color: var(--text-accent);
   }
 
   .content .description {
@@ -181,17 +269,6 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     display: flex;
     gap: 1em;
     align-items: center;
-  }
-
-  .icon-link {
-    width: 2em;
-    aspect-ratio: 1/1;
-    display: inline-block;
-  }
-
-  .icon-link::before,
-  .icon-link::after {
-    display: none;
   }
 
   .icon-github {
@@ -235,15 +312,13 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
       animation-timing-function: ease-in-out;
       animation-direction: both;
       animation-timeline: --slide;
-      /* animation-range: entry 0% exit 100%; */
     }
   }
 
-  /* @media screen and (max-width: 830px) {
-    .content {
-      background-position-x: 70%;
+  @media (orientation: portrait) {
+    .hero {
     }
-  } */
+  }
 
   @media screen and (max-width: 480px) {
     .content .hero {
@@ -281,8 +356,8 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
   <ProjectsScrollAnimations client:only />
   <main class="wrapper">
     <ul class="gallery">
-      <li class="slide intro">
-        <div class="content">
+      <li class="slide">
+        <div class="content intro">
           <h1 class="tagline">
             <span>What are we hunting?</span>
             <span class="right-aligned"
@@ -291,8 +366,9 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
           </h1>
         </div>
       </li>
-      <li class="slide project">
-        <div class="content revo-realms">
+
+      <li class="slide">
+        <div class="content project revo-realms">
           <div class="hero">
             <header>
               <h2 class="title">Revo Realms</h2>
@@ -327,11 +403,21 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
               </a>
             </footer>
           </div>
+          <div class="mosaic">
+            <div style="--img: url(/portfolio/projects/revo-realms/a.webp);">
+            </div>
+            <div style="--img: url(/portfolio/projects/revo-realms/b.webp);">
+            </div>
+            <div style="--img: url(/portfolio/projects/revo-realms/c.webp);">
+            </div>
+            <div style="--img: url(/portfolio/projects/revo-realms/d.webp);">
+            </div>
+          </div>
         </div>
       </li>
 
-      <li class="slide project">
-        <div class="content zanka-no-tachi">
+      <li class="slide">
+        <div class="content project zanka-no-tachi">
           <div class="hero">
             <header>
               <h2 class="title">Zanka no Tachi</h2>
@@ -366,11 +452,17 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
               </a>
             </footer>
           </div>
+          <div class="mosaic">
+            <div style="--img: url(/portfolio/projects/zanka-no-tachi/a.webp);">
+            </div>
+            <div style="--img: url(/portfolio/projects/zanka-no-tachi/b.webp);">
+            </div>
+          </div>
         </div>
       </li>
 
-      <li class="slide project">
-        <div class="content unshaken">
+      <li class="slide">
+        <div class="content project unshaken">
           <div class="hero">
             <header>
               <h2 class="title">Unshaken</h2>
@@ -404,11 +496,16 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
               </a>
             </footer>
           </div>
+          <div class="mosaic">
+            <div style="--img: url(/portfolio/projects/unshaken/a.webp);"></div>
+            <div style="--img: url(/portfolio/projects/unshaken/b.webp);"></div>
+            <div style="--img: url(/portfolio/projects/unshaken/c.webp);"></div>
+          </div>
         </div>
       </li>
 
-      <li class="slide project">
-        <div class="content cosmic-canvas">
+      <li class="slide">
+        <div class="content project cosmic-canvas">
           <div class="hero">
             <header>
               <h2 class="title">Cosmic Canvas</h2>
@@ -443,6 +540,14 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
                 <IconEye class:list={["animate"]} />
               </a>
             </footer>
+          </div>
+          <div class="mosaic">
+            <div style="--img: url(/portfolio/projects/cosmic-canvas/a.webp);">
+            </div>
+            <div style="--img: url(/portfolio/projects/cosmic-canvas/b.webp);">
+            </div>
+            <div style="--img: url(/portfolio/projects/cosmic-canvas/c.webp);">
+            </div>
           </div>
         </div>
       </li>
