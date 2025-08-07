@@ -1,6 +1,7 @@
 ---
 import BaseHead from "../components/ui/BaseHead.astro";
 import ProjectsScrollAnimations from "@components/islands/projectsScrollAnimations";
+import DisableScrollOnZoom from "@components/islands/onZoom";
 
 const { title, description } = Astro.props;
 ---
@@ -9,11 +10,15 @@ const { title, description } = Astro.props;
   <head>
     <BaseHead title={title} description={description} />
     <style is:global>
-      html,
-      body {
+      html {
         scroll-snap-type: y mandatory;
         scroll-behavior: smooth;
       }
+
+      .is-zoomed {
+        scroll-snap-type: none;
+      }
+
       .wrapper {
         --text-accent: rgb(146, 41, 41);
         box-sizing: border-box;
@@ -118,6 +123,7 @@ const { title, description } = Astro.props;
   </head>
   <body>
     <ProjectsScrollAnimations client:only />
+    <DisableScrollOnZoom client:only />
     <main class="wrapper">
       <ul class="gallery">
         <li class="slide">

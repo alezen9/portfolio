@@ -1,0 +1,21 @@
+---
+const { class: className, ...rest } = Astro.props;
+---
+
+<svg
+  viewBox="0 0 602 602"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  stroke="currentColor"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  stroke-width="27.5"
+  aria-label="External link"
+  role="img"
+  class:list={["icon", className]}
+  {...rest}
+>
+  <path
+    d="M575.676 191.5V26.5M575.676 26.5H410.676M575.676 26.5L203.176 399M476.176 276.5V519.983C476.176 550.918 451.094 575.993 420.159 575.983L82.1591 575.883C51.2377 575.873 26.1758 550.804 26.1758 519.883V182.5C26.1758 151.572 51.2478 126.5 82.1758 126.5H327.176"
+  ></path>
+</svg>

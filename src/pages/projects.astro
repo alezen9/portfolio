@@ -1,15 +1,16 @@
 ---
 import GodOfWarLayout from "src/layouts/GodOfWarLayout.astro";
-import IconEye from "@components/icons/IconEye.astro";
+import IconEternalLink from "@components/icons/IconEternalLink.astro";
 import IconGitHub from "@components/icons/IconGitHub.astro";
 ---
 
 <style>
   .project {
+    --padding: 2em;
     display: grid;
     grid-template-areas: "hero mosaic";
     grid-template-columns: 1fr 1fr;
-    padding: 2em;
+    padding: var(--padding);
     gap: 2em;
   }
 
@@ -45,9 +46,8 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
 
   .revo-realms .mosaic div:first-of-type {
     grid-area: a;
-    border-radius: var(--border-radius);
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
   }
 
   .revo-realms .mosaic div:nth-of-type(2) {
@@ -123,6 +123,16 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
       "c c c . .";
   }
 
+  .cosmic-canvas .mosaic div,
+  .revo-realms .mosaic div {
+    filter: brightness(1.5);
+  }
+
+  .unshaken .mosaic div,
+  .zanka-no-tachi .mosaic div {
+    filter: saturate(1.25);
+  }
+
   .cosmic-canvas .mosaic div:first-of-type {
     grid-area: a;
     border-top-left-radius: var(--border-radius);
@@ -150,7 +160,9 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    gap: 1em;
     z-index: 1;
+    padding-right: 5em;
   }
 
   .revo-realms .hero {
@@ -162,11 +174,11 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
   }
 
   .unshaken .hero {
-    --text-accent: rgb(212, 25, 54);
+    --text-accent: rgb(196, 6, 16);
   }
 
   .cosmic-canvas .hero {
-    --text-accent: var(--text-color);
+    --text-accent: rgb(205, 156, 7);
   }
 
   .project .hero .title {
@@ -175,36 +187,76 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     line-height: 1.15;
     margin: 0;
     color: var(--text-accent);
+    margin-bottom: 0.5em;
   }
 
-  .project .hero .description {
-    margin-top: 2em;
-    font-size: 0.75em;
-    font-weight: 200;
+  .project .hero p,
+  .project .hero ul {
+    font-size: 0.9em;
     text-align: justify;
+    max-width: 100%;
+  }
+
+  .project .hero ul {
+    position: relative;
+    margin-top: 2em;
+    list-style-type: square;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  .project .hero ul li {
+    position: relative;
+  }
+
+  .project .hero ul li::before {
+    --bg: color-mix(in srgb, var(--text-accent) 10%, var(--background-color));
+    position: absolute;
+    content: "";
+    inset: -0.25em -1em;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--bg) 7.5%,
+      transparent 75%
+    );
+    z-index: -1;
+  }
+
+  .project .hero h3 {
+    font-size: 1em;
   }
 
   .project .hero .links {
     display: flex;
     gap: 1em;
-    align-items: center;
+    align-items: end;
   }
 
   .icon-github {
     width: 1.75em;
   }
 
+  .icon-demo {
+    width: 1.5em;
+  }
+
+  .highlight {
+    filter: grayscale(0.25) saturate(3);
+  }
+
   @media (orientation: portrait) {
     .project {
       grid-template-areas: "mosaic" "hero";
       grid-template-columns: 1fr;
-      grid-template-rows: 1fr auto;
-      padding: 2em;
+      grid-template-rows: auto 1fr;
       gap: 2em;
     }
 
     .project .hero {
       min-height: max(300px, 100%);
+      padding: 0;
     }
 
     .project .hero .title {
@@ -225,6 +277,41 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
       font-size: 2.25em;
     }
   }
+
+  @media screen and (max-width: 720px) {
+    .project .mosaic {
+      grid-template-areas: "a";
+      height: 20vh;
+    }
+    .project .mosaic div:not(:first-of-type) {
+      display: none;
+    }
+    .project .mosaic div:first-of-type {
+      position: relative;
+      border-radius: var(--border-radius);
+      background-image: none;
+    }
+
+    .project .mosaic div:first-of-type::before {
+      position: absolute;
+      content: "";
+      inset: calc(var(--padding) * -1);
+      bottom: 0;
+      background-image: var(--img);
+      background-size: cover;
+      background-position: center;
+      z-index: 1;
+    }
+  }
+
+  @media screen and (orientation: portrait) and (max-width: 430px) {
+    .project .mosaic {
+      height: 30vh;
+    }
+    .project .hero .highlights {
+      display: none;
+    }
+  }
 </style>
 <GodOfWarLayout title="AG | Personal Projects" description="...">
   <li class="slide">
@@ -233,18 +320,40 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <header>
           <h2 class="title">Revo Realms</h2>
           <p class="description">
-            Revo Realms began life as an open-world 3D portfolio game built in
-            Three.js, then evolved into a sandbox playground for pushing the
-            limits of WebGPU and TypeScript. You can wander a simple terrain,
-            but really it's a testbed—drop in custom shaders, swap in new
-            models, and dial in lighting or physics experiments on the fly.<br
-            />
-            Under the hood I dove deep into GPU work: implementing frustum and occlusion
-            culling, squeezing performance with frame-rate throttling, texture atlases
-            and compressed GPU formats. I also got hands-on in Blender—modeling,
-            UV-unwrapping and baking—and came away with a far stronger grasp of TypeScript's
-            type system and shader integration.
+            Born as an open-world 3D portfolio, Revo Realms grew into a personal
+            sandbox for testing advanced WebGPU effects, physics, and scene
+            optimization. Built with <code>Three.js</code>
+            and vanilla TypeScript, it mixes interactive terrain, procedural vegetation,
+            water, fire, and dynamic audio into a performance-driven playground—sprinkled
+            with a few subtle references to the worlds, stories, and games I love.
           </p>
+          <ul class="highlights">
+            <li>
+              <span class="highlight">Built</span> GPU-driven grass & flowers with
+              instancing, compute shaders, and soft culling.
+            </li>
+            <li>
+              <span class="highlight">Optimized</span> third-party models in Blender
+              by reducing polycounts, removing unseen geometry, and creating texture
+              atlases via external tools.
+            </li>
+            <li>
+              <span class="highlight">Experimented</span> with water rendering techniques,
+              from vertex displacement to normal-based shading.
+            </li>
+            <li>
+              <span class="highlight">Structured</span> a lightweight Rapier physics
+              system tuned for stable, real-time simulation.
+            </li>
+            <li>
+              <span class="highlight">Added</span> spatial audio effects tied to
+              physics events for environmental feedback.
+            </li>
+            <li>
+              <span class="highlight">Designed</span> an efficient fire particle
+              pool, reusing particles and blending colors to convey heat and depth.
+            </li>
+          </ul>
         </header>
         <footer class="links">
           <a
@@ -259,7 +368,9 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             href="https://alezen9.github.io/revo-realms/"
             target="_blank"
           >
-            <IconEye class:list={["animate"]} />
+            <IconEternalLink
+              class:list={["animate", "icon-demo", "icon-demo"]}
+            />
           </a>
         </footer>
       </div>
@@ -278,18 +389,45 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <header>
           <h2 class="title">Zanka no Tachi</h2>
           <p class="description">
-            Zanka no Tachi is a stylized, real-time tribute to Genryūsai
-            Yamamoto's Bankai moment from manga and anime, rendered in React
-            Three Fiber. I built every element in Blender—armor plates, fiery
-            embers, flowing robes—and choreographed it all with GPU particle
-            systems that respond to mouse and time.
-            <br />
-            This project forced me to master Blender sculpting and rigging, then
-            translate that work into performant glTF assets. On the WebGL side I
-            learned how to drive thousands of particles—controlling emission, velocity,
-            lifetime and blending modes—purely on the GPU, without costly JavaScript
-            loops.
+            A real-time tribute to <span class="highlight"
+              >Yamamoto Genryūsai's Bankai</span
+            > from Bleach, built with <code>R3F</code> and <code>Three.js</code
+            >. I focused on a stylized, dynamic fire effect and a simple
+            low-poly environment, wiring GPGPU powered particle systems, custom
+            shaders and Blender-modeled assets to capture the raw power of that
+            iconic moment.
           </p>
+          <ul class="highlights">
+            <li>
+              <span class="highlight">Built</span> a <code>useGPGpu</code> hook to
+              declaratively manage <code>WebGL2</code> compute shaders, buffers,
+              and dispatch.
+            </li>
+            <li>
+              <span class="highlight">Routed</span> flame particles along <code
+                >CatmullRomCurve3</code
+              >, replacing an early manual layout.
+            </li>
+            <li>
+              <span class="highlight">Composed</span> post-processing passes to layer
+              in smoke and subtle blade-edge heat distortion.
+            </li>
+            <li>
+              <span class="highlight">Modeled</span> every asset—including Yamamoto
+              himself using manga as refs in a cohesive low-poly style.
+            </li>
+            <li>
+              <span class="highlight">Created</span> a <code
+                >usePositionalAudio</code
+              > hook to orchestrate spatialized fire crackle, voice lines, and expansion
+              sound effects.
+            </li>
+            <li>
+              <span class="highlight">Masked</span> procedural <code>GLSL</code>
+              shaders (circular → hexagonal) on-the-fly to shape each particle without
+              any sprite textures.
+            </li>
+          </ul>
         </header>
         <footer class="links">
           <a
@@ -304,7 +442,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             href="https://alezen9.github.io/zanka-no-tachi/"
             target="_blank"
           >
-            <IconEye class:list={["animate"]} />
+            <IconEternalLink class:list={["animate", "icon-demo"]} />
           </a>
         </footer>
       </div>
@@ -323,15 +461,35 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <header>
           <h2 class="title">Unshaken</h2>
           <p class="description">
-            Unshaken is my low-poly homage to Red Dead Redemption II—a solitary
-            campfire scene at dusk, complete with rustling grass and smoldering
-            embers. Beyond the nostalgia, it was a solo Blender-centric build:
-            every rock, twig and tent was born in my own 3D workspace.
-            <br />
-            Through it I reinforced UV-unwrap and texture-baking workflows—learning
-            when to bake ambient occlusion or normal maps, how to optimize for minimal
-            texture sets, and how to maintain visual fidelity in a low-poly aesthetic.
+            A low-poly homage to one of the best videogame experiences ever
+            created: Red Dead Redemption II. Brought to life with <code
+              >Three.js</code
+            > (via <code>R3F</code>), built and baked in <code>Blender</code>,
+            it depicts Arthur Morgan riding his horse down a hill beneath the
+            warm colors of dawn.
           </p>
+          <ul class="highlights">
+            <li>
+              <span class="highlight">Modeled</span> all low-poly assets in Blender,
+              from rocks and grass to the horse and Arthur, using tools like mirror
+              and boolean modifiers.
+            </li>
+            <li>
+              <span class="highlight">Unwrapped</span> complex UVs with a focus on
+              optimizing texture atlases while minimizing visible seams.
+            </li>
+            <li>
+              <span class="highlight">Lit</span> the scene with the <code
+                >&ltSky /&gt</code
+              >
+              component to replicate the dramatic dawn effect achieved in Blender
+              with Nishita Sky.
+            </li>
+            <li>
+              <span class="highlight">Integrated</span> Git LFS into the workflow
+              to efficiently manage large Blender files.
+            </li>
+          </ul>
         </header>
         <footer class="links">
           <a
@@ -346,7 +504,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             href="https://alezen9.github.io/unshaken/"
             target="_blank"
           >
-            <IconEye class:list={["animate"]} />
+            <IconEternalLink class:list={["animate", "icon-demo"]} />
           </a>
         </footer>
       </div>
@@ -364,19 +522,35 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <header>
           <h2 class="title">Cosmic Canvas</h2>
           <p class="description">
-            Cosmic Canvas started as a mission to render the entire solar system
-            one world at a time, but I paused after nailing Jupiter's swirling
-            storms in a single shader. It's a WebGL/GLSL demo built in React
-            Three Fiber, complete with procedural noise, rim lighting and
-            seamless looping.
-            <br />
-            It gave me a deep dive into shader math—layering fractal noise, animating
-            flow maps, blending multiple color ramps—and into R3F's <code
-              >shaderMaterial</code
-            > patterns (with help from Drei). The result is a compact, interactive
-            piece that's as much about coding elegant GLSL as it is about planet
-            design.
+            My first solo <code>Three.js</code> project (via <code>R3F</code>):
+            a shader driven study of Jupiter. The goal was simple—recreate the
+            planet's swirling bands with a single, compact shader and keep it
+            silky smooth even on potato devices. No textures, just procedural
+            noise, flow, and custom lighting.
           </p>
+          <ul class="highlights">
+            <li>
+              <span class="highlight">Implemented</span> a compact <code
+                >GLSL</code
+              > material that layers animated noise to drive Jupiter's banding and
+              storm motion.
+            </li>
+            <li>
+              <span class="highlight">Added</span> rim (Fresnel) and specular highlights,
+              with a softened day-night terminator to sell curvature and depth.
+            </li>
+            <li>
+              <span class="highlight">Orbit-rendered</span> four of Jupiter's largest
+              moons, each using adapted parts of the planet shader for surface detail.
+            </li>
+            <li>
+              <span class="highlight">Framed</span> the scene with <code
+                >Drei</code
+              >'s <code>&ltStars /&gt</code> and
+              <code>&ltTrail /&gt</code> components, making the small-scale satellites
+              easy to spot.
+            </li>
+          </ul>
         </header>
         <footer class="links">
           <a
@@ -391,7 +565,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             href="https://alezen9.github.io/cosmic-canvas/"
             target="_blank"
           >
-            <IconEye class:list={["animate"]} />
+            <IconEternalLink class:list={["animate", "icon-demo"]} />
           </a>
         </footer>
       </div>
