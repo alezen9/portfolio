@@ -1,104 +1,21 @@
 ---
 import GodOfWarLayout from "src/layouts/GodOfWarLayout.astro";
-import ProjectsScrollAnimations from "@components/islands/projectsScrollAnimations";
 import IconEye from "@components/icons/IconEye.astro";
 import IconGitHub from "@components/icons/IconGitHub.astro";
 ---
 
 <style>
-  html,
-  body {
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
-  }
-  .wrapper {
-    --text-accent: rgb(146, 41, 41);
-    box-sizing: border-box;
-    width: 100dvw;
-    flex-direction: column;
-  }
-
-  .omega {
-    height: 1ch;
-    filter: brightness(0.85);
-    transform: translateY(0.05em);
-  }
-
-  .tagline {
-    display: grid;
-    grid-template-rows: 1fr 1fr;
-    row-gap: 0.5em;
-    margin: 0 auto 1em auto;
-    max-width: min(80ch, 90dvw);
-  }
-
-  .tagline span.right-aligned {
-    text-align: right;
-  }
-
-  .mask {
-    position: relative;
-  }
-
-  .mask::after {
-    position: absolute;
-    content: "D";
-    color: var(--text-accent);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    -webkit-mask-image: url(/portfolio/god-of-war-mask.svg);
-    mask-image: url(/portfolio/god-of-war-mask.svg);
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: contain;
-    filter: brightness(1.5);
-  }
-
-  .gallery {
-    padding: 0;
-    margin: 0;
-    list-style-type: none;
-  }
-
-  .slide {
-    height: 100vh;
-    height: 100lvh;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    box-sizing: border-box;
-    view-timeline: --slide;
-  }
-
-  .content {
-    --contrast: 2;
-    --blur: 10px;
-    overflow: hidden;
-    position: fixed;
-    inset: 0;
-    transform-style: preserve-3d;
-    filter: blur(var(--blur)) contrast(var(--contrast));
-    background-color: var(--background-color);
-    opacity: 0;
-    visibility: hidden;
-    will-change: filter, visibility, opacity;
-  }
-
-  .intro {
-    display: grid;
-    place-content: center;
-  }
-
   .project {
     display: grid;
+    grid-template-areas: "hero mosaic";
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr;
     padding: 2em;
     gap: 2em;
   }
 
   .project .mosaic {
     display: grid;
+    grid-area: mosaic;
     gap: 0.25em;
     padding: 5.5em 0 0 0;
   }
@@ -225,8 +142,10 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
   }
 
   .project .hero {
+    grid-area: hero;
     background-color: var(--background-color);
     height: 100%;
+    max-width: max(500px, 100%);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -250,7 +169,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     --text-accent: var(--text-color);
   }
 
-  .content .title {
+  .project .hero .title {
     font-size: var(--step-5);
     font-weight: 600;
     line-height: 1.15;
@@ -258,14 +177,14 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     color: var(--text-accent);
   }
 
-  .content .description {
+  .project .hero .description {
     margin-top: 2em;
     font-size: 0.75em;
     font-weight: 200;
     text-align: justify;
   }
 
-  .content .links {
+  .project .hero .links {
     display: flex;
     gap: 1em;
     align-items: center;
@@ -275,282 +194,215 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     width: 1.75em;
   }
 
-  @keyframes progress-expand {
-    from {
-      transform: scaleX(0);
-    }
-    to {
-      transform: scaleX(1);
-    }
-  }
-
-  @keyframes blink {
-    0%,
-    100% {
-      filter: blur(var(--blur)) contrast(var(--contrast));
-      opacity: 0;
-      visibility: hidden;
-    }
-
-    50% {
-      filter: blur(0) contrast(1);
-      opacity: 1;
-      visibility: visible;
-    }
-  }
-
-  @supports (animation-timeline: scroll()) {
-    .progress {
-      animation-name: progress-expand;
-      animation-timing-function: linear;
-      animation-direction: both;
-      animation-timeline: scroll();
-    }
-
-    .slide .content {
-      animation-name: blink;
-      animation-timing-function: ease-in-out;
-      animation-direction: both;
-      animation-timeline: --slide;
-    }
-  }
-
   @media (orientation: portrait) {
-    .hero {
+    .project {
+      grid-template-areas: "mosaic" "hero";
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+      padding: 2em;
+      gap: 2em;
+    }
+
+    .project .hero {
+      min-height: max(300px, 100%);
+    }
+
+    .project .hero .title {
+      font-size: 2.25em;
+    }
+
+    .project .hero .description {
+      max-width: 100%;
+    }
+
+    .project .mosaic {
+      padding-top: 0;
     }
   }
 
-  @media screen and (max-width: 480px) {
-    .content .hero {
-      --gradient-stop: 65%;
-      padding: 4em 1.5em;
-    }
-    .content .title {
-      font-size: 2em;
-    }
-
-    .content .description {
-      max-width: 30ch;
-    }
-
-    .revo-realms,
-    .zanka-no-tachi,
-    .unshaken {
-      background-position-x: 60%;
-    }
-
-    .cosmic-canvas {
-      background-position-x: 70%;
-    }
-
-    .tagline {
-      font-size: 1.75em;
-    }
-
-    .title {
+  @media screen and (max-width: 1200px) {
+    .project .hero .title {
       font-size: 2.25em;
     }
   }
 </style>
 <GodOfWarLayout title="AG | Personal Projects" description="...">
-  <ProjectsScrollAnimations client:only />
-  <main class="wrapper">
-    <ul class="gallery">
-      <li class="slide">
-        <div class="content intro">
-          <h1 class="tagline">
-            <span>What are we hunting?</span>
-            <span class="right-aligned"
-              ><span class="mask" aria-hidden="true">D</span>eer.</span
-            >
-          </h1>
-        </div>
-      </li>
+  <li class="slide">
+    <div class="content project revo-realms">
+      <div class="hero">
+        <header>
+          <h2 class="title">Revo Realms</h2>
+          <p class="description">
+            Revo Realms began life as an open-world 3D portfolio game built in
+            Three.js, then evolved into a sandbox playground for pushing the
+            limits of WebGPU and TypeScript. You can wander a simple terrain,
+            but really it's a testbed—drop in custom shaders, swap in new
+            models, and dial in lighting or physics experiments on the fly.<br
+            />
+            Under the hood I dove deep into GPU work: implementing frustum and occlusion
+            culling, squeezing performance with frame-rate throttling, texture atlases
+            and compressed GPU formats. I also got hands-on in Blender—modeling,
+            UV-unwrapping and baking—and came away with a far stronger grasp of TypeScript's
+            type system and shader integration.
+          </p>
+        </header>
+        <footer class="links">
+          <a
+            class="icon-link"
+            href="https://github.com/alezen9/revo-realms"
+            target="_blank"
+          >
+            <IconGitHub class:list={["animate", "icon-github"]} />
+          </a>
+          <a
+            class="icon-link"
+            href="https://alezen9.github.io/revo-realms/"
+            target="_blank"
+          >
+            <IconEye class:list={["animate"]} />
+          </a>
+        </footer>
+      </div>
+      <div class="mosaic">
+        <div style="--img: url(/portfolio/projects/revo-realms/a.webp);"></div>
+        <div style="--img: url(/portfolio/projects/revo-realms/b.webp);"></div>
+        <div style="--img: url(/portfolio/projects/revo-realms/c.webp);"></div>
+        <div style="--img: url(/portfolio/projects/revo-realms/d.webp);"></div>
+      </div>
+    </div>
+  </li>
 
-      <li class="slide">
-        <div class="content project revo-realms">
-          <div class="hero">
-            <header>
-              <h2 class="title">Revo Realms</h2>
-              <p class="description">
-                Revo Realms began life as an open-world 3D portfolio game built
-                in Three.js, then evolved into a sandbox playground for pushing
-                the limits of WebGPU and TypeScript. You can wander a simple
-                terrain, but really it's a testbed—drop in custom shaders, swap
-                in new models, and dial in lighting or physics experiments on
-                the fly.<br />
-                Under the hood I dove deep into GPU work: implementing frustum and
-                occlusion culling, squeezing performance with frame-rate throttling,
-                texture atlases and compressed GPU formats. I also got hands-on in
-                Blender—modeling, UV-unwrapping and baking—and came away with a far
-                stronger grasp of TypeScript's type system and shader integration.
-              </p>
-            </header>
-            <footer class="links">
-              <a
-                class="icon-link"
-                href="https://github.com/alezen9/revo-realms"
-                target="_blank"
-              >
-                <IconGitHub class:list={["animate", "icon-github"]} />
-              </a>
-              <a
-                class="icon-link"
-                href="https://alezen9.github.io/revo-realms/"
-                target="_blank"
-              >
-                <IconEye class:list={["animate"]} />
-              </a>
-            </footer>
-          </div>
-          <div class="mosaic">
-            <div style="--img: url(/portfolio/projects/revo-realms/a.webp);">
-            </div>
-            <div style="--img: url(/portfolio/projects/revo-realms/b.webp);">
-            </div>
-            <div style="--img: url(/portfolio/projects/revo-realms/c.webp);">
-            </div>
-            <div style="--img: url(/portfolio/projects/revo-realms/d.webp);">
-            </div>
-          </div>
+  <li class="slide">
+    <div class="content project zanka-no-tachi">
+      <div class="hero">
+        <header>
+          <h2 class="title">Zanka no Tachi</h2>
+          <p class="description">
+            Zanka no Tachi is a stylized, real-time tribute to Genryūsai
+            Yamamoto's Bankai moment from manga and anime, rendered in React
+            Three Fiber. I built every element in Blender—armor plates, fiery
+            embers, flowing robes—and choreographed it all with GPU particle
+            systems that respond to mouse and time.
+            <br />
+            This project forced me to master Blender sculpting and rigging, then
+            translate that work into performant glTF assets. On the WebGL side I
+            learned how to drive thousands of particles—controlling emission, velocity,
+            lifetime and blending modes—purely on the GPU, without costly JavaScript
+            loops.
+          </p>
+        </header>
+        <footer class="links">
+          <a
+            class="icon-link"
+            href="https://github.com/alezen9/zanka-no-tachi"
+            target="_blank"
+          >
+            <IconGitHub class:list={["animate", "icon-github"]} />
+          </a>
+          <a
+            class="icon-link"
+            href="https://alezen9.github.io/zanka-no-tachi/"
+            target="_blank"
+          >
+            <IconEye class:list={["animate"]} />
+          </a>
+        </footer>
+      </div>
+      <div class="mosaic">
+        <div style="--img: url(/portfolio/projects/zanka-no-tachi/a.webp);">
         </div>
-      </li>
+        <div style="--img: url(/portfolio/projects/zanka-no-tachi/b.webp);">
+        </div>
+      </div>
+    </div>
+  </li>
 
-      <li class="slide">
-        <div class="content project zanka-no-tachi">
-          <div class="hero">
-            <header>
-              <h2 class="title">Zanka no Tachi</h2>
-              <p class="description">
-                Zanka no Tachi is a stylized, real-time tribute to Genryūsai
-                Yamamoto's Bankai moment from manga and anime, rendered in React
-                Three Fiber. I built every element in Blender—armor plates,
-                fiery embers, flowing robes—and choreographed it all with GPU
-                particle systems that respond to mouse and time.
-                <br />
-                This project forced me to master Blender sculpting and rigging, then
-                translate that work into performant glTF assets. On the WebGL side
-                I learned how to drive thousands of particles—controlling emission,
-                velocity, lifetime and blending modes—purely on the GPU, without
-                costly JavaScript loops.
-              </p>
-            </header>
-            <footer class="links">
-              <a
-                class="icon-link"
-                href="https://github.com/alezen9/zanka-no-tachi"
-                target="_blank"
-              >
-                <IconGitHub class:list={["animate", "icon-github"]} />
-              </a>
-              <a
-                class="icon-link"
-                href="https://alezen9.github.io/zanka-no-tachi/"
-                target="_blank"
-              >
-                <IconEye class:list={["animate"]} />
-              </a>
-            </footer>
-          </div>
-          <div class="mosaic">
-            <div style="--img: url(/portfolio/projects/zanka-no-tachi/a.webp);">
-            </div>
-            <div style="--img: url(/portfolio/projects/zanka-no-tachi/b.webp);">
-            </div>
-          </div>
-        </div>
-      </li>
+  <li class="slide">
+    <div class="content project unshaken">
+      <div class="hero">
+        <header>
+          <h2 class="title">Unshaken</h2>
+          <p class="description">
+            Unshaken is my low-poly homage to Red Dead Redemption II—a solitary
+            campfire scene at dusk, complete with rustling grass and smoldering
+            embers. Beyond the nostalgia, it was a solo Blender-centric build:
+            every rock, twig and tent was born in my own 3D workspace.
+            <br />
+            Through it I reinforced UV-unwrap and texture-baking workflows—learning
+            when to bake ambient occlusion or normal maps, how to optimize for minimal
+            texture sets, and how to maintain visual fidelity in a low-poly aesthetic.
+          </p>
+        </header>
+        <footer class="links">
+          <a
+            class="icon-link"
+            href="https://github.com/alezen9/unshaken"
+            target="_blank"
+          >
+            <IconGitHub class:list={["animate", "icon-github"]} />
+          </a>
+          <a
+            class="icon-link"
+            href="https://alezen9.github.io/unshaken/"
+            target="_blank"
+          >
+            <IconEye class:list={["animate"]} />
+          </a>
+        </footer>
+      </div>
+      <div class="mosaic">
+        <div style="--img: url(/portfolio/projects/unshaken/a.webp);"></div>
+        <div style="--img: url(/portfolio/projects/unshaken/b.webp);"></div>
+        <div style="--img: url(/portfolio/projects/unshaken/c.webp);"></div>
+      </div>
+    </div>
+  </li>
 
-      <li class="slide">
-        <div class="content project unshaken">
-          <div class="hero">
-            <header>
-              <h2 class="title">Unshaken</h2>
-              <p class="description">
-                Unshaken is my low-poly homage to Red Dead Redemption II—a
-                solitary campfire scene at dusk, complete with rustling grass
-                and smoldering embers. Beyond the nostalgia, it was a solo
-                Blender-centric build: every rock, twig and tent was born in my
-                own 3D workspace.
-                <br />
-                Through it I reinforced UV-unwrap and texture-baking workflows—learning
-                when to bake ambient occlusion or normal maps, how to optimize for
-                minimal texture sets, and how to maintain visual fidelity in a low-poly
-                aesthetic.
-              </p>
-            </header>
-            <footer class="links">
-              <a
-                class="icon-link"
-                href="https://github.com/alezen9/unshaken"
-                target="_blank"
-              >
-                <IconGitHub class:list={["animate", "icon-github"]} />
-              </a>
-              <a
-                class="icon-link"
-                href="https://alezen9.github.io/unshaken/"
-                target="_blank"
-              >
-                <IconEye class:list={["animate"]} />
-              </a>
-            </footer>
-          </div>
-          <div class="mosaic">
-            <div style="--img: url(/portfolio/projects/unshaken/a.webp);"></div>
-            <div style="--img: url(/portfolio/projects/unshaken/b.webp);"></div>
-            <div style="--img: url(/portfolio/projects/unshaken/c.webp);"></div>
-          </div>
+  <li class="slide">
+    <div class="content project cosmic-canvas">
+      <div class="hero">
+        <header>
+          <h2 class="title">Cosmic Canvas</h2>
+          <p class="description">
+            Cosmic Canvas started as a mission to render the entire solar system
+            one world at a time, but I paused after nailing Jupiter's swirling
+            storms in a single shader. It's a WebGL/GLSL demo built in React
+            Three Fiber, complete with procedural noise, rim lighting and
+            seamless looping.
+            <br />
+            It gave me a deep dive into shader math—layering fractal noise, animating
+            flow maps, blending multiple color ramps—and into R3F's <code
+              >shaderMaterial</code
+            > patterns (with help from Drei). The result is a compact, interactive
+            piece that's as much about coding elegant GLSL as it is about planet
+            design.
+          </p>
+        </header>
+        <footer class="links">
+          <a
+            class="icon-link"
+            href="https://github.com/alezen9/cosmic-canvas"
+            target="_blank"
+          >
+            <IconGitHub class:list={["animate", "icon-github"]} />
+          </a>
+          <a
+            class="icon-link"
+            href="https://alezen9.github.io/cosmic-canvas/"
+            target="_blank"
+          >
+            <IconEye class:list={["animate"]} />
+          </a>
+        </footer>
+      </div>
+      <div class="mosaic">
+        <div style="--img: url(/portfolio/projects/cosmic-canvas/a.webp);">
         </div>
-      </li>
-
-      <li class="slide">
-        <div class="content project cosmic-canvas">
-          <div class="hero">
-            <header>
-              <h2 class="title">Cosmic Canvas</h2>
-              <p class="description">
-                Cosmic Canvas started as a mission to render the entire solar
-                system one world at a time, but I paused after nailing Jupiter's
-                swirling storms in a single shader. It's a WebGL/GLSL demo built
-                in React Three Fiber, complete with procedural noise, rim
-                lighting and seamless looping.
-                <br />
-                It gave me a deep dive into shader math—layering fractal noise, animating
-                flow maps, blending multiple color ramps—and into R3F's <code
-                  >shaderMaterial</code
-                > patterns (with help from Drei). The result is a compact, interactive
-                piece that's as much about coding elegant GLSL as it is about planet
-                design.
-              </p>
-            </header>
-            <footer class="links">
-              <a
-                class="icon-link"
-                href="https://github.com/alezen9/cosmic-canvas"
-                target="_blank"
-              >
-                <IconGitHub class:list={["animate", "icon-github"]} />
-              </a>
-              <a
-                class="icon-link"
-                href="https://alezen9.github.io/cosmic-canvas/"
-                target="_blank"
-              >
-                <IconEye class:list={["animate"]} />
-              </a>
-            </footer>
-          </div>
-          <div class="mosaic">
-            <div style="--img: url(/portfolio/projects/cosmic-canvas/a.webp);">
-            </div>
-            <div style="--img: url(/portfolio/projects/cosmic-canvas/b.webp);">
-            </div>
-            <div style="--img: url(/portfolio/projects/cosmic-canvas/c.webp);">
-            </div>
-          </div>
+        <div style="--img: url(/portfolio/projects/cosmic-canvas/b.webp);">
         </div>
-      </li>
-    </ul>
-  </main>
+        <div style="--img: url(/portfolio/projects/cosmic-canvas/c.webp);">
+        </div>
+      </div>
+    </div>
+  </li>
 </GodOfWarLayout>

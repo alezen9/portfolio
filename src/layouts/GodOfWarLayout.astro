@@ -1,5 +1,6 @@
 ---
 import BaseHead from "../components/ui/BaseHead.astro";
+import ProjectsScrollAnimations from "@components/islands/projectsScrollAnimations";
 
 const { title, description } = Astro.props;
 ---
@@ -7,9 +8,130 @@ const { title, description } = Astro.props;
 <html lang="en">
   <head>
     <BaseHead title={title} description={description} />
-    <style></style>
+    <style is:global>
+      html,
+      body {
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+      }
+      .wrapper {
+        --text-accent: rgb(146, 41, 41);
+        box-sizing: border-box;
+        width: 100dvw;
+        flex-direction: column;
+      }
+
+      .omega {
+        height: 1ch;
+        filter: brightness(0.85);
+        transform: translateY(0.05em);
+      }
+
+      .tagline {
+        display: grid;
+        grid-template-rows: 1fr 1fr;
+        row-gap: 0.5em;
+        margin: 0 auto 1em auto;
+        max-width: min(80ch, 90dvw);
+      }
+
+      .tagline span.right-aligned {
+        text-align: right;
+      }
+
+      .mask {
+        position: relative;
+      }
+
+      .mask::after {
+        position: absolute;
+        content: "D";
+        color: var(--text-accent);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        -webkit-mask-image: url(/portfolio/god-of-war-mask.svg);
+        mask-image: url(/portfolio/god-of-war-mask.svg);
+        mask-repeat: no-repeat;
+        mask-position: center;
+        mask-size: contain;
+        filter: brightness(1.5);
+      }
+
+      .gallery {
+        padding: 0;
+        margin: 0;
+        list-style-type: none;
+      }
+
+      .gallery .slide {
+        height: 100vh;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        box-sizing: border-box;
+        view-timeline: --slide;
+      }
+
+      .gallery .slide .content {
+        --contrast: 2;
+        --blur: 10px;
+        overflow: hidden;
+        position: fixed;
+        inset: 0;
+        transform-style: preserve-3d;
+        filter: blur(var(--blur)) contrast(var(--contrast));
+        background-color: var(--background-color);
+        opacity: 0;
+        visibility: hidden;
+        will-change: filter, visibility, opacity;
+      }
+
+      .intro {
+        display: grid;
+        place-content: center;
+      }
+
+      @keyframes blink {
+        0%,
+        100% {
+          filter: blur(var(--blur)) contrast(var(--contrast));
+          opacity: 0;
+          visibility: hidden;
+        }
+
+        50% {
+          filter: blur(0) contrast(1);
+          opacity: 1;
+          visibility: visible;
+        }
+      }
+
+      @supports (animation-timeline: scroll()) {
+        .gallery .slide .content {
+          animation-name: blink;
+          animation-timing-function: ease-in-out;
+          animation-direction: both;
+          animation-timeline: --slide;
+        }
+      }
+    </style>
   </head>
   <body>
-    <slot />
+    <ProjectsScrollAnimations client:only />
+    <main class="wrapper">
+      <ul class="gallery">
+        <li class="slide">
+          <div class="content intro">
+            <h1 class="tagline">
+              <span>What are we hunting?</span>
+              <span class="right-aligned"
+                ><span class="mask" aria-hidden="true">D</span>eer.</span
+              >
+            </h1>
+          </div>
+        </li>
+        <slot />
+      </ul>
+    </main>
   </body>
 </html>
