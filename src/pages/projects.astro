@@ -2,7 +2,6 @@
 import GodOfWarLayout from "src/layouts/GodOfWarLayout.astro";
 import IconEternalLink from "@components/icons/IconEternalLink.astro";
 import IconGitHub from "@components/icons/IconGitHub.astro";
-import { Image } from "astro:assets";
 ---
 
 <style>
@@ -25,6 +24,9 @@ import { Image } from "astro:assets";
     padding: 5.5em 0 0 0;
     grid-template-rows: repeat(5, minmax(0, 1fr));
     grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
   }
 
   .project .mosaic img {
@@ -273,7 +275,10 @@ import { Image } from "astro:assets";
     }
 
     .project .hero {
-      min-height: max(300px, 100%);
+      min-height: 0;
+      min-width: 0;
+      height: 100%;
+      width: 100%;
       padding: 0;
     }
 
@@ -298,9 +303,7 @@ import { Image } from "astro:assets";
 
   @media screen and (max-width: 720px) {
     .project .mosaic {
-      grid-template-rows: 1fr;
-      grid-template-columns: 1fr;
-      grid-template-areas: "a";
+      grid-template: "a" / 1fr;
       height: 20vh;
     }
     .project .mosaic img:not(:first-of-type) {

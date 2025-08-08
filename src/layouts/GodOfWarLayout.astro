@@ -100,11 +100,13 @@ const { title, description } = Astro.props;
           filter: blur(0) contrast(1);
           opacity: 1;
           visibility: visible;
+          content-visibility: visible;
         }
       }
 
       @supports (animation-timeline: scroll()) {
         .gallery .slide .content {
+          content-visibility: hidden;
           animation-name: blink;
           animation-timing-function: ease-in-out;
           animation-direction: both;
