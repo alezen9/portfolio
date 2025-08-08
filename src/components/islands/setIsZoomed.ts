@@ -1,7 +1,3 @@
-type Props = {
-  onZoom: (e: Event) => void;
-};
-
 const mount = () => {
   const html = document.documentElement;
   const onZoom = (e: Event) => {

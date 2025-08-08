@@ -1,7 +1,7 @@
 ---
 import BaseHead from "../components/ui/BaseHead.astro";
 import ProjectsScrollAnimations from "@components/islands/projectsScrollAnimations";
-import DisableScrollOnZoom from "@components/islands/onZoom";
+import SetIsZoomed from "@components/islands/setIsZoomed";
 
 const { title, description } = Astro.props;
 ---
@@ -79,13 +79,12 @@ const { title, description } = Astro.props;
 
       .gallery .slide .content {
         --contrast: 2;
-        --blur: 10px;
+        --blur: 5px;
         overflow: hidden;
         position: fixed;
         inset: 0;
-        transform-style: preserve-3d;
-        filter: blur(var(--blur)) contrast(var(--contrast));
         background-color: var(--background-color);
+        filter: blur(var(--blur)) contrast(var(--contrast));
         opacity: 0;
         visibility: hidden;
         will-change: filter, visibility, opacity;
@@ -97,13 +96,6 @@ const { title, description } = Astro.props;
       }
 
       @keyframes blink {
-        0%,
-        100% {
-          filter: blur(var(--blur)) contrast(var(--contrast));
-          opacity: 0;
-          visibility: hidden;
-        }
-
         50% {
           filter: blur(0) contrast(1);
           opacity: 1;
@@ -119,11 +111,19 @@ const { title, description } = Astro.props;
           animation-timeline: --slide;
         }
       }
+
+      @media (prefers-reduced-motion: reduce) {
+        .gallery .slide .content {
+          --contrast: 1;
+          --blur: 0px;
+          filter: none;
+        }
+      }
     </style>
   </head>
   <body>
     <ProjectsScrollAnimations client:only />
-    <DisableScrollOnZoom client:only />
+    <SetIsZoomed client:only />
     <main class="wrapper">
       <ul class="gallery">
         <li class="slide">

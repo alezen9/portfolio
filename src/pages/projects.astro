@@ -246,6 +246,19 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     filter: grayscale(0.25) saturate(3);
   }
 
+  .project .hero .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+  }
+
+  .tag {
+    position: relative;
+    background-color: color-mix(in oklab, var(--text-accent) 35%, transparent);
+    padding-inline: 0.5em;
+    border-radius: 0.2em;
+  }
+
   @media (orientation: portrait) {
     .project {
       grid-template-areas: "mosaic" "hero";
@@ -315,25 +328,39 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
 </style>
 <GodOfWarLayout title="AG | Personal Projects" description="...">
   <li class="slide">
-    <div class="content project revo-realms">
+    <article class="content project revo-realms">
       <div class="hero">
         <header>
           <h2 class="title">Revo Realms</h2>
+          <p class="tags">
+            <span class="tag">TypeScript</span>
+            <span class="tag">Three.js</span>
+            <span class="tag">Blender</span>
+            <span class="tag">WebGPU</span>
+            <span class="tag">TSL</span>
+            <span class="tag">Rapier</span>
+          </p>
           <p class="description">
-            Born as an open-world 3D portfolio, Revo Realms grew into a personal
-            sandbox for testing advanced WebGPU effects, physics, and scene
-            optimization. Built with <code>Three.js</code>
-            and vanilla TypeScript, it mixes interactive terrain, procedural vegetation,
-            water, fire, and dynamic audio into a performance-driven playground—sprinkled
-            with a few subtle references to the worlds, stories, and games I love.
+            Born as an open-world 3D portfolio, Revo Realms quickly became a
+            sandbox for practicing <code>TSL</code>, trying advanced <code
+              >WebGPU</code
+            > effects, physics, and scene optimization. Built with <code
+              >Three.js</code
+            >
+            and vanilla <code>TypeScript</code>, it mixes interactive terrain,
+            procedural vegetation, water, fire, and dynamic audio into a
+            performance-driven playground, sprinkled with a few subtle
+            references to the worlds, stories, and games I love.
           </p>
           <ul class="highlights">
             <li>
               <span class="highlight">Built</span> GPU-driven grass & flowers with
-              instancing, compute shaders, and soft culling.
+              instancing, compute shaders, and soft per-instance culling.
             </li>
             <li>
-              <span class="highlight">Optimized</span> third-party models in Blender
+              <span class="highlight">Optimized</span> third-party models in <code
+                >Blender</code
+              >
               by reducing polycounts, removing unseen geometry, and creating texture
               atlases via external tools.
             </li>
@@ -342,8 +369,9 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
               from vertex displacement to normal-based shading.
             </li>
             <li>
-              <span class="highlight">Structured</span> a lightweight Rapier physics
-              system tuned for stable, real-time simulation.
+              <span class="highlight">Structured</span> a lightweight <code
+                >Rapier</code
+              > physics system tuned for stable, real-time simulation.
             </li>
             <li>
               <span class="highlight">Added</span> spatial audio effects tied to
@@ -351,13 +379,16 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             </li>
             <li>
               <span class="highlight">Designed</span> an efficient fire particle
-              pool, reusing particles and blending colors to convey heat and depth.
+              pool, reusing particles and custom color blending to convey both heat
+              and depth in one single system.
             </li>
           </ul>
         </header>
         <footer class="links">
           <a
             class="icon-link"
+            aria-label="Revo Realms GitHub repo"
+            rel="noopener"
             href="https://github.com/alezen9/revo-realms"
             target="_blank"
           >
@@ -365,12 +396,12 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
           </a>
           <a
             class="icon-link"
+            aria-label="Revo Realms live demo"
+            rel="noopener"
             href="https://alezen9.github.io/revo-realms/"
             target="_blank"
           >
-            <IconEternalLink
-              class:list={["animate", "icon-demo", "icon-demo"]}
-            />
+            <IconEternalLink class:list={["animate", "icon-demo"]} />
           </a>
         </footer>
       </div>
@@ -380,28 +411,36 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <div style="--img: url(/portfolio/projects/revo-realms/c.webp);"></div>
         <div style="--img: url(/portfolio/projects/revo-realms/d.webp);"></div>
       </div>
-    </div>
+    </article>
   </li>
 
   <li class="slide">
-    <div class="content project zanka-no-tachi">
+    <article class="content project zanka-no-tachi">
       <div class="hero">
         <header>
           <h2 class="title">Zanka no Tachi</h2>
+          <p class="tags">
+            <span class="tag">React.js</span>
+            <span class="tag">Three.js</span>
+            <span class="tag">R3F</span>
+            <span class="tag">Drei</span>
+            <span class="tag">Blender</span>
+            <span class="tag">WebGL</span>
+          </p>
           <p class="description">
             A real-time tribute to <span class="highlight"
               >Yamamoto Genryūsai's Bankai</span
-            > from Bleach, built with <code>R3F</code> and <code>Three.js</code
-            >. I focused on a stylized, dynamic fire effect and a simple
+            > from Bleach. Built with <code>Three.js</code> (via <code>R3F</code
+            >), I focused on a stylized, dynamic fire effect and a simple
             low-poly environment, wiring GPGPU powered particle systems, custom
-            shaders and Blender-modeled assets to capture the raw power of that
-            iconic moment.
+            shaders and Blender assets to capture the raw power of that iconic
+            moment.
           </p>
           <ul class="highlights">
             <li>
               <span class="highlight">Built</span> a <code>useGPGpu</code> hook to
-              declaratively manage <code>WebGL2</code> compute shaders, buffers,
-              and dispatch.
+              declaratively manage <code>WebGL</code> compute shaders, buffers, and
+              dispatching.
             </li>
             <li>
               <span class="highlight">Routed</span> flame particles along <code
@@ -409,12 +448,12 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
               >, replacing an early manual layout.
             </li>
             <li>
-              <span class="highlight">Composed</span> post-processing passes to layer
-              in smoke and subtle blade-edge heat distortion.
+              <span class="highlight">Composed</span> a post-processing pass to layer
+              in a subtle heat distortion.
             </li>
             <li>
-              <span class="highlight">Modeled</span> every asset—including Yamamoto
-              himself using manga as refs in a cohesive low-poly style.
+              <span class="highlight">Modeled</span> every asset in a cohesive low-poly
+              style, including Yamamoto himself using manga panels as references.
             </li>
             <li>
               <span class="highlight">Created</span> a <code
@@ -425,13 +464,15 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             <li>
               <span class="highlight">Masked</span> procedural <code>GLSL</code>
               shaders (circular → hexagonal) on-the-fly to shape each particle without
-              any sprite textures.
+              any alpha textures.
             </li>
           </ul>
         </header>
         <footer class="links">
           <a
             class="icon-link"
+            aria-label="Zanka no Tachi GitHub repo"
+            rel="noopener"
             href="https://github.com/alezen9/zanka-no-tachi"
             target="_blank"
           >
@@ -439,6 +480,8 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
           </a>
           <a
             class="icon-link"
+            aria-label="Zanka no Tachi live demo"
+            rel="noopener"
             href="https://alezen9.github.io/zanka-no-tachi/"
             target="_blank"
           >
@@ -452,27 +495,34 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <div style="--img: url(/portfolio/projects/zanka-no-tachi/b.webp);">
         </div>
       </div>
-    </div>
+    </article>
   </li>
 
   <li class="slide">
-    <div class="content project unshaken">
+    <article class="content project unshaken">
       <div class="hero">
         <header>
           <h2 class="title">Unshaken</h2>
+          <p class="tags">
+            <span class="tag">React.js</span>
+            <span class="tag">Three.js</span>
+            <span class="tag">R3F</span>
+            <span class="tag">Drei</span>
+            <span class="tag">Blender</span>
+          </p>
           <p class="description">
-            A low-poly homage to one of the best videogame experiences ever
-            created: Red Dead Redemption II. Brought to life with <code
-              >Three.js</code
-            > (via <code>R3F</code>), built and baked in <code>Blender</code>,
-            it depicts Arthur Morgan riding his horse down a hill beneath the
-            warm colors of dawn.
+            A low-poly homage to one of the best video game experiences ever:
+            Red Dead Redemption II. Brought to life with <code>Three.js</code> (via
+            <code>R3F</code>), modelled and baked in <code>Blender</code>, it
+            depicts <span class="highlight">Arthur Morgan</span> riding his horse
+            down a hill beneath the warm colors of dawn.
           </p>
           <ul class="highlights">
             <li>
-              <span class="highlight">Modeled</span> all low-poly assets in Blender,
-              from rocks and grass to the horse and Arthur, using tools like mirror
-              and boolean modifiers.
+              <span class="highlight">Modeled</span> all low-poly assets in <code
+                >Blender</code
+              >, from rocks and grass to the horse and Arthur, using tools like
+              mirror and boolean modifiers. It was quite a challenge.
             </li>
             <li>
               <span class="highlight">Unwrapped</span> complex UVs with a focus on
@@ -494,6 +544,8 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <footer class="links">
           <a
             class="icon-link"
+            aria-label="Unshaken GitHub repo"
+            rel="noopener"
             href="https://github.com/alezen9/unshaken"
             target="_blank"
           >
@@ -501,6 +553,8 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
           </a>
           <a
             class="icon-link"
+            aria-label="Unshaken live demo"
+            rel="noopener"
             href="https://alezen9.github.io/unshaken/"
             target="_blank"
           >
@@ -513,20 +567,27 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <div style="--img: url(/portfolio/projects/unshaken/b.webp);"></div>
         <div style="--img: url(/portfolio/projects/unshaken/c.webp);"></div>
       </div>
-    </div>
+    </article>
   </li>
 
   <li class="slide">
-    <div class="content project cosmic-canvas">
+    <article class="content project cosmic-canvas">
       <div class="hero">
         <header>
           <h2 class="title">Cosmic Canvas</h2>
+          <p class="tags">
+            <span class="tag">React.js</span>
+            <span class="tag">Three.js</span>
+            <span class="tag">R3F</span>
+            <span class="tag">Drei</span>
+            <span class="tag">WebGL</span>
+          </p>
           <p class="description">
             My first solo <code>Three.js</code> project (via <code>R3F</code>):
-            a shader driven study of Jupiter. The goal was simple—recreate the
-            planet's swirling bands with a single, compact shader and keep it
-            silky smooth even on potato devices. No textures, just procedural
-            noise, flow, and custom lighting.
+            a shader driven study of <span class="highlight">Jupiter</span>. The
+            goal was to recreate the planet's swirling bands with a single,
+            compact shader and keep it silky smooth even on low-end devices. No
+            textures, just procedural noise, flow, and custom lighting.
           </p>
           <ul class="highlights">
             <li>
@@ -548,13 +609,15 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
                 >Drei</code
               >'s <code>&ltStars /&gt</code> and
               <code>&ltTrail /&gt</code> components, making the small-scale satellites
-              easy to spot.
+              easier to spot.
             </li>
           </ul>
         </header>
         <footer class="links">
           <a
             class="icon-link"
+            aria-label="Cosmic Canvas GitHub repo"
+            rel="noopener"
             href="https://github.com/alezen9/cosmic-canvas"
             target="_blank"
           >
@@ -562,6 +625,8 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
           </a>
           <a
             class="icon-link"
+            aria-label="Cosmic Canvas live demo"
+            rel="noopener"
             href="https://alezen9.github.io/cosmic-canvas/"
             target="_blank"
           >
@@ -577,6 +642,6 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <div style="--img: url(/portfolio/projects/cosmic-canvas/c.webp);">
         </div>
       </div>
-    </div>
+    </article>
   </li>
 </GodOfWarLayout>
