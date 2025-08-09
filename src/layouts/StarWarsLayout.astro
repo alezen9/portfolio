@@ -2,14 +2,28 @@
 import BlobMask from "@components/islands/BlobMask";
 import BaseHead from "../components/ui/BaseHead.astro";
 import IconLogo from "@components/icons/IconLogo.astro";
+import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
+import LightsaberExclamation from "@components/ui/LightsaberExclamation.astro";
 
 const { title, description } = Astro.props;
 ---
 
 <html lang="en">
   <head>
-    <BaseHead title={title} description={description} />
+    <BaseHead title={title} description={description}>
+      <link
+        rel="preload"
+        href="/portfolio/fonts/Starjedi.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      /></BaseHead
+    >
     <style>
+      @font-face {
+        font-family: "Starjedi";
+        src: url("/portfolio/fonts/Starjedi.woff2") format("woff2");
+      }
       .background {
         position: absolute;
         inset: 0;
@@ -40,6 +54,30 @@ const { title, description } = Astro.props;
         mask-position: center;
       }
 
+      .wrapper {
+        --text-accent: rgb(255, 232, 31);
+        box-sizing: border-box;
+        width: 100%;
+        max-width: min(80ch, 90dvw);
+        min-height: 100dvh;
+        margin: 0 auto;
+        padding: 2em;
+        display: flex;
+        flex-direction: column;
+        gap: 4em;
+      }
+
+      .tagline {
+        display: grid;
+        grid-template-rows: 1fr 1fr;
+        margin-bottom: 1em;
+        font-family: "Starjedi";
+      }
+
+      .tagline span.right-aligned {
+        text-align: right;
+      }
+
       @media (prefers-color-scheme: dark) {
         .reveal-layer {
           opacity: 0.1;
@@ -57,13 +95,29 @@ const { title, description } = Astro.props;
           display: none;
         }
       }
+
+      @media screen and (max-width: 720px) {
+        .tagline {
+          font-size: 2.2em;
+        }
+      }
+
+      @media screen and (max-width: 480px) {
+        .wrapper {
+          padding: 2em;
+          max-width: 100dvw;
+        }
+        .tagline {
+          font-size: 1.5em;
+        }
+      }
     </style>
   </head>
 
   <body>
-    <a href="/portfolio" aria-label="Go back to Homepage">
+    <!-- <a href="/portfolio" aria-label="Go back to Homepage">
       <IconLogo />
-    </a>
+    </a> -->
     <div class="background">
       <svg
         width="100%"
@@ -161,6 +215,15 @@ const { title, description } = Astro.props;
       <div class="reveal-layer" aria-hidden="true"></div>
       <BlobMask client:only gradient={1} radius={250} />
     </div>
-    <slot />
+    <main class="wrapper">
+      <h1 class="tagline">
+        <span>Hello there!</span>
+        <span class="right-aligned"
+          >General Kenobi<LightsaberExclamation /></span
+        >
+      </h1>
+      <slot />
+      <CopyrightsDisclaimer />
+    </main>
   </body>
 </html>
