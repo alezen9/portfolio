@@ -260,10 +260,23 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
   }
 
   .tag {
+    --color: var(--text-accent);
+    --percentage: 40%;
     position: relative;
-    background-color: color-mix(in oklab, var(--text-accent) 35%, transparent);
+    overflow: hidden;
+    background-color: color-mix(
+      in oklab,
+      var(--color) var(--percentage),
+      transparent
+    );
     padding-inline: 0.5em;
     border-radius: 0.2em;
+  }
+  .metric::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    backdrop-filter: hue-rotate(180deg);
   }
 
   @media (orientation: portrait) {
@@ -342,54 +355,37 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <header>
           <h2 class="title">Revo Realms</h2>
           <p class="tags">
-            <span class="tag">TypeScript</span>
             <span class="tag">Three.js</span>
-            <span class="tag">Blender</span>
+            <span class="tag">TypeScript</span>
             <span class="tag">WebGPU</span>
-            <span class="tag">TSL</span>
-            <span class="tag">Rapier</span>
+            <span class="tag metric">&lt; 20 draw calls</span>
+            <span class="tag metric">&lt; 8.5ms per frame</span>
           </p>
           <p class="description">
-            Born as an open-world 3D portfolio, Revo Realms quickly became a
-            sandbox for practicing <code>TSL</code>, trying advanced <code
-              >WebGPU</code
-            > effects, physics, and scene optimization. Built with <code
-              >Three.js</code
-            >
-            and vanilla <code>TypeScript</code>, it mixes interactive terrain,
-            procedural vegetation, water, fire, and dynamic audio into a
-            performance-driven playground, sprinkled with a few subtle
-            references to the worlds, stories, and games I love.
+            Born as an open-world 3D portfolio, Revo Realms became a sandbox for
+            practicing <code>TSL</code>, testing advanced <code>WebGPU</code> effects,
+            physics, and optimization. Built with <code>Three.js</code> and <code
+              >TypeScript</code
+            >, it combines interactive terrain, procedural vegetation, water,
+            fire, and spatial audio, with subtle references to the worlds and
+            stories I love.
           </p>
           <ul class="highlights">
             <li>
-              <span class="highlight">Built</span> GPU-driven grass & flowers with
-              instancing, compute shaders, and soft per-instance culling.
+              <span class="highlight">Built</span> a foliage system fully backed
+              by compute shaders, handling culling, animation, interaction, and dynamic
+              effects in one pass, entirely on the GPU.
             </li>
             <li>
               <span class="highlight">Optimized</span> third-party models in <code
                 >Blender</code
-              >
-              by reducing polycounts, removing unseen geometry, and creating texture
-              atlases via external tools.
+              > via polycount reduction, hidden-geometry removal, and custom texture
+              atlases.
             </li>
             <li>
-              <span class="highlight">Experimented</span> with water rendering techniques,
-              from vertex displacement to normal-based shading.
-            </li>
-            <li>
-              <span class="highlight">Structured</span> a lightweight <code
-                >Rapier</code
-              > physics system tuned for stable, real-time simulation.
-            </li>
-            <li>
-              <span class="highlight">Added</span> spatial audio effects tied to
-              physics events for environmental feedback.
-            </li>
-            <li>
-              <span class="highlight">Designed</span> an efficient fire particle
-              pool, reusing particles and custom color blending to convey both heat
-              and depth in one single system.
+              <span class="highlight">Designed</span> a fully compute shader-driven
+              fire particle pool, reusing instances with custom color blending to
+              convey both heat and depth.
             </li>
           </ul>
         </header>
@@ -449,12 +445,12 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <header>
           <h2 class="title">Zanka no Tachi</h2>
           <p class="tags">
-            <span class="tag">React.js</span>
             <span class="tag">Three.js</span>
             <span class="tag">R3F</span>
-            <span class="tag">Drei</span>
             <span class="tag">Blender</span>
             <span class="tag">WebGL</span>
+            <span class="tag metric">WebGPU</span>
+            <span class="tag metric">WebGPU</span>
           </p>
           <p class="description">
             A real-time tribute to <span class="highlight"
@@ -541,11 +537,11 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <header>
           <h2 class="title">Unshaken</h2>
           <p class="tags">
-            <span class="tag">React.js</span>
             <span class="tag">Three.js</span>
             <span class="tag">R3F</span>
-            <span class="tag">Drei</span>
             <span class="tag">Blender</span>
+            <span class="tag metric">WebGPU</span>
+            <span class="tag metric">WebGPU</span>
           </p>
           <p class="description">
             A low-poly homage to one of the best video game experiences ever:
@@ -628,11 +624,12 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         <header>
           <h2 class="title">Cosmic Canvas</h2>
           <p class="tags">
-            <span class="tag">React.js</span>
             <span class="tag">Three.js</span>
             <span class="tag">R3F</span>
             <span class="tag">Drei</span>
             <span class="tag">WebGL</span>
+            <span class="tag metric">WebGPU</span>
+            <span class="tag metric">WebGPU</span>
           </p>
           <p class="description">
             My first solo <code>Three.js</code> project (via <code>R3F</code>):
