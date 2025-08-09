@@ -1,0 +1,36 @@
+---
+const { class: className, ...rest } = Astro.props;
+---
+
+<style>
+  svg {
+    position: fixed;
+    top: 2.5em;
+    right: 2.5em;
+    color: var(--text-color);
+    width: 1.75rem;
+    aspect-ratio: 1/1;
+    display: grid;
+    place-content: center;
+    z-index: 10;
+  }
+</style>
+<svg
+  viewBox="0 0 338 338"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  stroke="currentColor"
+  stroke-width="15"
+  stroke-linejoin="round"
+  stroke-linecap="round"
+  aria-label="Aleksandar Gjoreski"
+  role="img"
+  class:list={[className]}
+  {...rest}
+>
+  <rect x="8" y="8" width="322" height="322" rx="33"></rect>
+  <path d="M74 263L263 74"></path>
+  <path
+    d="M256.404 252.431H284.904V290.931C189.575 328.834 182.5 174.5 283.005 205.427M48 139L59.2195 112.494M129 139L117.5 112.494M117.5 112.494L89.8575 48.7812C89.1576 47.1681 86.8663 47.1783 86.1809 48.7976L59.2195 112.494M117.5 112.494H59.2195"
+  ></path>
+</svg>

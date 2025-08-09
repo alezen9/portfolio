@@ -1,6 +1,7 @@
 ---
 import BlobMask from "@components/islands/BlobMask";
 import BaseHead from "../components/ui/BaseHead.astro";
+import IconLogo from "@components/icons/IconLogo.astro";
 
 const { title, description } = Astro.props;
 ---
@@ -60,6 +61,9 @@ const { title, description } = Astro.props;
   </head>
 
   <body>
+    <a href="/portfolio" aria-label="Go back to Homepage">
+      <IconLogo />
+    </a>
     <div class="background">
       <svg
         width="100%"

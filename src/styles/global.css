@@ -121,7 +121,19 @@ a {
   font-weight: 500;
 }
 
-a::before {
+/* a::before {
+  position: absolute;
+  content: "";
+  bottom: 0;
+  left: 0;
+  width: 0;
+  transition: width 0.2s ease-in-out;
+  will-change: width;
+  height: 1px;
+  background-color: var(--text-color);
+} */
+
+a:not(:has(> svg:only-child))::before {
   position: absolute;
   content: "";
   bottom: 0;
@@ -133,7 +145,7 @@ a::before {
   background-color: var(--text-color);
 }
 
-a::after {
+a:not(:has(> svg:only-child))::after {
   --size: 4px;
   position: absolute;
   content: "";
@@ -148,11 +160,11 @@ a::after {
   will-change: opacity;
 }
 
-a:hover::before {
+a:not(:has(> svg:only-child)):hover::before {
   width: 110%;
 }
 
-a:hover::after {
+a:not(:has(> svg:only-child)):hover::after {
   opacity: 1;
   transition: opacity 0.2s ease-in-out 0.2s;
 }
@@ -207,11 +219,6 @@ ul {
 
 .icon-link:hover {
   transform: scale(1.1);
-}
-
-.icon-link::before,
-.icon-link::after {
-  display: none;
 }
 
 @keyframes animateDash {

@@ -1,4 +1,5 @@
 ---
+import IconLogo from "@components/icons/IconLogo.astro";
 import BaseHead from "../components/ui/BaseHead.astro";
 import ProjectsScrollAnimations from "@components/islands/projectsScrollAnimations";
 import SetIsZoomed from "@components/islands/setIsZoomed";
@@ -127,6 +128,9 @@ const { title, description } = Astro.props;
     <ProjectsScrollAnimations client:only />
     <SetIsZoomed client:only />
     <main class="wrapper">
+      <a href="/portfolio" aria-label="Go back to Homepage">
+        <IconLogo />
+      </a>
       <ul class="gallery">
         <li class="slide">
           <div class="content intro">
