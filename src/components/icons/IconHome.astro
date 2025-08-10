@@ -1,0 +1,42 @@
+---
+const { class: className, ...rest } = Astro.props;
+---
+
+<svg
+  viewBox="0 0 190 216"
+  xmlns="http://www.w3.org/2000/svg"
+  fill="none"
+  stroke="currentColor"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  stroke-width="15"
+  aria-label="Home"
+  role="img"
+  class:list={["icon", className]}
+  {...rest}
+>
+  <!-- <path
+    d="M23.9994 150V99L100.999 8L181.999 99V192H133.999M8 192L24 176M8 192L24 208M8 192H68.4994M133.999 192V119.5H68.4994V192M133.999 192H68.4994"
+  ></path> -->
+  <path
+    class="house"
+    d="M23.9994 150V99L100.999 8L181.999 99V192H133.999"
+    pathLength="1"
+    style="--i:0"></path>
+
+  <path class="door-step" d="M133.999 192H68.4994" pathLength="1" style="--i:2"
+  ></path>
+
+  <path
+    class="door"
+    d="M133.999 192V119.5H68.4994V192"
+    pathLength="1"
+    style="--i:2"></path>
+
+  <path class="left-base" d="M8 192H68.4994" pathLength="1" style="--i:3"
+  ></path>
+
+  <path class="arow-top" d="M8 192L24 176" pathLength="1" style="--i:4"></path>
+  <path class="arrow-bottom" d="M8 192L24 208" pathLength="1" style="--i:4"
+  ></path>
+</svg>

@@ -4,6 +4,7 @@ import BaseHead from "../components/ui/BaseHead.astro";
 import IconLogo from "@components/icons/IconLogo.astro";
 import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
 import LightsaberExclamation from "@components/ui/LightsaberExclamation.astro";
+import IconHome from "@components/icons/IconHome.astro";
 
 const { title, description } = Astro.props;
 ---
@@ -115,9 +116,6 @@ const { title, description } = Astro.props;
   </head>
 
   <body>
-    <!-- <a href="/portfolio" aria-label="Go back to Homepage">
-      <IconLogo />
-    </a> -->
     <div class="background">
       <svg
         width="100%"
@@ -216,6 +214,9 @@ const { title, description } = Astro.props;
       <BlobMask client:only gradient={1} radius={250} />
     </div>
     <main class="wrapper">
+      <a class="go-home" href="/portfolio" aria-label="Go back to Homepage">
+        <IconHome />
+      </a>
       <h1 class="tagline">
         <span>Hello there!</span>
         <span class="right-aligned"

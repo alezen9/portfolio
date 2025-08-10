@@ -319,6 +319,18 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
       grid-template: "a" / 1fr;
       height: 20vh;
     }
+
+    .project .mosaic::after {
+      position: absolute;
+      content: "";
+      inset: calc(var(--padding) * -1);
+      background: linear-gradient(
+        to bottom,
+        var(--background-color),
+        transparent 45%
+      );
+    }
+
     .project .mosaic img:not(:first-of-type) {
       display: none;
     }

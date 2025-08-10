@@ -105,10 +105,10 @@ code {
   font-weight: 400;
   padding: 0 0.5em;
   letter-spacing: -0.05em;
-  background: color-mix(in srgb, var(--text-color) 10%, transparent);
+  background: color-mix(in oklab, var(--text-color) 10%, transparent);
   border-radius: 0.2em;
   white-space: nowrap;
-  color: color-mix(in srgb, var(--text-accent) 40%, var(--text-color));
+  color: color-mix(in oklab, var(--text-accent) 40%, var(--text-color));
 }
 
 a {
@@ -120,18 +120,6 @@ a {
   letter-spacing: 3px;
   font-weight: 500;
 }
-
-/* a::before {
-  position: absolute;
-  content: "";
-  bottom: 0;
-  left: 0;
-  width: 0;
-  transition: width 0.2s ease-in-out;
-  will-change: width;
-  height: 1px;
-  background-color: var(--text-color);
-} */
 
 a:not(:has(> svg:only-child))::before {
   position: absolute;
@@ -178,6 +166,28 @@ svg.animate {
   stroke-dasharray: 5000;
   stroke-dashoffset: 5000;
   animation: animateDash 1.5s ease-in-out forwards;
+}
+
+a.go-home {
+  position: fixed;
+  top: 1em;
+  right: 2em;
+  padding: 1em;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  border-top-right-radius: 0.25em;
+  border-bottom-right-radius: 0.25em;
+  z-index: 99;
+  backdrop-filter: blur(4px) contrast(1);
+  color: color-mix(in oklab, var(--text-accent) 75%, var(--text-color));
+}
+
+a.go-home:hover svg path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: animateDash 0.5s ease-in-out forwards;
+  animation-delay: calc(var(--i) * 0.25s);
 }
 
 .highlight {
@@ -263,5 +273,17 @@ ul {
   }
   .icon-link:hover {
     transform: none;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  a.go-home {
+    top: 0;
+    right: 0;
+  }
+  a.go-home:hover svg path {
+    stroke-dasharray: unset;
+    stroke-dashoffset: unset;
+    animation: none;
   }
 }
