@@ -96,7 +96,6 @@ const { title, description } = Astro.props;
         inset: 0;
         pointer-events: none;
         background: url(/portfolio/god-of-war-mask.svg);
-        box-shadow: inset 0 0 100px 100px var(--background-color);
         background-repeat: no-repeat;
         background-position: 80% center;
         background-size: auto 150vh;
@@ -105,6 +104,15 @@ const { title, description } = Astro.props;
       }
 
       .background::before {
+        position: absolute;
+        content: "";
+        inset: 0;
+        pointer-events: none;
+        box-sizing: border-box;
+        border: 5px solid red;
+      }
+
+      .background::after {
         --px: calc(var(--pointer-x, 0) * 1%);
         --py: calc(var(--pointer-y, 0) * 1%);
 
@@ -114,8 +122,9 @@ const { title, description } = Astro.props;
         pointer-events: none;
         background: radial-gradient(
           circle at var(--px) var(--py),
-          transparent 0%,
-          var(--background-color) 50%
+          transparent,
+          rgba(var(--bg-raw), 0.5) 30%,
+          var(--background-color) 40%
         );
       }
 
@@ -150,6 +159,9 @@ const { title, description } = Astro.props;
 
       @media (pointer: coarse) {
         .background::before {
+          display: none;
+        }
+        .background::after {
           --px: 40%;
           --py: 40%;
         }

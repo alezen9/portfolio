@@ -12,15 +12,18 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     grid-template-columns: 1fr 1fr;
     padding: var(--padding);
     gap: 2em;
+    max-width: min(2048px, 100dvw);
+    margin: auto;
   }
 
   .project .mosaic {
     position: relative;
     display: grid;
+    box-sizing: border-box;
     grid-area: mosaic;
     min-height: 0;
     min-width: 0;
-    gap: 0.25em;
+    gap: 1em;
     padding: 5.5em 0 0 0;
     grid-template-rows: repeat(5, minmax(0, 1fr));
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -30,12 +33,18 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
   }
 
   .project .mosaic img {
-    --border-radius: 0.25em;
+    --border-radius: 0.5em;
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center;
+    box-shadow:
+      1px 1px 1px rgba(0, 0, 0, 0.03),
+      2px 2px 4px rgba(0, 0, 0, 0.06),
+      5px 5px 9px rgba(0, 0, 0, 0.09),
+      10px 10px 15px rgba(0, 0, 0, 0.12),
+      15px 15px 24px rgba(0, 0, 0, 0.15);
   }
 
   .revo-realms .mosaic {
@@ -162,6 +171,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     grid-area: hero;
     background-color: var(--background-color);
     height: 100%;
+    overflow: hidden;
     max-width: max(500px, 100%);
     box-sizing: border-box;
     display: flex;
