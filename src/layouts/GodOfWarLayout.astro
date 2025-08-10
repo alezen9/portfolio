@@ -1,9 +1,6 @@
 ---
 import IconLogo from "@components/icons/IconLogo.astro";
 import BaseHead from "../components/ui/BaseHead.astro";
-import ProjectsScrollAnimations from "@components/islands/projectsScrollAnimations";
-import SetIsZoomed from "@components/islands/setIsZoomed";
-import BlobMask from "@components/islands/BlobMask";
 import TrackPointerMovement from "@components/islands/trackPointerMovement";
 
 const { title, description } = Astro.props;
@@ -30,20 +27,10 @@ const { title, description } = Astro.props;
         scroll-behavior: smooth;
       }
 
-      .is-zoomed {
-        scroll-snap-type: none;
-      }
-
       .wrapper {
         --text-accent: rgb(146, 41, 41);
         box-sizing: border-box;
         width: 100dvw;
-      }
-
-      .omega {
-        height: 1ch;
-        filter: brightness(0.85);
-        transform: translateY(0.05em);
       }
 
       .tagline {
@@ -85,18 +72,17 @@ const { title, description } = Astro.props;
       }
 
       .gallery .slide {
-        height: 100vh;
+        height: 100lvh;
         scroll-snap-align: start;
-        scroll-snap-stop: always;
+        /* scroll-snap-stop: always; */
         box-sizing: border-box;
         view-timeline: --slide;
       }
 
       .gallery .slide .content {
-        overflow: hidden;
-        position: fixed;
-        inset: 0;
-        background-color: var(--background-color);
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
       }
 
       .intro {
@@ -110,6 +96,7 @@ const { title, description } = Astro.props;
         inset: 0;
         pointer-events: none;
         background: url(/portfolio/god-of-war-mask.svg);
+        box-shadow: inset 0 0 100px 100px var(--background-color);
         background-repeat: no-repeat;
         background-position: 80% center;
         background-size: auto 150vh;
@@ -148,64 +135,21 @@ const { title, description } = Astro.props;
       }
 
       @supports (animation-timeline: scroll()) {
-        @keyframes backwards-scroll {
-          0% {
-            translate: 0 -100%;
-            visibility: hidden;
-            opacity: 0;
-            content-visibility: hidden;
-          }
-
-          50% {
-            translate: 0;
-            visibility: visible;
-            opacity: 1;
-            content-visibility: visible;
-          }
-
+        @keyframes fade {
+          0%,
           100% {
-            translate: 0 100%;
-            visibility: hidden;
             opacity: 0;
-            content-visibility: hidden;
-          }
-        }
-        .backwards-scroll-transition .slide .content {
-          animation-name: backwards-scroll;
-          animation-timing-function: ease-in-out;
-          animation-direction: both;
-          animation-timeline: --slide;
-        }
-
-        @keyframes blink {
-          0,
-          100% {
-            filter: blur(--blur) contrast(--contrast);
-            opacity: 1;
-            visibility: visible;
-            content-visibility: hidden;
           }
           50% {
-            filter: blur(0) contrast(1);
             opacity: 1;
-            visibility: visible;
-            content-visibility: visible;
           }
         }
 
-        .blink-scroll-transition .slide .content {
-          animation-name: blink;
-          animation-timing-function: ease-in-out;
-          animation-direction: both;
-          animation-timeline: --slide;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
         .gallery .slide .content {
-          --contrast: 1;
-          --blur: 0px;
-          filter: none;
+          animation-name: fade;
+          animation-timing-function: ease-in-out;
+          animation-direction: both;
+          animation-timeline: --slide;
         }
       }
 
@@ -228,14 +172,12 @@ const { title, description } = Astro.props;
     </style>
   </head>
   <body>
-    <ProjectsScrollAnimations client:only />
-    <SetIsZoomed client:only />
     <TrackPointerMovement client:only />
     <main class="wrapper">
       <!-- <a href="/portfolio" aria-label="Go back to Homepage">
         <IconLogo />
       </a> -->
-      <ul class="gallery backwards-scroll-transition">
+      <ul class="gallery">
         <li class="slide">
           <div class="content intro">
             <div class="background" aria-hidden="true"></div>
