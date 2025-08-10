@@ -38,7 +38,6 @@ const { title, description } = Astro.props;
         --text-accent: rgb(146, 41, 41);
         box-sizing: border-box;
         width: 100dvw;
-        flex-direction: column;
       }
 
       .omega {
@@ -94,16 +93,10 @@ const { title, description } = Astro.props;
       }
 
       .gallery .slide .content {
-        --contrast: 2;
-        --blur: 5px;
         overflow: hidden;
         position: fixed;
         inset: 0;
         background-color: var(--background-color);
-        filter: blur(var(--blur)) contrast(var(--contrast));
-        opacity: 0;
-        visibility: hidden;
-        will-change: filter, visibility, opacity;
       }
 
       .intro {
@@ -135,23 +128,72 @@ const { title, description } = Astro.props;
         background: radial-gradient(
           circle at var(--px) var(--py),
           transparent 0%,
-          rgba(var(--bg-raw, 0.35)) 35%,
           var(--background-color) 50%
         );
       }
 
-      @keyframes blink {
-        50% {
-          filter: blur(0) contrast(1);
-          opacity: 1;
-          visibility: visible;
-          content-visibility: visible;
-        }
+      .backwards-scroll-transition .slide .content {
+        visibility: hidden;
+        opacity: 0;
+        will-change: visibility, translate, opacity;
+      }
+
+      .blink-scroll-transition .slide .content {
+        --contrast: 2;
+        --blur: 5px;
+        visibility: hidden;
+        filter: blur(var(--blur)) contrast(var(--contrast));
+        opacity: 0;
+        will-change: filter, visibility, opacity;
       }
 
       @supports (animation-timeline: scroll()) {
-        .gallery .slide .content {
-          content-visibility: hidden;
+        @keyframes backwards-scroll {
+          0% {
+            translate: 0 -100%;
+            visibility: hidden;
+            opacity: 0;
+            content-visibility: hidden;
+          }
+
+          50% {
+            translate: 0;
+            visibility: visible;
+            opacity: 1;
+            content-visibility: visible;
+          }
+
+          100% {
+            translate: 0 100%;
+            visibility: hidden;
+            opacity: 0;
+            content-visibility: hidden;
+          }
+        }
+        .backwards-scroll-transition .slide .content {
+          animation-name: backwards-scroll;
+          animation-timing-function: ease-in-out;
+          animation-direction: both;
+          animation-timeline: --slide;
+        }
+
+        @keyframes blink {
+          0,
+          100% {
+            filter: blur(--blur) contrast(--contrast);
+            opacity: 1;
+            visibility: visible;
+            content-visibility: hidden;
+          }
+          50% {
+            filter: blur(0) contrast(1);
+            opacity: 1;
+            visibility: visible;
+            content-visibility: visible;
+          }
+        }
+
+        .blink-scroll-transition .slide .content {
           animation-name: blink;
           animation-timing-function: ease-in-out;
           animation-direction: both;
@@ -169,7 +211,7 @@ const { title, description } = Astro.props;
 
       @media screen and (max-width: 480px) {
         .tagline {
-          font-size: 2em;
+          font-size: 1.8em;
         }
 
         .background {
@@ -193,7 +235,7 @@ const { title, description } = Astro.props;
       <!-- <a href="/portfolio" aria-label="Go back to Homepage">
         <IconLogo />
       </a> -->
-      <ul class="gallery">
+      <ul class="gallery backwards-scroll-transition">
         <li class="slide">
           <div class="content intro">
             <div class="background" aria-hidden="true"></div>
