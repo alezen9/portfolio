@@ -1,86 +1,131 @@
 import { useEffect, useRef } from "preact/hooks";
 
 const CONFIG = {
-  springStiffness: 0.75, // how fast it chases the pointer
-  springDamping: 0.9, // velocity decay (0 = elastic, 1 = critically damped)
-  maxStretchFactor: 1.35, // 35 % “squash & stretch” cap
+  springStiffness: 0.75,
+  springDamping: 0.9, // 0..1 (higher = more damping)
+  maxStretchFactor: 1.35,
 };
 
 type Props = {
   radius?: number;
-  gradient?: number; // 1 = full gradient, 0 sharp circle
+  gradient?: number; // 1 = full soft gradient, 0 = sharp edge
 };
 
-const BlobMask = (props: Props) => {
-  const { radius = 150, gradient = 0 } = props;
+export default function BlobMask({ radius = 150, gradient = 0 }: Props) {
   const circleRef = useRef<SVGCircleElement | null>(null);
-  const gradientPercentage = (1 - gradient) * 100;
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  const innerPct = (1 - gradient) * 100;
 
   useEffect(() => {
-    if (!circleRef.current) return;
+    if (!circleRef.current || !svgRef.current) return;
 
-    const position = { x: innerWidth / 2, y: innerHeight / 2 };
-    const velocity = { x: 0, y: 0 };
-    const target = { x: position.x, y: position.y };
-
-    function drawBlob(stretchFactor: number) {
-      circleRef.current!.setAttribute("cx", position.x.toFixed(1));
-      circleRef.current!.setAttribute("cy", position.y.toFixed(1));
-      circleRef.current!.setAttribute("r", (radius * stretchFactor).toFixed(1));
+    function getSize() {
+      return { w: window.innerWidth, h: window.innerHeight };
     }
+    const { w, h } = getSize();
 
-    const animate: FrameRequestCallback = () => {
-      // spring integration
-      velocity.x += (target.x - position.x) * CONFIG.springStiffness;
-      velocity.y += (target.y - position.y) * CONFIG.springStiffness;
+    const pos = { x: w / 2, y: h / 2 };
+    const vel = { x: 0, y: 0 };
+    const target = { x: pos.x, y: pos.y };
 
-      velocity.x *= 1 - CONFIG.springDamping;
-      velocity.y *= 1 - CONFIG.springDamping;
+    svgRef.current.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    circleRef.current.setAttribute("cx", pos.x.toFixed(2));
+    circleRef.current.setAttribute("cy", pos.y.toFixed(2));
+    circleRef.current.setAttribute("r", radius.toFixed(2));
 
-      position.x += velocity.x;
-      position.y += velocity.y;
+    let rafId = 0;
+    let last = performance.now();
+    let running = true;
 
-      // velocity > stretch mapping
-      const speed = Math.hypot(velocity.x, velocity.y);
-      const stretch = Math.min(CONFIG.maxStretchFactor, 1 + speed * 0.02);
-
-      drawBlob(stretch);
-      requestAnimationFrame(animate);
+    const draw = (stretch: number) => {
+      circleRef.current!.setAttribute("cx", pos.x.toFixed(2));
+      circleRef.current!.setAttribute("cy", pos.y.toFixed(2));
+      circleRef.current!.setAttribute("r", (radius * stretch).toFixed(2));
     };
-    requestAnimationFrame(animate);
 
-    function updateTarget(event: PointerEvent) {
-      target.x = event.clientX;
-      target.y = event.clientY;
-    }
-    window.addEventListener("pointermove", updateTarget, { passive: true });
+    const animate: FrameRequestCallback = (now) => {
+      if (!running) return;
+      const dt = Math.min(0.05, (now - last) / 1000); // clamp 50ms
+      last = now;
 
-    return () => window.removeEventListener("pointermove", updateTarget);
-  }, []);
+      // spring
+      vel.x += (target.x - pos.x) * CONFIG.springStiffness;
+      vel.y += (target.y - pos.y) * CONFIG.springStiffness;
+      vel.x *= 1 - CONFIG.springDamping;
+      vel.y *= 1 - CONFIG.springDamping;
+      // normalize for 60fps
+      pos.x += vel.x * (dt * 60);
+      pos.y += vel.y * (dt * 60);
+
+      const speed = Math.hypot(vel.x, vel.y);
+      const stretch = Math.min(CONFIG.maxStretchFactor, 1 + speed * 0.01);
+
+      draw(stretch);
+      rafId = requestAnimationFrame(animate);
+    };
+
+    const onMove = (e: PointerEvent) => {
+      target.x = e.clientX;
+      target.y = e.clientY;
+      if (!running) {
+        running = true;
+        last = performance.now();
+        rafId = requestAnimationFrame(animate);
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        running = false;
+        cancelAnimationFrame(rafId);
+      } else {
+        if (!running) {
+          running = true;
+          last = performance.now();
+          rafId = requestAnimationFrame(animate);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    window.addEventListener("pointermove", onMove, { passive: true });
+    rafId = requestAnimationFrame(animate);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pointermove", onMove);
+      cancelAnimationFrame(rafId);
+      running = false;
+    };
+  }, [radius]);
+
+  const vw = typeof window !== "undefined" ? window.innerWidth : 0;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 0;
 
   return (
     <svg
-      viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
+      ref={svgRef}
+      viewBox={`0 0 ${vw} ${vh}`}
       style="position:fixed; inset:0; width:0; height:0"
       aria-hidden="true"
     >
       <defs>
         <radialGradient id="myGradient">
-          <stop offset={`${gradientPercentage}%`} stop-color="white" />
+          <stop offset={`${innerPct}%`} stop-color="white" />
           <stop offset="95%" stop-color="black" />
         </radialGradient>
-        <mask id="blob-mask" mask-type="luminance" maskUnits="userSpaceOnUse">
+
+        <mask id="blob-mask" maskUnits="userSpaceOnUse">
           <circle
             ref={circleRef}
-            cx={window.innerWidth / 2}
-            cy={window.innerHeight / 2}
+            cx={vw / 2}
+            cy={vh / 2}
             r={radius}
-            fill="url('#myGradient')"
+            fill="url(#myGradient)"
           />
         </mask>
       </defs>
     </svg>
   );
-};
-
-export default BlobMask;
+}

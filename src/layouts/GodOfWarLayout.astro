@@ -3,14 +3,28 @@ import IconLogo from "@components/icons/IconLogo.astro";
 import BaseHead from "../components/ui/BaseHead.astro";
 import ProjectsScrollAnimations from "@components/islands/projectsScrollAnimations";
 import SetIsZoomed from "@components/islands/setIsZoomed";
+import BlobMask from "@components/islands/BlobMask";
+import TrackPointerMovement from "@components/islands/trackPointerMovement";
 
 const { title, description } = Astro.props;
 ---
 
 <html lang="en">
   <head>
-    <BaseHead title={title} description={description} />
+    <BaseHead title={title} description={description}>
+      <link
+        rel="preload"
+        href="/portfolio/fonts/Berserker-Regular.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      /></BaseHead
+    >
     <style is:global>
+      @font-face {
+        font-family: "Berserker-Regular";
+        src: url("/portfolio/fonts/Berserker-Regular.woff2") format("woff2");
+      }
       html {
         scroll-snap-type: y mandatory;
         scroll-behavior: smooth;
@@ -39,6 +53,7 @@ const { title, description } = Astro.props;
         row-gap: 0.5em;
         margin: 0 auto 1em auto;
         max-width: min(80ch, 90dvw);
+        font-family: "Berserker-Regular";
       }
 
       .tagline span.right-aligned {
@@ -59,7 +74,7 @@ const { title, description } = Astro.props;
         -webkit-mask-image: url(/portfolio/god-of-war-mask.svg);
         mask-image: url(/portfolio/god-of-war-mask.svg);
         mask-repeat: no-repeat;
-        mask-position: center;
+        mask-position: 15%;
         mask-size: contain;
         filter: brightness(1.5);
       }
@@ -96,6 +111,35 @@ const { title, description } = Astro.props;
         place-content: center;
       }
 
+      .background {
+        position: absolute;
+        content: "";
+        inset: 0;
+        pointer-events: none;
+        background: url(/portfolio/god-of-war-mask.svg);
+        background-repeat: no-repeat;
+        background-position: 80% center;
+        background-size: auto 150vh;
+        opacity: 0.15;
+        z-index: -1;
+      }
+
+      .background::before {
+        --px: calc(var(--pointer-x, 0) * 1%);
+        --py: calc(var(--pointer-y, 0) * 1%);
+
+        position: absolute;
+        inset: 0;
+        content: "";
+        pointer-events: none;
+        background: radial-gradient(
+          circle at var(--px) var(--py),
+          transparent 0%,
+          rgba(var(--bg-raw, 0.35)) 35%,
+          var(--background-color) 50%
+        );
+      }
+
       @keyframes blink {
         50% {
           filter: blur(0) contrast(1);
@@ -122,18 +166,37 @@ const { title, description } = Astro.props;
           filter: none;
         }
       }
+
+      @media screen and (max-width: 480px) {
+        .tagline {
+          font-size: 2em;
+        }
+
+        .background {
+          background-position: 20vw center;
+        }
+      }
+
+      @media (pointer: coarse) {
+        .background::before {
+          --px: 40%;
+          --py: 40%;
+        }
+      }
     </style>
   </head>
   <body>
     <ProjectsScrollAnimations client:only />
     <SetIsZoomed client:only />
+    <TrackPointerMovement client:only />
     <main class="wrapper">
-      <a href="/portfolio" aria-label="Go back to Homepage">
+      <!-- <a href="/portfolio" aria-label="Go back to Homepage">
         <IconLogo />
-      </a>
+      </a> -->
       <ul class="gallery">
         <li class="slide">
           <div class="content intro">
+            <div class="background" aria-hidden="true"></div>
             <h1 class="tagline">
               <span>What are we hunting?</span>
               <span class="right-aligned"
