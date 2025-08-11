@@ -121,6 +121,13 @@ a {
   font-weight: 500;
 }
 
+a[aria-disabled="true"] {
+  color: currentColor;
+  pointer-events: none;
+  text-decoration: none;
+  opacity: 0.25;
+}
+
 a:not(:has(> svg:only-child))::before {
   position: absolute;
   content: "";
