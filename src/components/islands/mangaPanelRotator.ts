@@ -37,6 +37,14 @@ const rotatePanels = ({ panelId, panels, intervalMs = 15000 }: Props) => {
   const panelEl = document.getElementById(panelId);
   if (!panelEl) return;
 
+  const timer = document.querySelector(".timer") as SVGElement;
+
+  const resetTimerAnimation = () => {
+    if (!timer) return;
+    timer.classList.toggle("countdown-a");
+    timer.classList.toggle("countdown-b");
+  };
+
   const { matches: hasMouseCursor } = window.matchMedia("(pointer: fine)");
 
   const initialPanel = panels[currentPanelIdx];
@@ -55,6 +63,7 @@ const rotatePanels = ({ panelId, panels, intervalMs = 15000 }: Props) => {
       panelEl.style.setProperty("--color-img", `url("${nextPanel.colorSrc}")`);
 
     currentPanelIdx = nextPanelIdx;
+    resetTimerAnimation();
   };
 
   const prefetchNextPanel = () => {

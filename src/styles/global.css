@@ -276,14 +276,8 @@ ul {
   }
 }
 
-@media screen and (max-width: 480px) {
+@media (pointer: coarse) {
   a.go-home {
-    top: 0;
-    right: 0;
-  }
-  a.go-home:hover svg path {
-    stroke-dasharray: unset;
-    stroke-dashoffset: unset;
-    animation: none;
+    display: none;
   }
 }
