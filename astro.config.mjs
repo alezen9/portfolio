@@ -9,7 +9,7 @@ import preact from "@astrojs/preact";
 export default defineConfig({
   site: "https://alezen9.github.io",
   base: "portfolio",
-  trailingSlash: "never",
+  trailingSlash: "ignore",
   integrations: [mdx(), sitemap(), preact()],
   devToolbar: {
     enabled: false,

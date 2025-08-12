@@ -3,9 +3,12 @@ const clamp = (val: number, min: number, max: number) =>
 
 const root = document.documentElement;
 
+const MAX_STRETCH_FACTOR = 2.35;
+
 type Options = {
   springStiffness?: number; // higher = snappier
   springDamping?: number; // 0..1, higher = more damped (velocity scaled by 1 - damping)
+  enableStretching?: boolean;
 };
 
 const trackPointerMovement = (opts: Options = {}) => {
@@ -41,6 +44,14 @@ const trackPointerMovement = (opts: Options = {}) => {
     const py = pos.y.toFixed(2);
     root.style.setProperty("--pointer-x", px);
     root.style.setProperty("--pointer-y", py);
+
+    if (opts.enableStretching) {
+      const speed = Math.hypot(vel.x, vel.y);
+      const stretch = Math.min(MAX_STRETCH_FACTOR, 1 + speed * 0.075).toFixed(
+        2,
+      );
+      root.style.setProperty("--stretch", `${stretch}`);
+    }
 
     // Settle stop
     const nearTarget = Math.hypot(target.x - pos.x, target.y - pos.y) < 0.05;
