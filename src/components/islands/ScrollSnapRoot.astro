@@ -1,0 +1,28 @@
+<style is:global>
+  .overflow-auto {
+    overflow: auto;
+  }
+
+  .overflow-scroll {
+    height: 100dvh;
+    overflow-y: scroll;
+  }
+  .scroll-snap-y {
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+  }
+</style>
+<script>
+  const html = document.documentElement;
+  const body = document.body;
+  const ua = navigator.userAgent;
+  const isWebkit =
+    (/AppleWebKit/.test(ua) && !/Chrome/.test(ua)) ||
+    /\b(iPad|iPhone|iPod)\b/.test(ua);
+
+  if (isWebkit) html.classList.add("scroll-snap-y");
+  else {
+    html.classList.add("overflow-auto");
+    body.classList.add("overflow-scroll", "scroll-snap-y");
+  }
+</script>
