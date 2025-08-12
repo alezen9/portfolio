@@ -25,41 +25,23 @@ const { title, description } = Astro.props;
         src: url("/portfolio/fonts/Starjedi.woff2") format("woff2");
       }
       .background {
-        position: absolute;
+        position: fixed;
         inset: 0;
-        height: 100dvh;
-        width: 100dvw;
-        z-index: -999;
-        overflow: hidden;
-      }
 
-      .reveal-layer {
-        --r: 100px;
-        --outer-size: calc(var(--r) * 3.5);
+        --r: 300px;
+        --outer-size: calc(var(--r) * 1.5);
         --x: calc(var(--pointer-x) * 1%);
         --y: calc(var(--pointer-y) * 1%);
 
-        position: fixed;
-        inset: 0;
         mask-image: radial-gradient(
           circle at var(--x) var(--y),
-          black var(--r),
-          transparent var(--outer-size)
+          rgba(0, 0, 0, 0.25),
+          transparent var(--r)
         );
-      }
-
-      .reveal-layer::before {
-        content: "";
-        position: fixed;
-        inset: 0;
+        color: var(--text-color);
         pointer-events: none;
-        background-color: var(--text-color);
-        mask-image: url("#panel-mask");
-        -webkit-mask-image: url("#panel-mask");
-        mask-repeat: repeat;
-        -webkit-mask-repeat: repeat;
-        mask-size: 75%;
-        mask-position: center;
+        z-index: -1;
+        opacity: 0.25;
       }
 
       .wrapper {
@@ -125,6 +107,7 @@ const { title, description } = Astro.props;
   <body>
     <div class="background">
       <svg
+        aria-hidden="true"
         width="100%"
         xmlns="http://www.w3.org/2000/svg"
         style="aspect-ratio: 2103/1818;"
@@ -213,11 +196,9 @@ const { title, description } = Astro.props;
           </pattern>
         </defs>
 
-        <mask id="panel-mask" maskUnits="objectBoundingBox">
-          <rect fill="url(#Pattern)" width="100%" height="100%"></rect>
-        </mask>
+        <rect id="panel-mask" fill="url(#Pattern)" width="100%" height="100%"
+        ></rect>
       </svg>
-      <div class="reveal-layer" aria-hidden="true"></div>
       <TrackPointerMovement client:only />
     </div>
     <main class="wrapper">

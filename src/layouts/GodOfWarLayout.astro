@@ -72,6 +72,7 @@ const { title, description } = Astro.props;
       }
 
       .gallery .slide {
+        position: relative;
         height: 100vh;
         scroll-snap-align: start;
         /* scroll-snap-stop: always; */
@@ -90,30 +91,71 @@ const { title, description } = Astro.props;
         place-content: center;
       }
 
-      .background {
-        --r: 150px;
-        --r-multiplier: 4.25;
+      .background-old {
+        --r: 1px;
+        --r-multiplier: 350; /* Slightly larger for smoother transition */
         --outer-size: calc(var(--r) * var(--r-multiplier));
         --p-x: calc(var(--pointer-x, 0) * 1%);
         --p-y: calc(var(--pointer-y, 0) * 1%);
 
         box-sizing: border-box;
         position: absolute;
-        content: "";
         inset: 0;
         pointer-events: none;
         background: url(/portfolio/god-of-war-mask.svg);
         background-repeat: no-repeat;
         background-position: 80% center;
         background-size: auto 150vh;
-        opacity: 0.15;
+        opacity: 0.25;
         z-index: -1;
         border: 2.5px solid red;
+
         mask-image: radial-gradient(
           circle at var(--p-x) var(--p-y),
-          black var(--r),
+          black,
           transparent var(--outer-size)
         );
+
+        --drop-shadow-opacity: 1;
+        filter: contrast(1.02) brightness(0.99)
+          drop-shadow(
+            5px 5px 10px rgba(var(--text-raw), var(--drop-shadow-opacity))
+          );
+      }
+
+      /** https://grainy-gradients.vercel.app/noise.svg */
+      .background {
+        --r: 400px;
+        --p-x: calc(var(--pointer-x, 0) * 1%);
+        --p-y: calc(var(--pointer-y, 0) * 1%);
+
+        box-sizing: border-box;
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: url(/portfolio/god-of-war-mask.svg);
+        background-repeat: no-repeat;
+        background-position: 80% center;
+        background-size: auto 150vh;
+        opacity: 0.3;
+        z-index: -1;
+        border: 2.5px solid red;
+
+        mask-image: url(/portfolio/gradient-mask.webp);
+        --size: calc(var(--r) * 2);
+        mask-size: var(--size) var(--size);
+        mask-repeat: no-repeat;
+        --bias-x: calc(var(--pointer-x) / 100 + 0.5 - 1);
+        --bias-y: calc(var(--pointer-y) / 100 + 0.5 - 1);
+        --x: calc(var(--p-x) + var(--size) * var(--bias-x));
+        --y: calc(var(--p-y) + var(--size) * var(--bias-y));
+        mask-position: var(--x) var(--y);
+
+        --drop-shadow-opacity: 1;
+        filter: contrast(1.02) brightness(0.99)
+          drop-shadow(
+            5px 5px 10px rgba(var(--text-raw), var(--drop-shadow-opacity))
+          );
       }
 
       @supports (animation-timeline: scroll()) {
@@ -150,6 +192,12 @@ const { title, description } = Astro.props;
           --r-multiplier: 2;
           --p-x: 20%;
           --p-y: 40%;
+        }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .background {
+          --drop-shadow-opacity: 0;
         }
       }
     </style>
