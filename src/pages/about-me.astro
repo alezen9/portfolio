@@ -58,7 +58,8 @@ import StarWarsLayout from "src/layouts/StarWarsLayout.astro";
   }
 
   .company header {
-    position: relative;
+    position: sticky;
+    top: 0;
     display: grid;
     grid-template-columns: 1fr auto;
     grid-template-rows: 1fr 1fr;
@@ -66,6 +67,7 @@ import StarWarsLayout from "src/layouts/StarWarsLayout.astro";
     justify-content: space-between;
     align-items: center;
     padding: 1em 0;
+    background-color: var(--background-color);
   }
 
   .company header::before {
