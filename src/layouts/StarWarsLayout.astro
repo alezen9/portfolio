@@ -1,7 +1,6 @@
 ---
-import BlobMask from "@components/islands/BlobMask";
+import TrackPointerMovement from "@components/islands/trackPointerMovement";
 import BaseHead from "../components/ui/BaseHead.astro";
-import IconLogo from "@components/icons/IconLogo.astro";
 import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
 import LightsaberExclamation from "@components/ui/LightsaberExclamation.astro";
 import IconHome from "@components/icons/IconHome.astro";
@@ -35,10 +34,18 @@ const { title, description } = Astro.props;
       }
 
       .reveal-layer {
+        --r: 100px;
+        --outer-size: calc(var(--r) * 3.5);
+        --x: calc(var(--pointer-x) * 1%);
+        --y: calc(var(--pointer-y) * 1%);
+
         position: fixed;
         inset: 0;
-        mask-image: url("#blob-mask");
-        -webkit-mask-image: url("#blob-mask");
+        mask-image: radial-gradient(
+          circle at var(--x) var(--y),
+          black var(--r),
+          transparent var(--outer-size)
+        );
       }
 
       .reveal-layer::before {
@@ -211,7 +218,7 @@ const { title, description } = Astro.props;
         </mask>
       </svg>
       <div class="reveal-layer" aria-hidden="true"></div>
-      <BlobMask client:only gradient={1} radius={250} />
+      <TrackPointerMovement client:only />
     </div>
     <main class="wrapper">
       <a class="go-home" href="/portfolio" aria-label="Go back to Homepage">
