@@ -15,6 +15,13 @@ const { title, description } = Astro.props;
         as="font"
         type="font/woff2"
         crossorigin
+      />
+      <link
+        rel="preload"
+        href="/portfolio/gradient-mask.webp"
+        as="image"
+        type="image/webp"
+        crossorigin
       /></BaseHead
     >
     <style is:global>
@@ -125,10 +132,7 @@ const { title, description } = Astro.props;
 
       /** https://grainy-gradients.vercel.app/noise.svg */
       .background {
-        --r: 400px;
-        --p-x: calc(var(--pointer-x, 0) * 1%);
-        --p-y: calc(var(--pointer-y, 0) * 1%);
-
+        --mask-size: 800px;
         box-sizing: border-box;
         position: absolute;
         inset: 0;
@@ -140,16 +144,6 @@ const { title, description } = Astro.props;
         opacity: 0.3;
         z-index: -1;
         border: 2.5px solid red;
-
-        mask-image: url(/portfolio/gradient-mask.webp);
-        --size: calc(var(--r) * 2);
-        mask-size: var(--size) var(--size);
-        mask-repeat: no-repeat;
-        --bias-x: calc(var(--pointer-x) / 100 + 0.5 - 1);
-        --bias-y: calc(var(--pointer-y) / 100 + 0.5 - 1);
-        --x: calc(var(--p-x) + var(--size) * var(--bias-x));
-        --y: calc(var(--p-y) + var(--size) * var(--bias-y));
-        mask-position: var(--x) var(--y);
 
         --drop-shadow-opacity: 1;
         filter: contrast(1.02) brightness(0.99)
@@ -211,7 +205,7 @@ const { title, description } = Astro.props;
       <ul class="gallery">
         <li class="slide">
           <div class="content intro">
-            <div class="background" aria-hidden="true"></div>
+            <div class="background gradient-mask" aria-hidden="true"></div>
             <h1 class="tagline">
               <span>What are we hunting?</span>
               <span class="right-aligned"

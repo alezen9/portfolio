@@ -17,27 +17,24 @@ const { title, description } = Astro.props;
         as="font"
         type="font/woff2"
         crossorigin
-      /></BaseHead
-    >
+      />
+      <link
+        rel="preload"
+        href="/portfolio/gradient-mask.webp"
+        as="image"
+        type="image/webp"
+        crossorigin
+      />
+    </BaseHead>
     <style>
       @font-face {
         font-family: "Starjedi";
         src: url("/portfolio/fonts/Starjedi.woff2") format("woff2");
       }
       .background {
+        --mask-size: 500px;
         position: fixed;
         inset: 0;
-
-        --r: 300px;
-        --outer-size: calc(var(--r) * 1.5);
-        --x: calc(var(--pointer-x) * 1%);
-        --y: calc(var(--pointer-y) * 1%);
-
-        mask-image: radial-gradient(
-          circle at var(--x) var(--y),
-          rgba(0, 0, 0, 0.25),
-          transparent var(--r)
-        );
         color: var(--text-color);
         pointer-events: none;
         z-index: -1;
@@ -105,7 +102,7 @@ const { title, description } = Astro.props;
   </head>
 
   <body>
-    <div class="background">
+    <div class="background gradient-mask">
       <svg
         aria-hidden="true"
         width="100%"
