@@ -91,6 +91,13 @@ const { title, description } = Astro.props;
       }
 
       .background {
+        --r: 150px;
+        --r-multiplier: 4.25;
+        --outer-size: calc(var(--r) * var(--r-multiplier));
+        --p-x: calc(var(--pointer-x, 0) * 1%);
+        --p-y: calc(var(--pointer-y, 0) * 1%);
+
+        box-sizing: border-box;
         position: absolute;
         content: "";
         inset: 0;
@@ -101,30 +108,11 @@ const { title, description } = Astro.props;
         background-size: auto 150vh;
         opacity: 0.15;
         z-index: -1;
-      }
-
-      .background::before {
-        position: absolute;
-        content: "";
-        inset: 0;
-        pointer-events: none;
-        box-sizing: border-box;
-        border: 5px solid red;
-      }
-
-      .background::after {
-        --px: calc(var(--pointer-x, 0) * 1%);
-        --py: calc(var(--pointer-y, 0) * 1%);
-
-        position: absolute;
-        inset: 0;
-        content: "";
-        pointer-events: none;
-        background: radial-gradient(
-          circle at var(--px) var(--py),
-          transparent,
-          rgba(var(--bg-raw), 0.5) 30%,
-          var(--background-color) 40%
+        border: 2.5px solid red;
+        mask-image: radial-gradient(
+          circle at var(--p-x) var(--p-y),
+          black var(--r),
+          transparent var(--outer-size)
         );
       }
 
@@ -158,12 +146,10 @@ const { title, description } = Astro.props;
       }
 
       @media (pointer: coarse) {
-        .background::before {
-          display: none;
-        }
-        .background::after {
-          --px: 40%;
-          --py: 40%;
+        .background {
+          --r-multiplier: 2;
+          --p-x: 20%;
+          --p-y: 40%;
         }
       }
     </style>
