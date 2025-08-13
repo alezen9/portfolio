@@ -176,28 +176,6 @@ svg.animate {
   animation: animateDash 1.5s ease-in-out forwards;
 }
 
-a.go-home {
-  position: fixed;
-  top: 1em;
-  right: 2em;
-  padding: 1em;
-  width: 1.5em;
-  height: 1.5em;
-  border-radius: 50%;
-  border-top-right-radius: 0.25em;
-  border-bottom-right-radius: 0.25em;
-  z-index: 99;
-  backdrop-filter: blur(4px) contrast(1);
-  color: color-mix(in oklab, var(--text-accent) 75%, var(--text-color));
-}
-
-a.go-home:hover svg path {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: animateDash 0.5s ease-in-out forwards;
-  animation-delay: calc(var(--i) * 0.25s);
-}
-
 .highlight {
   color: color-mix(in srgb, var(--text-accent) 50%, var(--text-color));
 }
@@ -296,11 +274,5 @@ ul {
   }
   .icon-link:hover {
     transform: none;
-  }
-}
-
-@media (pointer: coarse) {
-  a.go-home {
-    display: none;
   }
 }

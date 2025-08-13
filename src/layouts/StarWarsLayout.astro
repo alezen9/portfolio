@@ -3,7 +3,7 @@ import TrackPointerMovement from "@components/islands/trackPointerMovement";
 import BaseHead from "../components/ui/BaseHead.astro";
 import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
 import LightsaberExclamation from "@components/ui/LightsaberExclamation.astro";
-import IconHome from "@components/icons/IconHome.astro";
+import GoHome from "@components/islands/GoHome.astro";
 
 const { title, description } = Astro.props;
 ---
@@ -199,9 +199,7 @@ const { title, description } = Astro.props;
       <TrackPointerMovement client:only />
     </div>
     <main class="wrapper">
-      <a class="go-home" href="/portfolio" aria-label="Go back to Homepage">
-        <IconHome />
-      </a>
+      <GoHome client:load />
       <h1 class="tagline">
         <span>Hello there!</span>
         <span class="right-aligned"

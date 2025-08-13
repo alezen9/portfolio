@@ -1,0 +1,85 @@
+---
+import IconHome from "@components/icons/IconHome.astro";
+---
+
+<script>
+  const a = document.querySelector("a.go-home");
+  let cls = "show";
+  (() => {
+    console.log(document.referrer, location.href);
+
+    if (!document.referrer) return;
+    if (document.referrer === location.href) return;
+
+    try {
+      const prevUrl = new URL(document.referrer);
+      const currentUrl = new URL(location.href);
+
+      if (prevUrl.origin !== currentUrl.origin) return;
+
+      const currentBase = currentUrl.pathname.split("/").at(1);
+      const prevBase = prevUrl.pathname.split("/").at(1);
+
+      if (currentBase !== prevBase) return;
+
+      cls = "hide";
+    } catch (error) {
+      console.info("Bro how did you land here?");
+    }
+  })();
+  a?.classList.add(cls);
+</script>
+<style>
+  a.go-home.hide {
+    display: none;
+  }
+
+  a.go-home.show {
+    display: block;
+  }
+
+  a.go-home {
+    display: none;
+    position: fixed;
+    top: 1em;
+    right: 2em;
+    padding: 1em;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    z-index: 1;
+    backdrop-filter: blur(4px) contrast(1);
+    color: color-mix(in oklab, var(--text-accent) 75%, var(--text-color));
+    opacity: 0.25;
+    scale: 1;
+    transition:
+      opacity 0.5s ease-in-out,
+      scale 0.5s cubic-bezier(0.075, 0.82, 0.165, 1);
+  }
+
+  @media (pointer: fine) {
+    a.go-home.show:hover {
+      opacity: 1;
+      scale: 1.1;
+    }
+  }
+
+  @media (pointer: coarse) {
+    a.go-home.show {
+      opacity: 1;
+      transition: none;
+      top: 0.5em;
+      right: 0.5em;
+    }
+  }
+
+  /* a:hover svg path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: animateDash 0.5s ease-in-out forwards;
+    animation-delay: calc(var(--i) * 0.25s);
+  } */
+</style>
+<a class="go-home" href="/portfolio" aria-label="Go back to Homepage">
+  <IconHome />
+</a>

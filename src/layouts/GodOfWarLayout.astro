@@ -1,7 +1,7 @@
 ---
-import IconHome from "@components/icons/IconHome.astro";
 import BaseHead from "../components/ui/BaseHead.astro";
 import TrackPointerMovement from "@components/islands/trackPointerMovement";
+import GoHome from "@components/islands/GoHome.astro";
 
 const { title, description } = Astro.props;
 ---
@@ -183,9 +183,9 @@ const { title, description } = Astro.props;
 
       @media (pointer: coarse) {
         .background {
-          --r-multiplier: 2;
-          --p-x: 20%;
-          --p-y: 40%;
+          --mask-size: 75%;
+          --x: 50%;
+          --y: 0%;
         }
       }
 
@@ -199,9 +199,7 @@ const { title, description } = Astro.props;
   <body>
     <TrackPointerMovement client:only />
     <main class="wrapper">
-      <a class="go-home" href="/portfolio" aria-label="Go back to Homepage">
-        <IconHome />
-      </a>
+      <GoHome client:load />
       <ul class="gallery">
         <li class="slide">
           <div class="content intro">
