@@ -1,35 +1,13 @@
 ---
 import IconHome from "@components/icons/IconHome.astro";
+import GoHomeVisibility from "./goHomeVisibility";
 ---
 
-<script>
-  const a = document.querySelector("a.go-home");
-  let cls = "show";
-  (() => {
-    console.log(document.referrer, location.href);
-
-    if (!document.referrer) return;
-    if (document.referrer === location.href) return;
-
-    try {
-      const prevUrl = new URL(document.referrer);
-      const currentUrl = new URL(location.href);
-
-      if (prevUrl.origin !== currentUrl.origin) return;
-
-      const currentBase = currentUrl.pathname.split("/").at(1);
-      const prevBase = prevUrl.pathname.split("/").at(1);
-
-      if (currentBase !== prevBase) return;
-
-      cls = "hide";
-    } catch (error) {
-      console.info("Bro how did you land here?");
-    }
-  })();
-  a?.classList.add(cls);
-</script>
 <style>
+  a.go-home::before,
+  a.go-home::after {
+    display: none;
+  }
   a.go-home.hide {
     display: none;
   }
@@ -81,5 +59,6 @@ import IconHome from "@components/icons/IconHome.astro";
   } */
 </style>
 <a class="go-home" href="/portfolio" aria-label="Go back to Homepage">
+  <GoHomeVisibility client:only />
   <IconHome />
 </a>
