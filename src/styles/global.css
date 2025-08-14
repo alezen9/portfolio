@@ -1,13 +1,11 @@
 @font-face {
   font-family: "RobotoMono";
-  src: url("/portfolio/fonts/RobotoMono-VariableFont_wght.woff2")
-    format("woff2");
+  src: url("/fonts/RobotoMono-VariableFont_wght.woff2") format("woff2");
 }
 
 @font-face {
   font-family: "RedHatText";
-  src: url("/portfolio/fonts/RedHatText-VariableFont_wght.woff2")
-    format("woff2");
+  src: url("/fonts/RedHatText-VariableFont_wght.woff2") format("woff2");
 }
 
 :root {
@@ -245,7 +243,7 @@ ul {
   --p-x: calc(var(--pointer-x, 0) * 1%);
   --p-y: calc(var(--pointer-y, 0) * 1%);
 
-  mask-image: url(/portfolio/gradient-mask.webp);
+  mask-image: url(/gradient-mask.webp);
   --size: var(--mask-size, 200px);
   mask-size: var(--size) var(--size);
   mask-repeat: no-repeat;

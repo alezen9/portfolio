@@ -13,14 +13,14 @@ const { title, description } = Astro.props;
     <BaseHead title={title} description={description}>
       <link
         rel="preload"
-        href="/portfolio/fonts/Starjedi.woff2"
+        href="/fonts/Starjedi.woff2"
         as="font"
         type="font/woff2"
         crossorigin
       />
       <link
         rel="preload"
-        href="/portfolio/gradient-mask.webp"
+        href="/gradient-mask.webp"
         as="image"
         type="image/webp"
         crossorigin
@@ -29,7 +29,7 @@ const { title, description } = Astro.props;
     <style>
       @font-face {
         font-family: "Starjedi";
-        src: url("/portfolio/fonts/Starjedi.woff2") format("woff2");
+        src: url("/fonts/Starjedi.woff2") format("woff2");
       }
       .background {
         --mask-size: 500px;

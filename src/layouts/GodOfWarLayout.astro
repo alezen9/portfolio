@@ -11,14 +11,14 @@ const { title, description } = Astro.props;
     <BaseHead title={title} description={description}>
       <link
         rel="preload"
-        href="/portfolio/fonts/Berserker-Regular.woff2"
+        href="/fonts/Berserker-Regular.woff2"
         as="font"
         type="font/woff2"
         crossorigin
       />
       <link
         rel="preload"
-        href="/portfolio/gradient-mask.webp"
+        href="/gradient-mask.webp"
         as="image"
         type="image/webp"
         crossorigin
@@ -27,7 +27,7 @@ const { title, description } = Astro.props;
     <style is:global>
       @font-face {
         font-family: "Berserker-Regular";
-        src: url("/portfolio/fonts/Berserker-Regular.woff2") format("woff2");
+        src: url("/fonts/Berserker-Regular.woff2") format("woff2");
       }
       html {
         scroll-snap-type: y mandatory;
@@ -64,8 +64,8 @@ const { title, description } = Astro.props;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        -webkit-mask-image: url(/portfolio/god-of-war-mask.svg);
-        mask-image: url(/portfolio/god-of-war-mask.svg);
+        -webkit-mask-image: url(/god-of-war-mask.svg);
+        mask-image: url(/god-of-war-mask.svg);
         mask-repeat: no-repeat;
         mask-position: 15%;
         mask-size: contain;
@@ -109,7 +109,7 @@ const { title, description } = Astro.props;
         position: absolute;
         inset: 0;
         pointer-events: none;
-        background: url(/portfolio/god-of-war-mask.svg);
+        background: url(/god-of-war-mask.svg);
         background-repeat: no-repeat;
         background-position: 80% center;
         background-size: auto 150vh;
@@ -137,7 +137,7 @@ const { title, description } = Astro.props;
         position: absolute;
         inset: 0;
         pointer-events: none;
-        background: url(/portfolio/god-of-war-mask.svg);
+        background: url(/god-of-war-mask.svg);
         background-repeat: no-repeat;
         background-position: 80% center;
         background-size: auto 150vh;

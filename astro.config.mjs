@@ -7,8 +7,8 @@ import preact from "@astrojs/preact";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://alezen9.github.io",
-  base: "portfolio",
+  site: "https://aleksandargjoreski.dev",
+  base: "/",
   trailingSlash: "ignore",
   integrations: [mdx(), sitemap(), preact()],
   devToolbar: {
