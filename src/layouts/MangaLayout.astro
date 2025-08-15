@@ -6,13 +6,15 @@ import TrackPointerMovement from "@components/islands/trackPointerMovement";
 
 const firstPanel = panels[0];
 const intervalMs = 15000;
-
-const { title, description } = Astro.props;
 ---
 
 <html lang="en">
   <head>
-    <BaseHead title={title} description={description} />
+    <BaseHead
+      title="AG | Home"
+      description="Creative front-end engineer exploring fast web apps, WebGL/WebGPU experiments and polished user experiences."
+      imageSrc="/og-images/home.jpg"
+    />
     <style>
       .panel {
         position: absolute;

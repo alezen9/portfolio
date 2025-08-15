@@ -2,13 +2,15 @@
 import BaseHead from "../components/ui/BaseHead.astro";
 import TrackPointerMovement from "@components/islands/trackPointerMovement";
 import GoHome from "@components/islands/GoHome.astro";
-
-const { title, description } = Astro.props;
 ---
 
 <html lang="en">
   <head>
-    <BaseHead title={title} description={description}>
+    <BaseHead
+      title="AG | Personal Projects"
+      description="..."
+      imageSrc="/og-images/projects.jpg"
+    >
       <link
         rel="preload"
         href="/fonts/Berserker-Regular.woff2"

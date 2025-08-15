@@ -32,13 +32,13 @@ const { title, description } = Astro.props;
         src: url("/fonts/Starjedi.woff2") format("woff2");
       }
       .background {
-        --mask-size: 500px;
+        --mask-size: 800px;
         position: fixed;
         inset: 0;
         color: var(--text-color);
         pointer-events: none;
         z-index: -1;
-        opacity: 0.25;
+        opacity: 0.05;
       }
 
       .wrapper {
@@ -59,6 +59,9 @@ const { title, description } = Astro.props;
         grid-template-rows: 1fr 1fr;
         margin-bottom: 1em;
         font-family: "Starjedi";
+        color: var(--text-accent);
+        filter: saturate(0.75) drop-shadow(0 0 10px rgba(0, 0, 0, 0.15))
+          grayscale(0.15);
       }
 
       .tagline span.right-aligned {
