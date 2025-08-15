@@ -141,15 +141,76 @@ const { title, description } = Astro.props;
         background-repeat: no-repeat;
         background-position: 80% center;
         background-size: auto 150vh;
-        opacity: 0.3;
+        opacity: 0.5;
         z-index: -1;
-        border: 2.5px solid red;
+        font-family: "Berserker-Regular";
 
-        --drop-shadow-opacity: 1;
+        --drop-shadow-opacity: 0.75;
         filter: contrast(1.02) brightness(0.99)
           drop-shadow(
-            5px 5px 10px rgba(var(--text-raw), var(--drop-shadow-opacity))
+            5px 5px 15px rgba(var(--text-raw), var(--drop-shadow-opacity))
           );
+
+        display: flex;
+        flex-direction: column;
+        justify-content: end;
+        align-items: center;
+        padding: 2em;
+        gap: 3em;
+      }
+
+      .background .tagline-two {
+        max-width: 350px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        font-size: 1.15em;
+      }
+
+      .background .tagline-two span:last-of-type {
+        text-align: right;
+      }
+
+      .background span.algiz {
+        position: relative;
+        display: block;
+        width: 0;
+        height: 0.85lh;
+        border: 1.5px solid;
+        color: red;
+      }
+
+      .background span.algiz::before {
+        position: absolute;
+        top: -10%;
+        left: -50%;
+        width: 1ch;
+        aspect-ratio: 1/1;
+        content: "";
+        border-top: 3px solid;
+        border-right: 3px solid;
+        transform: translate(-50%, -10%) rotate(135deg);
+      }
+
+      .background span.algiz::after {
+        position: absolute;
+        top: 50%;
+        left: -50%;
+        width: 1.5lh;
+        aspect-ratio: 1/1;
+        content: "";
+        transform: translate(-50%, -50%);
+        border: 3px double;
+        border-radius: 50%;
+        opacity: 0.25;
+      }
+
+      .background::before {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        content: "";
+        border: 2.5px solid red;
       }
 
       @supports (animation-timeline: scroll()) {
@@ -203,7 +264,13 @@ const { title, description } = Astro.props;
       <ul class="gallery">
         <li class="slide">
           <div class="content intro">
-            <div class="background gradient-mask" aria-hidden="true"></div>
+            <div class="background gradient-mask" aria-hidden="true">
+              <div class="tagline-two">
+                <span>In which direction?</span>
+                <span>In the direction of the deer.</span>
+              </div>
+              <span class="algiz"></span>
+            </div>
             <h1 class="tagline">
               <span>What are we hunting?</span>
               <span class="right-aligned"

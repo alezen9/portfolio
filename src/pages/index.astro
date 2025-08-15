@@ -118,7 +118,7 @@ import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
 
   @media screen and (max-width: 480px) {
     .hero {
-      padding: 4em 1.5em;
+      padding: 3em 1.5em;
     }
 
     .tagline {
@@ -129,15 +129,21 @@ import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
       font-size: 0.85em;
     }
   }
+
+  @media screen and (max-width: 400px) {
+    .tagline {
+      font-size: 2em;
+    }
+  }
 </style>
 
 <MangaLayout
-  title="AG | Home "
+  title="AG | Home"
   description="Creative front-end engineer exploring fast web apps, WebGL/WebGPU experiments and polished user experiences."
 >
   <main class="hero">
     <div class="header">
-      <h1 class="tagline">Pixels set in motion</h1>
+      <h1 class="tagline">Pixels set&nbsp;in motion</h1>
       <div class="signature">
         <p class="typewriter">
           Aleksandar Gjoreski | Creative Frontend Engineer
@@ -160,7 +166,9 @@ import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
     </div>
     <div class="footer">
       <div class="nav-links">
-        <!-- <a href="/blog" aria-disabled="true">Blog</a> -->
+        <a href="/blog" aria-disabled="true"
+          >Blog <small style="letter-spacing: 0;">(coming soon)</small></a
+        >
         <a href="/projects">Projects</a>
         <a href="/about-me">About me</a>
       </div>
