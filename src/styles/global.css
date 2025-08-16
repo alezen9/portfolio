@@ -254,6 +254,23 @@ ul {
   mask-position: var(--x) var(--y);
 }
 
+.tilt {
+  --tilt-max: var(--tilt-max-angle, 10deg);
+
+  --nx: calc((var(--local-pointer-x, 50) - 50) / 50);
+  --ny: calc((var(--local-pointer-y, 50) - 50) / 50);
+
+  --tilt-x: calc(var(--ny) * var(--tilt-max) * -1);
+  --tilt-y: calc(var(--nx) * var(--tilt-max));
+
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 0.15s linear;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-raw: var(--bg-dark);
@@ -266,6 +283,11 @@ ul {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .tilt {
+    will-change: none;
+    transform: none;
+  }
+
   .icon-link {
     will-change: none;
     transition: none;

@@ -4,15 +4,98 @@ const clamp = (val: number, min: number, max: number) =>
 const root = document.documentElement;
 
 const MAX_STRETCH_FACTOR = 2.35;
+const ID_ATTRIBUTE_NAME = "pointer-tracker-id";
+
+const computeBoundingBoxPercentages = (bb: DOMRectReadOnly) => {
+  const leftPercentage = (bb.left / innerWidth) * 100;
+  const rightPercentage = (bb.right / innerWidth) * 100;
+  const topPercentage = (bb.top / innerHeight) * 100;
+  const bottomPercentage = (bb.bottom / innerHeight) * 100;
+
+  const widthPercentage = bb.width / innerWidth;
+  const heightPercentage = bb.height / innerHeight;
+
+  return {
+    leftPercentage,
+    rightPercentage,
+    topPercentage,
+    bottomPercentage,
+    widthPercentage,
+    heightPercentage,
+  };
+};
+
+const createObserver = (targets?: string[]) => {
+  if (!targets?.length) return null;
+
+  const elements = document.querySelectorAll<HTMLElement>(targets.join(", "));
+  const visibleObservables = new Set<string>();
+  const observablesMap = new Map<string, HTMLElement>();
+
+  const onIntersect = (entries: IntersectionObserverEntry[]) => {
+    for (const entry of entries) {
+      const pointerTrackerId = entry.target.getAttribute(ID_ATTRIBUTE_NAME)!;
+      if (entry.isIntersecting) visibleObservables.add(pointerTrackerId);
+      else visibleObservables.delete(pointerTrackerId);
+    }
+  };
+  const observer = new IntersectionObserver(onIntersect);
+
+  const observe = () => {
+    elements.forEach((element, idx) => {
+      const pointerTrackerId = `pointer-tracker-${idx}`;
+      element.setAttribute(ID_ATTRIBUTE_NAME, pointerTrackerId);
+      observablesMap.set(pointerTrackerId, element);
+      observer.observe(element);
+    });
+  };
+
+  const disconnect = () => observer.disconnect();
+
+  const updateElements = (pos: { x: number; y: number }) => {
+    if (!visibleObservables.size) return;
+    visibleObservables.forEach((pointerTrackerId) => {
+      const el = observablesMap.get(pointerTrackerId)!;
+      const rect = el.getBoundingClientRect();
+      const bb = computeBoundingBoxPercentages(rect);
+
+      let lpx = 50;
+      let lpy = 50;
+      const isHoverX =
+        pos.x >= bb.leftPercentage && pos.x <= bb.rightPercentage;
+      const isHoverY =
+        pos.y >= bb.topPercentage && pos.y <= bb.bottomPercentage;
+      if (isHoverX && isHoverY) {
+        const dx = pos.x - bb.leftPercentage;
+        const dy = pos.y - bb.topPercentage;
+        lpx = dx / bb.widthPercentage;
+        lpy = dy / bb.heightPercentage;
+      }
+
+      el.style.setProperty("--local-pointer-x", lpx.toFixed(2));
+      el.style.setProperty("--local-pointer-y", lpy.toFixed(2));
+    });
+  };
+
+  return {
+    observe,
+    disconnect,
+    updateElements,
+  };
+};
 
 type Options = {
   springStiffness?: number; // higher = snappier
   springDamping?: number; // 0..1, higher = more damped (velocity scaled by 1 - damping)
   enableStretching?: boolean;
+  targets?: string[];
 };
 
 const trackPointerMovement = (opts: Options = {}) => {
   if (!matchMedia("(pointer:fine)").matches) return;
+
+  const observer = createObserver(opts.targets);
+  observer?.observe();
 
   const stiffness = opts.springStiffness ?? 0.75;
   const damping = clamp(opts.springDamping ?? 0.9, 0.05, 0.95);
@@ -44,6 +127,8 @@ const trackPointerMovement = (opts: Options = {}) => {
     const py = pos.y.toFixed(2);
     root.style.setProperty("--pointer-x", px);
     root.style.setProperty("--pointer-y", py);
+
+    observer?.updateElements(pos);
 
     if (opts.enableStretching) {
       const speed = Math.hypot(vel.x, vel.y);
@@ -93,6 +178,7 @@ const trackPointerMovement = (opts: Options = {}) => {
   rafId = requestAnimationFrame(raf);
 
   return () => {
+    observer?.disconnect();
     document.removeEventListener("visibilitychange", onVisibilityChange);
     window.removeEventListener("pointermove", onMove);
     cancelAnimationFrame(rafId);

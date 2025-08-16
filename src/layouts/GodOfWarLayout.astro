@@ -262,7 +262,7 @@ import GoHome from "@components/islands/GoHome.astro";
     </style>
   </head>
   <body>
-    <TrackPointerMovement client:only />
+    <TrackPointerMovement client:only targets={["figure"]} />
     <main class="wrapper">
       <GoHome />
       <ul class="gallery">

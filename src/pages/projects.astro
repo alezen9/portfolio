@@ -2,6 +2,7 @@
 import GodOfWarLayout from "src/layouts/GodOfWarLayout.astro";
 import IconEternalLink from "@components/icons/IconEternalLink.astro";
 import IconGitHub from "@components/icons/IconGitHub.astro";
+// import LocalPointerMovement from "@components/islands/localPointerMovement";
 ---
 
 <style>
@@ -23,28 +24,33 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     grid-area: mosaic;
     min-height: 0;
     min-width: 0;
-    gap: 1em;
+    gap: 0.25em;
     padding: 5.5em 0 0 0;
     grid-template-rows: repeat(5, minmax(0, 1fr));
     grid-template-columns: repeat(5, minmax(0, 1fr));
     width: 100%;
     height: 100%;
     box-sizing: border-box;
+    perspective: 4000px;
   }
 
-  .project .mosaic img {
-    --border-radius: 0.5em;
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
+  .project .mosaic figure {
+    border-radius: 0.25em;
+    overflow: hidden;
     box-shadow:
       1px 1px 1px rgba(0, 0, 0, 0.03),
       2px 2px 4px rgba(0, 0, 0, 0.06),
       5px 5px 9px rgba(0, 0, 0, 0.09),
       10px 10px 15px rgba(0, 0, 0, 0.12),
       15px 15px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .project .mosaic img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
   }
 
   .revo-realms .mosaic {
@@ -60,28 +66,6 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     object-position: top;
   }
 
-  .revo-realms .mosaic img:first-of-type {
-    grid-area: a;
-    border-bottom-left-radius: var(--border-radius);
-    border-bottom-right-radius: var(--border-radius);
-  }
-
-  .revo-realms .mosaic img:nth-of-type(2) {
-    grid-area: b;
-    border-top-right-radius: var(--border-radius);
-  }
-
-  .revo-realms .mosaic img:nth-of-type(3) {
-    grid-area: c;
-    border-top-left-radius: var(--border-radius);
-    border-bottom-left-radius: var(--border-radius);
-  }
-
-  .revo-realms .mosaic img:nth-of-type(4) {
-    grid-area: d;
-    border-top-left-radius: var(--border-radius);
-  }
-
   .zanka-no-tachi .mosaic {
     grid-template-areas:
       ". . b b b"
@@ -91,43 +75,13 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
       "a a a a .";
   }
 
-  .zanka-no-tachi .mosaic img:first-of-type {
-    grid-area: a;
-    border-radius: var(--border-radius);
-    border-top-right-radius: 0;
-  }
-
-  .zanka-no-tachi .mosaic img:nth-of-type(2) {
-    grid-area: b;
-    border-radius: var(--border-radius);
-    border-bottom-left-radius: 0;
-  }
-
   .unshaken .mosaic {
     grid-template-areas:
-      ". a a a a"
-      "c a a a a"
-      "c a a a a"
-      "c b b . ."
-      ". b b . .";
-  }
-
-  .unshaken .mosaic img:first-of-type {
-    grid-area: a;
-    border-radius: var(--border-radius);
-    border-bottom-left-radius: 0;
-  }
-
-  .unshaken .mosaic img:nth-of-type(2) {
-    grid-area: b;
-    border-bottom-right-radius: var(--border-radius);
-    border-bottom-left-radius: var(--border-radius);
-  }
-
-  .unshaken .mosaic img:nth-of-type(3) {
-    grid-area: c;
-    border-top-left-radius: var(--border-radius);
-    border-bottom-left-radius: var(--border-radius);
+      ". . a a a"
+      "c c a a a"
+      "c c a a a"
+      "c c b b ."
+      ". . b b .";
   }
 
   .cosmic-canvas .mosaic {
@@ -147,24 +101,6 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
   .unshaken .mosaic img,
   .zanka-no-tachi .mosaic img {
     filter: saturate(1.25);
-  }
-
-  .cosmic-canvas .mosaic img:first-of-type {
-    grid-area: a;
-    border-top-left-radius: var(--border-radius);
-    border-top-right-radius: var(--border-radius);
-  }
-
-  .cosmic-canvas .mosaic img:nth-of-type(2) {
-    grid-area: b;
-    border-top-right-radius: var(--border-radius);
-    border-bottom-right-radius: var(--border-radius);
-  }
-
-  .cosmic-canvas .mosaic img:nth-of-type(3) {
-    grid-area: c;
-    border-bottom-left-radius: var(--border-radius);
-    border-bottom-right-radius: var(--border-radius);
   }
 
   .project .hero {
@@ -340,16 +276,17 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
       );
     }
 
-    .project .mosaic img:not(:first-of-type) {
+    .project .mosaic figure:not(:first-of-type) {
       display: none;
     }
-    .project .mosaic img:first-of-type {
+    .project .mosaic figure:first-of-type {
       position: absolute;
       inset: calc(var(--padding) * -1);
       bottom: 0;
       width: calc(100% + var(--padding) * 2);
       height: calc(100% + var(--padding));
-      border-radius: 0;
+    }
+    .project .mosaic img {
       object-position: center;
     }
   }
@@ -435,30 +372,38 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         </footer>
       </div>
       <div class="mosaic">
-        <img
-          src="/projects/revo-realms/a.webp"
-          alt="Revo Realms - Lake"
-          loading="lazy"
-          decoding="async"
-        />
-        <img
-          src="/projects/revo-realms/b.webp"
-          alt="Revo Realms - Leviathan Axe and Fire"
-          loading="lazy"
-          decoding="async"
-        />
-        <img
-          src="/projects/revo-realms/c.webp"
-          alt="Revo Realms - Vegetation and Dragon Ball"
-          loading="lazy"
-          decoding="async"
-        />
-        <img
-          src="/projects/revo-realms/d.webp"
-          alt="Revo Realms - JoJo and One Piece"
-          loading="lazy"
-          decoding="async"
-        />
+        <figure class="tilt" style="grid-area: a;">
+          <img
+            src="/projects/revo-realms/a.webp"
+            alt="Revo Realms - Lake"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+        <figure class="tilt" style="grid-area: b;">
+          <img
+            src="/projects/revo-realms/b.webp"
+            alt="Revo Realms - Leviathan Axe and Fire"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+        <figure class="tilt" style="grid-area: c;">
+          <img
+            src="/projects/revo-realms/c.webp"
+            alt="Revo Realms - Vegetation and Dragon Ball"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+        <figure class="tilt" style="grid-area: d;">
+          <img
+            src="/projects/revo-realms/d.webp"
+            alt="Revo Realms - JoJo and One Piece"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
       </div>
     </article>
   </li>
@@ -486,8 +431,9 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
           </p>
           <ul class="highlights">
             <li>
-              <span class="highlight">Developed</span> a <code>useGPGpu</code> hook
-              to declaratively manage GPU-based computation in <code>WebGL</code
+              <span class="highlight">Developed</span> a <code>useGPGpu</code>
+              hook to declaratively manage GPU-based computation in <code
+                >WebGL</code
               >, via fragment shaders, buffers, and ping-pong rendering.
             </li>
             <li>
@@ -495,10 +441,9 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
               to convey the heat haze generated by Yamamoto's Bankai.
             </li>
             <li>
-              <span class="highlight">Modeled</span> Yamamoto and his sword in <code
-                >Blender</code
-              > with stylized cloth and footwear, and built a minimal low-poly environment
-              to frame the effect.
+              <span class="highlight">Modeled</span> Yamamoto and his sword in
+              <code>Blender</code> with stylized cloth and footwear, and built a
+              minimal low-poly environment to frame the effect.
             </li>
             <li>
               <span class="highlight">Shaped</span> each particle procedurally in
@@ -529,18 +474,22 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         </footer>
       </div>
       <div class="mosaic">
-        <img
-          src="/projects/zanka-no-tachi/a.webp"
-          alt="Zanka no Tachi - Shikai"
-          loading="lazy"
-          decoding="async"
-        />
-        <img
-          src="/projects/zanka-no-tachi/b.webp"
-          alt="Zanka no Tachi - Bankai"
-          loading="lazy"
-          decoding="async"
-        />
+        <figure class="tilt" style="grid-area: a;">
+          <img
+            src="/projects/zanka-no-tachi/a.webp"
+            alt="Zanka no Tachi - Shikai"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+        <figure class="tilt" style="grid-area: b;">
+          <img
+            src="/projects/zanka-no-tachi/b.webp"
+            alt="Zanka no Tachi - Bankai"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
       </div>
     </article>
   </li>
@@ -608,24 +557,30 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         </footer>
       </div>
       <div class="mosaic">
-        <img
-          src="/projects/unshaken/a.webp"
-          alt="Unshaken - Front view"
-          loading="lazy"
-          decoding="async"
-        />
-        <img
-          src="/projects/unshaken/b.webp"
-          alt="Unshaken - Side view"
-          loading="lazy"
-          decoding="async"
-        />
-        <img
-          src="/projects/unshaken/c.webp"
-          alt="Unshaken - Arthur Morgan"
-          loading="lazy"
-          decoding="async"
-        />
+        <figure class="tilt" style="grid-area: a;">
+          <img
+            src="/projects/unshaken/a.webp"
+            alt="Unshaken - Front view"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+        <figure class="tilt" style="grid-area: b;">
+          <img
+            src="/projects/unshaken/b.webp"
+            alt="Unshaken - Side view"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+        <figure class="tilt" style="grid-area: c;">
+          <img
+            src="/projects/unshaken/c.webp"
+            alt="Unshaken - Arthur Morgan"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
       </div>
     </article>
   </li>
@@ -691,24 +646,31 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
         </footer>
       </div>
       <div class="mosaic">
-        <img
-          src="/projects/cosmic-canvas/a.webp"
-          alt="Cosmic Canvas - Jupiter and Io"
-          loading="lazy"
-          decoding="async"
-        />
-        <img
-          src="/projects/cosmic-canvas/b.webp"
-          alt="Cosmic Canvas - Half shade view"
-          loading="lazy"
-          decoding="async"
-        />
-        <img
-          src="/projects/cosmic-canvas/c.webp"
-          alt="Cosmic Canvas - Front view"
-          loading="lazy"
-          decoding="async"
-        />
+        <figure class="tilt" style="grid-area: a;">
+          <img
+            src="/projects/cosmic-canvas/a.webp"
+            alt="Cosmic Canvas - Jupiter and Io"
+            loading="lazy"
+            decoding="async"
+            style="grid-area: a;"
+          />
+        </figure>
+        <figure class="tilt" style="grid-area: b;">
+          <img
+            src="/projects/cosmic-canvas/b.webp"
+            alt="Cosmic Canvas - Half shade view"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+        <figure class="tilt" style="grid-area: c;">
+          <img
+            src="/projects/cosmic-canvas/c.webp"
+            alt="Cosmic Canvas - Front view"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
       </div>
     </article>
   </li>
