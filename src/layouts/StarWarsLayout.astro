@@ -1,5 +1,5 @@
 ---
-import TrackPointerMovement from "@components/islands/trackPointerMovement";
+import trackPointerMovement from "src/scripts/trackPointerMovement";
 import BaseHead from "../components/ui/BaseHead.astro";
 import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
 import LightsaberExclamation from "@components/ui/LightsaberExclamation.astro";
@@ -26,6 +26,10 @@ const { title, description } = Astro.props;
         crossorigin
       />
     </BaseHead>
+    <script>
+      import trackPointerMovement from "src/scripts/trackPointerMovement";
+      const cleanup = trackPointerMovement({ targets: ["figure"] });
+    </script>
     <style>
       @font-face {
         font-family: "Starjedi";
@@ -199,7 +203,6 @@ const { title, description } = Astro.props;
         <rect id="panel-mask" fill="url(#Pattern)" width="100%" height="100%"
         ></rect>
       </svg>
-      <TrackPointerMovement client:only />
     </div>
     <main class="wrapper">
       <GoHome />

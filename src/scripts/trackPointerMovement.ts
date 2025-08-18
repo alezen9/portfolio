@@ -1,8 +1,6 @@
 const clamp = (val: number, min: number, max: number) =>
   Math.min(Math.max(val, min), max);
 
-const root = document.documentElement;
-
 const MAX_STRETCH_FACTOR = 2.35;
 const ID_ATTRIBUTE_NAME = "pointer-tracker-id";
 
@@ -93,6 +91,7 @@ type Options = {
 
 const trackPointerMovement = (opts: Options = {}) => {
   if (!matchMedia("(pointer:fine)").matches) return;
+  const root = document.documentElement;
 
   const observer = createObserver(opts.targets);
   observer?.observe();

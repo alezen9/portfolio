@@ -1,6 +1,5 @@
 ---
 import BaseHead from "../components/ui/BaseHead.astro";
-import TrackPointerMovement from "@components/islands/trackPointerMovement";
 import GoHome from "@components/islands/GoHome.astro";
 ---
 
@@ -24,8 +23,12 @@ import GoHome from "@components/islands/GoHome.astro";
         as="image"
         type="image/webp"
         crossorigin
-      /></BaseHead
-    >
+      />
+    </BaseHead>
+    <script>
+      import trackPointerMovement from "src/scripts/trackPointerMovement";
+      const cleanup = trackPointerMovement({ targets: ["figure"] });
+    </script>
     <style is:global>
       @font-face {
         font-family: "Berserker-Regular";
@@ -262,7 +265,6 @@ import GoHome from "@components/islands/GoHome.astro";
     </style>
   </head>
   <body>
-    <TrackPointerMovement client:only targets={["figure"]} />
     <main class="wrapper">
       <GoHome />
       <ul class="gallery">

@@ -1,7 +1,8 @@
 ---
 import GodOfWarLayout from "src/layouts/GodOfWarLayout.astro";
-import IconEternalLink from "@components/icons/IconEternalLink.astro";
+import IconExternalLink from "@components/icons/IconExternalLink.astro";
 import IconGitHub from "@components/icons/IconGitHub.astro";
+import Rune from "@components/icons/Rune.svelte";
 // import LocalPointerMovement from "@components/islands/localPointerMovement";
 ---
 
@@ -53,10 +54,14 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
     object-position: center;
   }
 
+  .project .mosaic svg {
+    padding: 3em;
+  }
+
   .revo-realms .mosaic {
     grid-template-areas:
       ". d d b b"
-      "c c . b b"
+      "c c r b b"
       "c c a a a"
       "c c a a a"
       ". . a a a";
@@ -71,22 +76,22 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
       ". . b b b"
       ". . b b b"
       "a a a a ."
-      "a a a a ."
+      "a a a a r"
       "a a a a .";
   }
 
   .unshaken .mosaic {
     grid-template-areas:
-      ". . a a a"
-      "c c a a a"
-      "c c a a a"
-      "c c b b ."
-      ". . b b .";
+      "d d d b b"
+      "d d d b b"
+      "c r a a a"
+      "e e a a a"
+      "e e a a a";
   }
 
   .cosmic-canvas .mosaic {
     grid-template-areas:
-      "a a a . ."
+      "a a a r ."
       "a a a b b"
       "c c c b b"
       "c c c b b"
@@ -367,7 +372,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             href="https://alezen9.github.io/revo-realms/"
             target="_blank"
           >
-            <IconEternalLink class:list={["animate", "icon-demo"]} />
+            <IconExternalLink class:list={["animate", "icon-demo"]} />
           </a>
         </footer>
       </div>
@@ -404,6 +409,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             decoding="async"
           />
         </figure>
+        <Rune client:load style="grid-area: r;" className="raido" />
       </div>
     </article>
   </li>
@@ -469,7 +475,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             href="https://alezen9.github.io/zanka-no-tachi/"
             target="_blank"
           >
-            <IconEternalLink class:list={["animate", "icon-demo"]} />
+            <IconExternalLink class:list={["animate", "icon-demo"]} />
           </a>
         </footer>
       </div>
@@ -490,6 +496,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             decoding="async"
           />
         </figure>
+        <Rune client:load style="grid-area: r;" className="sowilo" />
       </div>
     </article>
   </li>
@@ -552,7 +559,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             href="https://alezen9.github.io/unshaken/"
             target="_blank"
           >
-            <IconEternalLink class:list={["animate", "icon-demo"]} />
+            <IconExternalLink class:list={["animate", "icon-demo"]} />
           </a>
         </footer>
       </div>
@@ -581,6 +588,23 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             decoding="async"
           />
         </figure>
+        <figure class="tilt" style="grid-area: d;">
+          <img
+            src="/projects/unshaken/d.webp"
+            alt="Unshaken - Arthur Morgan"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+        <figure class="tilt" style="grid-area: e;">
+          <img
+            src="/projects/unshaken/e.webp"
+            alt="Unshaken - Arthur Morgan"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+        <Rune client:load style="grid-area: r;" className="eihwaz" />
       </div>
     </article>
   </li>
@@ -641,7 +665,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             href="https://alezen9.github.io/cosmic-canvas/"
             target="_blank"
           >
-            <IconEternalLink class:list={["animate", "icon-demo"]} />
+            <IconExternalLink class:list={["animate", "icon-demo"]} />
           </a>
         </footer>
       </div>
@@ -671,6 +695,7 @@ import IconGitHub from "@components/icons/IconGitHub.astro";
             decoding="async"
           />
         </figure>
+        <Rune client:load style="grid-area: r;" className="tiwaz" />
       </div>
     </article>
   </li>
