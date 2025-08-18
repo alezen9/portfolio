@@ -25,7 +25,7 @@ const { title, description } = Astro.props;
     />
     <script>
       import trackPointerMovement from "@components/scripts/trackPointerMovement";
-      const cleanup = trackPointerMovement();
+      const cleanup = trackPointerMovement({ rootSelector: ".gradient-mask" });
 
       // If using Astro View Transitions (or any partial swap), clean up before swap
       document.addEventListener("astro:before-swap", () => cleanup?.());
@@ -43,7 +43,7 @@ const { title, description } = Astro.props;
         font-display: swap;
       }
       .background {
-        --mask-size: 2000px;
+        --mask-size: 800px;
         position: fixed;
         inset: 0;
         color: var(--text-color);
@@ -114,7 +114,7 @@ const { title, description } = Astro.props;
   </head>
 
   <body>
-    <div class="background gradient-mask">
+    <div class="background gradient-mask force-gpu">
       <svg
         aria-hidden="true"
         xmlns="http://www.w3.org/2000/svg"

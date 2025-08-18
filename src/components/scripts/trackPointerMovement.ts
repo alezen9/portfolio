@@ -87,11 +87,17 @@ type Options = {
   springDamping?: number; // 0..1, higher = more damped (velocity scaled by 1 - damping)
   enableStretching?: boolean;
   targets?: string[];
+  rootSelector?: string;
 };
 
 const trackPointerMovement = (opts: Options = {}) => {
   if (!matchMedia("(pointer:fine)").matches) return;
-  const root = document.documentElement;
+  const root = opts.rootSelector
+    ? document.querySelector<HTMLElement>(opts.rootSelector)
+    : document.documentElement;
+
+  console.log(opts);
+  if (!root) return;
 
   const observer = createObserver(opts.targets);
   observer?.observe();

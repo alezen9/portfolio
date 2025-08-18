@@ -6,10 +6,8 @@
 
   const uid = `wobble-${Math.random().toString(36).slice(2)}`;
 
-  const smin = 100;
-  const smax = 300;
-  const fMin = 0.001;
-  const fMax = 0.3;
+  const smin = 250;
+  const smax = 350;
   const enterDur = 0.35;
   const leaveDur = 0.45;
 
@@ -17,7 +15,6 @@
   let turb!: SVGFETurbulenceElement;
 
   let wobbleTL: gsap.core.Tween | null = null;
-  let freqTL: gsap.core.Tween | null = null;
   let enterTween: gsap.core.Tween | null = null;
   let leaveTween: gsap.core.Tween | null = null;
 
@@ -26,21 +23,7 @@
     wobbleTL = gsap.to(disp, {
       attr: { scale: `random(${smin}, ${smax}, 1)` },
       duration: 1,
-      ease: "sine.inOut",
-      repeat: -1,
-      yoyo: true,
-      repeatRefresh: true,
-    });
-  }
-
-  function startFreq() {
-    freqTL?.kill();
-    freqTL = gsap.to(turb, {
-      attr: {
-        baseFrequency: `random(${fMin}, ${fMax}, 0.001) random(${fMin}, ${fMax}, 0.001)`,
-      },
-      duration: 1,
-      ease: "sine.inOut",
+      ease: "sine",
       repeat: -1,
       yoyo: true,
       repeatRefresh: true,
@@ -50,9 +33,8 @@
   function toZero() {
     leaveTween?.kill();
     wobbleTL?.pause();
-    freqTL?.pause();
     enterTween = gsap.to(disp, {
-      attr: { scale: 0 },
+      attr: { scale: 10 },
       duration: enterDur,
       ease: "power2.out",
     });
@@ -65,7 +47,7 @@
       attr: { scale: `random(${smin}, ${smax}, 1)` },
       duration: leaveDur,
       ease: "power2.out",
-      onComplete: startWobble, // resume the infinite wobble from this value
+      onComplete: startWobble,
     });
   }
 
@@ -82,21 +64,20 @@
 
   onDestroy(() => {
     wobbleTL?.kill();
-    freqTL?.kill();
     enterTween?.kill();
     leaveTween?.kill();
   });
 </script>
 
 <svg
-  class={`rune ${className}`}
+  class={`rune force-gpu ${className}`}
   viewBox="0 0 276 275"
   fill="none"
   stroke="currentColor"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
-  on:mouseenter={onEnter}
-  on:mouseleave={onLeave}
+  onmouseenter={onEnter}
+  onmouseleave={onLeave}
 >
   <path
     class="frame"

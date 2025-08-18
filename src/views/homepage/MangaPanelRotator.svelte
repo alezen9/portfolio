@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import panels from "@content/other/manga-panels.json" assert { type: "json" };
+  import trackPointerMovement from "@components/scripts/trackPointerMovement";
 
   let intervalMs = 15000;
   let idx = $state(0);
@@ -53,11 +54,18 @@
     oddIdx = getOddIdx();
   };
 
+  let cleanup: VoidFunction | undefined;
+
   onMount(() => {
+    cleanup = trackPointerMovement({
+      rootSelector: ".panel",
+      enableStretching: true,
+    });
     window.addEventListener("keydown", onShiftArrow);
   });
 
   onDestroy(() => {
+    cleanup?.();
     window.removeEventListener("keydown", onShiftArrow);
   });
 </script>
@@ -69,11 +77,21 @@
 >
   <div class="slot even" style={`opacity: ${evenOpacity};`}>
     <img role="presentation" class="base" src={evenPanel.bwSrc} alt="" />
-    <img role="presentation" class="reveal" src={evenPanel.colorSrc} alt="" />
+    <img
+      role="presentation"
+      class="reveal force-gpu"
+      src={evenPanel.colorSrc}
+      alt=""
+    />
   </div>
   <div class="slot odd" style={`opacity: ${oddOpacity};`}>
     <img role="presentation" class="base" src={oddPanel.bwSrc} alt="" />
-    <img role="presentation" class="reveal" src={oddPanel.colorSrc} alt="" />
+    <img
+      role="presentation"
+      class="reveal force-gpu"
+      src={oddPanel.colorSrc}
+      alt=""
+    />
   </div>
 </div>
 <div class="keys">

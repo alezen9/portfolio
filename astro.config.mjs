@@ -17,4 +17,9 @@ export default defineConfig({
   server: {
     host: true,
   },
+  vite: {
+    build: {
+      sourcemap: false,
+    },
+  },
 });

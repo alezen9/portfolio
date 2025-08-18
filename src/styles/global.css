@@ -255,6 +255,11 @@ ul {
   --x: calc(var(--p-x) + var(--size) * var(--bias-x));
   --y: calc(var(--p-y) + var(--size) * var(--bias-y));
   mask-position: var(--x) var(--y);
+  contain: paint;
+}
+
+.force-gpu {
+  transform: translateZ(0);
 }
 
 .tilt {
@@ -272,6 +277,7 @@ ul {
   transform-origin: center;
   will-change: transform;
   transition: transform 0.15s linear;
+  contain: paint;
 }
 
 @media (prefers-color-scheme: dark) {

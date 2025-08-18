@@ -31,7 +31,10 @@ import BaseHead from "@components/ui/BaseHead.astro";
     />
     <script>
       import trackPointerMovement from "@components/scripts/trackPointerMovement";
-      const cleanup = trackPointerMovement({ targets: ["figure"] });
+      const cleanup = trackPointerMovement({
+        rootSelector: ".gradient-mask",
+        targets: ["figure"],
+      });
 
       // If using Astro View Transitions (or any partial swap), clean up before swap
       document.addEventListener("astro:before-swap", () => cleanup?.());
@@ -137,7 +140,6 @@ import BaseHead from "@components/ui/BaseHead.astro";
           drop-shadow(
             5px 5px 15px rgba(var(--text-raw), var(--drop-shadow-opacity))
           );
-
         display: flex;
         flex-direction: column;
         justify-content: end;
@@ -198,6 +200,7 @@ import BaseHead from "@components/ui/BaseHead.astro";
         pointer-events: none;
         content: "";
         border: 2.5px solid red;
+        pointer-events: none;
       }
 
       @supports (animation-timeline: scroll()) {
@@ -251,7 +254,7 @@ import BaseHead from "@components/ui/BaseHead.astro";
       <ul class="gallery">
         <li class="slide">
           <div class="content intro">
-            <div class="background gradient-mask" aria-hidden="true">
+            <div class="background gradient-mask force-gpu" aria-hidden="true">
               <div class="tagline-two">
                 <span>In which direction?</span>
                 <span>In the direction of the deer.</span>
