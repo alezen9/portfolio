@@ -1,0 +1,31 @@
+---
+import BaseHead from "@components/ui/BaseHead.astro";
+import MangaPanelRotator from "./MangaPanelRotator.svelte";
+---
+
+<html lang="en">
+  <head>
+    <BaseHead
+      title="AG | Home"
+      description="Creative front-end engineer exploring fast web apps, WebGL/WebGPU experiments and polished user experiences."
+      imageSrc="/og-images/home.jpg"
+    />
+    <script>
+      import trackPointerMovement from "@components/scripts/trackPointerMovement";
+      const cleanup = trackPointerMovement({ enableStretching: true });
+
+      // If using Astro View Transitions (or any partial swap), clean up before swap
+      document.addEventListener("astro:before-swap", () => cleanup?.());
+
+      // On full-page unloads (and as a general safety net)
+      window.addEventListener("pagehide", () => cleanup?.(), { once: true });
+
+      // In dev, clean up on HMR dispose
+      if (import.meta.hot) import.meta.hot.dispose(() => cleanup?.());
+    </script>
+  </head>
+  <body>
+    <MangaPanelRotator client:only="svelte" />
+    <slot />
+  </body>
+</html>

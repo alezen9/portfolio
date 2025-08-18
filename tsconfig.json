@@ -9,7 +9,8 @@
       "@islands/*": ["src/components/islands/*"],
       "@utils/*": ["src/utils/*"],
       "@styles/*": ["src/styles/*"],
-      "@content/*": ["src/content/*"]
+      "@content/*": ["src/content/*"],
+      "@views/*": ["src/views/*"]
     },
     "strictNullChecks": true,
     "jsx": "react-jsx",

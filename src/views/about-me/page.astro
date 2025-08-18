@@ -1,0 +1,392 @@
+---
+import Layout from "./layout.astro";
+---
+
+<style>
+  section {
+    position: relative;
+  }
+
+  section::before {
+    position: absolute;
+    content: "";
+    top: -1em;
+    left: -1em;
+    width: calc(100% + 2em);
+    height: calc(100% + 2em);
+    opacity: 0.9;
+    background-color: var(--background-color);
+    border-radius: 0.25em;
+    z-index: -1;
+  }
+
+  section p {
+    font-size: 0.9em;
+    text-align: justify;
+    max-width: 100%;
+  }
+
+  .title {
+    position: relative;
+    font-weight: 600;
+    font-size: 1.25em;
+    margin-bottom: 1em;
+  }
+
+  .title::before {
+    position: absolute;
+    content: "";
+    background-color: var(--text-color);
+    bottom: -0.25em;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    z-index: -1;
+    opacity: 0.5;
+  }
+
+  .career {
+    display: flex;
+    flex-direction: column;
+    gap: 7.5em;
+  }
+
+  .company {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  .company header {
+    position: sticky;
+    top: 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: 1fr 1fr;
+    row-gap: 0.5em;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1em 0;
+    background-color: var(--background-color);
+  }
+
+  .company header::before {
+    --bg: color-mix(in oklab, var(--text-color) 10%, var(--background-color));
+    position: absolute;
+    content: "";
+    top: 0;
+    left: -1em;
+    width: calc(100% + 2em);
+    height: 100%;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--bg) 7.5%,
+      transparent 75%
+    );
+    z-index: -1;
+  }
+
+  .company header h3,
+  .company header p {
+    margin: 0;
+  }
+
+  .company header .name {
+    font-size: 1.25em;
+    font-weight: 500;
+  }
+
+  .company header .location,
+  .company header .period {
+    text-align: right;
+  }
+
+  .company .subtitle {
+    font-size: 1em;
+  }
+
+  .company .mission,
+  .company .role,
+  .company .achievements {
+    text-align: justify;
+  }
+
+  .company ul {
+    font-size: 0.9em;
+  }
+
+  @media screen and (max-width: 480px) {
+    .section::before {
+      opacity: 1;
+    }
+
+    .tagline {
+      font-size: 2.2em;
+    }
+  }
+</style>
+<Layout
+  title="AG | About Me"
+  description="I'm Aleksandar Gjoreski, a Frontend Engineer who moved from Node-rendered sites to React, Tailwind design systems and full-stack ownership, now diving deeper into 3D graphics. Here's how the journey is unfolding."
+>
+  <section>
+    <h2 class="title">TL;DR</h2>
+    <p>
+      Hi, I'm Aleksandar, originally from North Macedonia, living in northern
+      Italy since I was young.
+    </p>
+    <p>
+      I enjoy tinkering with tech, mainly for the web: building fast, reliable
+      applications, crafting visuals, and creating immersive 3D experiences.
+    </p>
+    <p>
+      Evenings are usually for football, friends and family, and a stack of
+      other hobbies.
+    </p>
+  </section>
+
+  <section>
+    <h2 class="title">The (slightly) longer version</h2>
+    <p>
+      I stepped into tech back in 2017, building server-rendered
+      <code>Node + Pug</code> sites. Soon after I went deep into
+      <code>React</code>, shipping a steady stream of data-heavy SaaS and
+      marketplace dashboards.
+    </p>
+    <p>
+      Along the way I picked up graphics work, raw <code>WebGL</code>,
+      <code>WebGPU</code>, and the maths that makes 3D tick, both with and
+      without <code>Three.js</code>, and more recently inside
+      <code>Godot</code> as well.
+    </p>
+    <p>The open-ended nature of graphics keeps me learning every day.</p>
+    <p>
+      I like to join projects early: sketching an MVP, spotting pitfalls, and
+      agreeing on trade-offs with designers, back-end devs, QA, and everyone
+      else in the loop. Lining up the basics first makes the initial build
+      smoother and lets us iterate on real user feedback instead of re-doing
+      avoidable mistakes.
+    </p>
+    <p>
+      A few edge cases still slip through, but each one becomes a lesson for
+      next time.
+    </p>
+    <p>
+      My career timeline starts just below. It ain't much, but it's honest work.
+    </p>
+  </section>
+
+  <section>
+    <h2 class="title">Professional journey</h2>
+    <div class="career">
+      <article class="company">
+        <header>
+          <h3 class="name">zolar</h3>
+          <p class="location">Berlin · Remote</p>
+          <p class="role">Frontend Engineer</p>
+          <p class="period">
+            <time datetime="2023-04">2023</time> &gt <time datetime="2024-11"
+              >2024</time
+            >
+          </p>
+        </header>
+        <div>
+          <h4 class="subtitle">About the company:</h4>
+          <p class="mission">
+            An end-to-end digital platform for German homeowners to go solar,
+            covering online system design, financing, permitting, and installer
+            scheduling. The SaaS tools link customers, installers, and finance
+            partners making solar adoption as easy as any home upgrade.
+          </p>
+        </div>
+        <div>
+          <h4 class="subtitle">My role:</h4>
+          <p class="role">
+            Joined as a Frontend Engineer. Within months I took ownership of
+            full-stack products: planning, architecting, building, deploying,
+            and monitoring features end-to-end; partnering with infra, design,
+            and business stakeholders as well as sharing outcomes through docs
+            and company-wide demos.
+          </p>
+        </div>
+        <div>
+          <h4 class="subtitle">A few personal wins:</h4>
+          <ul class="achievements">
+            <li>
+              <span class="highlight">Consolidated</span> a Tailwind design-system
+              library, slashing UI re-work across squads, and bringing company-wide
+              consistency.
+            </li>
+            <li>
+              <span class="highlight">Added</span>
+              changelog automation and canary releases to the design-system npm package,
+              enabling teams to consume updates with zero guesswork.
+            </li>
+            <li>
+              <span class="highlight">Automated</span>
+              GDPR deletion for one of the products via Kafka → Lambda → DynamoDB
+              (Node CDK), removing manual steps and audit worries.
+            </li>
+            <li>
+              <span class="highlight">Cut</span>
+              PWA first-load by 75% after measuring baseline, by refactoring entities
+              and fine-tuning AWS Amplify caching.
+            </li>
+            <li>
+              <span class="highlight">Maintained</span>
+              native iOS wrapper for the PWA and owned App Store submissions, removing
+              a team bottleneck.
+            </li>
+            <li>
+              <span class="highlight">Set up</span>
+              a Jest/RTL environment and added 200+ between unit and integration
+              tests to the PWA, making daily deploys a non-event.
+            </li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="company">
+        <header>
+          <h3 class="name">Genie AI</h3>
+          <p class="location">London · Remote</p>
+          <p class="role">Frontend Engineer</p>
+          <p class="period">
+            <time datetime="2021-10">2021</time> &gt <time datetime="2023-03"
+              >2023</time
+            >
+          </p>
+        </header>
+
+        <div>
+          <h4 class="subtitle">About the company:</h4>
+          <p class="mission">
+            AI-powered contract platform that lets businesses draft, review, and
+            sign agreements in minutes, leveraging a free library of open-source
+            templates and an intelligent editor that delivers lawyer-level
+            insight at a fraction of the usual legal cost.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="subtitle">My role:</h4>
+          <p class="role">
+            Hired as a Frontend Engineer to replace the legacy Angular app with
+            a green-field Next.js code-base. I set the technical foundation:
+            tooling, linting, and a shared component library. I then owned two
+            major features: a virtualised contract marketplace (advanced search,
+            faceted filters, SSR for SEO); and real-time comment threads on
+            contract packages (GraphQL subscriptions, optimistic updates). I
+            worked daily with backend and product design teams to keep
+            performance sharp and the UX cohesive.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="subtitle">A few personal wins:</h4>
+          <ul class="achievements">
+            <li>
+              <span class="highlight">Built</span> the green-field Next.js frontend:
+              a shared Material UI component library, type-safe state with Recoil,
+              and GraphQL data hooks—giving the team a clean baseline for new features.
+            </li>
+            <li>
+              <span class="highlight">Developed</span> a virtualised contract marketplace
+              with faceted search, filters and infinite scroll. Thanks to windowing
+              + React composition and memoisation techniques, the list holds a steady
+              60 fps even with thousands of documents.
+            </li>
+            <li>
+              <span class="highlight">Supported</span> junior engineers and ran frontend
+              guild sessions, spreading React + TypeScript best practices across
+              the team.
+            </li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="company">
+        <header>
+          <h3 class="name">Condexo</h3>
+          <p class="location">Rome · Hybrid</p>
+          <p class="role">Frontend Engineer</p>
+          <p class="period">
+            <time datetime="2019-05">2019</time> &gt <time datetime="2021-10"
+              >2021</time
+            >
+          </p>
+        </header>
+
+        <div>
+          <h4 class="subtitle">About the company:</h4>
+          <p class="mission">
+            Cloud platform that digitises Italian apartment buildings. Property
+            managers track expenses, schedule maintenance, and send notices from
+            a single dashboard, while residents pay fees, open tickets, and vote
+            on assembly items through a responsive web app. Every ticket's
+            status, maintenance schedule, and budget line is visible in real
+            time—replacing paper binders and lobby notice-boards, cutting admin
+            workload, giving managers and tenants full transparency into both
+            building finances and day-to-day issues.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="subtitle">My role:</h4>
+          <p class="role">
+            Started as a junior Frontend Engineer, gradually evolving into the
+            team's go-to person on the frontend. I planned, built, and shipped
+            features end-to-end, oversaw the move from outsourced to in-house
+            development, and supported incoming engineers, collaborating daily
+            with backend and product colleagues.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="subtitle">A few personal wins:</h4>
+          <ul class="achievements">
+            <li>
+              <span class="highlight">Delivered</span> a building-management dashboard
+              with Stripe in-app payments, giving residents one-click fee settlement
+              and cutting late-payment calls for support.
+            </li>
+
+            <li>
+              <span class="highlight">Built</span> the online assembly workflow:
+              multi-step forms, delegate logic, vote tracking, and automated meeting
+              minutes (PDF), moving a paper process fully online and saving managers
+              hours per meeting.
+            </li>
+
+            <li>
+              <span class="highlight">Co-owned</span> the ticketing system end-to-end,
+              letting residents raise issues and managers track progress in real
+              time, which shortened average resolution time from days to hours.
+            </li>
+
+            <li>
+              <span class="highlight">Created</span> a green-field back-office app
+              (Next.js, Material UI, GraphQL, SWR) with a bulk-import module that
+              migrated building data in minutes, eliminating days of manual entry
+              for the support team.
+            </li>
+
+            <li>
+              <span class="highlight">Led</span> the migration of the main codebase
+              from JavaScript to TypeScript, catching type-level errors at build
+              time and noticeably reducing production bug reports.
+            </li>
+
+            <li>
+              <span class="highlight">Facilitated</span> the hand-off from an offshore
+              vendor to the in-house team: ran knowledge-transfer sessions, produced
+              full docs, and onboarded new engineers so they could ship their first
+              PR within the first week.
+            </li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </section>
+</Layout>
