@@ -9,22 +9,27 @@ import GoHome from "@components/islands/GoHome.astro";
       title="AG | Personal Projects"
       description="..."
       imageSrc="/og-images/projects.jpg"
-    >
-      <link
-        rel="preload"
-        href="/fonts/Berserker-Regular.woff2"
-        as="font"
-        type="font/woff2"
-        crossorigin
-      />
-      <link
-        rel="preload"
-        href="/gradient-mask.webp"
-        as="image"
-        type="image/webp"
-        crossorigin
-      />
-    </BaseHead>
+    />
+    <link
+      rel="preload"
+      href="/fonts/Berserker-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/gradient-mask.webp"
+      as="image"
+      type="image/webp"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/god-of-war-mask.svg"
+      as="image"
+      type="image/svg+xml"
+    />
     <script>
       import trackPointerMovement from "src/scripts/trackPointerMovement";
       const cleanup = trackPointerMovement({ targets: ["figure"] });
@@ -33,6 +38,7 @@ import GoHome from "@components/islands/GoHome.astro";
       @font-face {
         font-family: "Berserker-Regular";
         src: url("/fonts/Berserker-Regular.woff2") format("woff2");
+        font-display: swap;
       }
       html {
         scroll-snap-type: y mandatory;

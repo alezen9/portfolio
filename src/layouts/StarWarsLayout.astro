@@ -10,30 +10,30 @@ const { title, description } = Astro.props;
 
 <html lang="en">
   <head>
-    <BaseHead title={title} description={description}>
-      <link
-        rel="preload"
-        href="/fonts/Starjedi.woff2"
-        as="font"
-        type="font/woff2"
-        crossorigin
-      />
-      <link
-        rel="preload"
-        href="/gradient-mask.webp"
-        as="image"
-        type="image/webp"
-        crossorigin
-      />
-    </BaseHead>
+    <BaseHead title={title} description={description} />
+    <link
+      rel="preload"
+      href="/fonts/Starjedi.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/gradient-mask.webp"
+      as="image"
+      type="image/webp"
+      crossorigin
+    />
     <script>
       import trackPointerMovement from "src/scripts/trackPointerMovement";
-      const cleanup = trackPointerMovement({ targets: ["figure"] });
+      const cleanup = trackPointerMovement();
     </script>
     <style>
       @font-face {
         font-family: "Starjedi";
         src: url("/fonts/Starjedi.woff2") format("woff2");
+        font-display: swap;
       }
       .background {
         --mask-size: 2000px;
