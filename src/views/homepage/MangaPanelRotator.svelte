@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import panels from "@content/other/manga-panels.json" assert { type: "json" };
   import trackPointerMovement from "@components/scripts/trackPointerMovement";
+  import { createInterval } from "@utils/createInterval";
 
   let intervalMs = 15000;
   let idx = $state(0);
@@ -25,23 +26,14 @@
   let oddPanel = $derived(panels[oddIdx]);
   let evenOpacity = $derived(idx % 2 === 0 ? 1 : 0);
   let oddOpacity = $derived(1 - evenOpacity);
-
   let timerAnimation = $derived(idx % 2 === 0 ? "a" : "b");
-
-  $effect(() => {
-    const interval = setInterval(() => {
-      idx = getNextIdx();
-    }, intervalMs);
-
-    return () => {
-      clearInterval(interval);
-    };
-  });
+  let interval: ReturnType<typeof createInterval>;
 
   const onShiftArrow = (e: KeyboardEvent) => {
     if (!e.shiftKey || isTransitioning) return;
     if (e.code !== "ArrowRight") return;
     idx = getNextIdx();
+    interval.reset();
   };
 
   const onTransitionStart = () => {
@@ -57,6 +49,9 @@
   let cleanup: VoidFunction | undefined;
 
   onMount(() => {
+    interval = createInterval(() => {
+      idx = getNextIdx();
+    }, intervalMs);
     cleanup = trackPointerMovement({
       rootSelector: ".panel",
       enableStretching: true,
@@ -66,6 +61,7 @@
 
   onDestroy(() => {
     cleanup?.();
+    interval.clear();
     window.removeEventListener("keydown", onShiftArrow);
   });
 </script>

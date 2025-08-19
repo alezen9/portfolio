@@ -1,6 +1,7 @@
 ---
 import BaseHead from "@components/ui/BaseHead.astro";
 import MangaPanelRotator from "./MangaPanelRotator.svelte";
+import Menu from "@components/ui/Menu.astro";
 ---
 
 <html lang="en">
@@ -12,6 +13,7 @@ import MangaPanelRotator from "./MangaPanelRotator.svelte";
     />
   </head>
   <body>
+    <Menu />
     <MangaPanelRotator client:only="svelte" />
     <slot />
   </body>

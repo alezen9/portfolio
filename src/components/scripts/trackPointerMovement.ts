@@ -96,7 +96,6 @@ const trackPointerMovement = (opts: Options = {}) => {
     ? document.querySelector<HTMLElement>(opts.rootSelector)
     : document.documentElement;
 
-  console.log(opts);
   if (!root) return;
 
   const observer = createObserver(opts.targets);
