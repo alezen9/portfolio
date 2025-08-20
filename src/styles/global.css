@@ -116,16 +116,18 @@ code {
 a {
   position: relative;
   width: fit-content;
-  color: var(--text-color);
+  color: currentColor;
   text-decoration: none;
   font-family: var(--font-mono);
   letter-spacing: 3px;
   font-weight: 500;
 }
 
-a[aria-disabled="true"] {
+a[aria-disabled="true"],
+label[aria-disabled="true"] {
   color: currentColor;
   pointer-events: none;
+  user-select: none;
   text-decoration: none;
   opacity: 0.25;
 }

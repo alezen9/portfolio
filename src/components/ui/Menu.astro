@@ -1,15 +1,18 @@
 ---
 import IconMenu from "@components/icons/IconMenu.astro";
-import IconColorScheme from "@components/icons/IconColorScheme.astro";
-import IconAudio from "@components/icons/IconAudio.astro";
+import IconMoon from "@components/icons/IconMoon.astro";
+import IconVolume from "@components/icons/IconVolume.astro";
+import IconHome from "@components/icons/IconHome.astro";
+import IconSun from "@components/icons/IconSun.astro";
 ---
 
 <style>
   nav[aria-label="Site settings"] {
     --btn-size: 2.25em;
+    --svg-size: 1.25em;
     --pad: 0.25em;
     --tray-gap: 0.25em;
-    --n-elements: 2; /** in tray, no menu button */
+    --n-elements: 3; /** in tray, no menu button */
     --tray-size: calc(var(--n-elements) * var(--btn-size) + var(--tray-gap));
     position: fixed;
     top: 2em;
@@ -71,16 +74,17 @@ import IconAudio from "@components/icons/IconAudio.astro";
   }
 
   svg {
-    width: 1.25em;
+    width: var(--svg-size);
     aspect-ratio: 1/1;
+    filter: contrast(10);
   }
 
   details::details-content {
     opacity: 0;
     width: 0;
-    transition-property: opacity, width;
-    transition-duration: 0.25s;
-    transition-timing-function: ease-in-out;
+    transition:
+      opacity 0.5s ease,
+      width 0.5s ease;
   }
 
   details[open]::details-content {
@@ -104,9 +108,15 @@ import IconAudio from "@components/icons/IconAudio.astro";
     height: var(--btn-size);
     aspect-ratio: 1/1;
     position: relative;
+    border-radius: 50%;
+    transition: background-color 0.5s ease;
   }
 
-  li label {
+  li:not(:has(label[aria-disabled="true"])):hover {
+    background-color: color-mix(in oklab, var(--text-color) 10%, transparent);
+  }
+
+  li > * {
     display: grid;
     place-items: center;
     width: 100%;
@@ -114,10 +124,6 @@ import IconAudio from "@components/icons/IconAudio.astro";
     border-radius: 50%;
     cursor: pointer;
   }
-  /* li svg {
-    height: 1em;
-    aspect-ratio: 1/1;
-  } */
 
   input[type="checkbox"] {
     position: absolute;
@@ -127,9 +133,13 @@ import IconAudio from "@components/icons/IconAudio.astro";
     cursor: pointer;
   }
 
-  li input:checked + svg {
-    /* do later */
-    color: red;
+  .color-scheme {
+    display: flex;
+    flex-direction: column;
+    gap: var(--svg-size);
+    padding: 0.5em 0;
+    transform: translateY(0);
+    transition: transform 0.5s cubic-bezier(0.4, -0.1, 0.55, 1.17);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -137,10 +147,40 @@ import IconAudio from "@components/icons/IconAudio.astro";
       background: rgba(var(--bg-raw), 0.5);
       /* box-shadow: none; */
     }
+
+    .color-scheme {
+      transform: translateY(calc(var(--svg-size) * -2));
+    }
   }
 </style>
 
-<!-- <nav aria-label="Site settings">
+<script>
+  const isHomepage =
+    document.location.href.replace(/\/$/, "") === document.location.origin;
+  const homepageLink = document.getElementById(
+    "homepage-link",
+  ) as HTMLAnchorElement;
+  if (!isHomepage && homepageLink) {
+    homepageLink.title = "Go to homepage";
+    homepageLink.href = "/";
+  }
+
+  const themeToggle = document.getElementById(
+    "theme-toggle",
+  ) as HTMLInputElement;
+  if (themeToggle) {
+    themeToggle.defaultChecked = true;
+    document.documentElement.dataset.theme = "dark";
+    const onToggle = (e: Event) => {
+      if (!e.target) return;
+      const theme = (e.target as HTMLInputElement).checked ? "dark" : "light";
+      document.documentElement.dataset.theme = theme;
+    };
+    themeToggle.addEventListener("change", onToggle);
+  }
+</script>
+
+<nav aria-label="Site settings">
   <details open>
     <summary aria-label="Open settings">
       <IconMenu />
@@ -148,17 +188,29 @@ import IconAudio from "@components/icons/IconAudio.astro";
 
     <ul>
       <li>
-        <label for="theme-toggle" title="Toggle dark mode">
+        <a id="homepage-link" title="You are already home :)">
+          <IconHome />
+        </a>
+      </li>
+      <li>
+        <label for="theme-toggle" title="Toggle appearance">
           <input id="theme-toggle" type="checkbox" name="theme" />
-          <IconColorScheme />
+          <span class="color-scheme">
+            <IconSun aria-label="Light mode" />
+            <IconMoon aria-label="Dark mode" />
+          </span>
         </label>
       </li>
       <li>
-        <label for="audio-toggle" title="Toggle sound">
-          <input id="audio-toggle" type="checkbox" name="audio" />
-          <IconAudio />
+        <label
+          for="audio-toggle"
+          title="Audio coming soon"
+          aria-disabled="true"
+        >
+          <input id="audio-toggle" type="checkbox" name="audio" disabled />
+          <IconVolume />
         </label>
       </li>
     </ul>
   </details>
-</nav> -->
+</nav>

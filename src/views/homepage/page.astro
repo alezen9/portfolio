@@ -163,24 +163,42 @@ import Layout from "./layout.astro";
     </div>
     <div class="footer">
       <div class="nav-links">
-        <a href="/blog" aria-disabled="true"
+        <a
+          href="/coming-soon"
+          aria-disabled="true"
+          title="Articles & notes (coming soon)"
+          tabindex="-1"
           >Blog <small style="letter-spacing: 0;">(coming soon)</small></a
         >
-        <a href="/projects">Projects</a>
-        <a href="/about-me">About me</a>
+        <a href="/projects" title="Explore some of my side projects">Projects</a
+        >
+        <a href="/about-me" title="Learn a little more about my journey"
+          >About me</a
+        >
       </div>
       <div class="personal-links">
         <a
           class="icon-link"
           href="https://www.linkedin.com/in/aleksandar-d-gjoreski/"
           target="_blank"
+          title="Connect with me on LinkedIn"
         >
           <IconLinkedIn class:list={["animate"]} />
         </a>
-        <a class="icon-link" href="https://github.com/alezen9" target="_blank">
+        <a
+          class="icon-link"
+          href="https://github.com/alezen9"
+          target="_blank"
+          title="Check out my work on GitHub"
+        >
           <IconGitHub class:list={["animate", "icon-github"]} />
         </a>
-        <a class="icon-link" href="https://x.com/aleksgjoreski" target="_blank">
+        <a
+          class="icon-link"
+          href="https://x.com/aleksgjoreski"
+          target="_blank"
+          title="Find me on X"
+        >
           <IconX class:list={["animate", "icon-x"]} />
         </a>
       </div>

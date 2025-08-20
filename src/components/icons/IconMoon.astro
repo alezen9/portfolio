@@ -1,5 +1,9 @@
 ---
-const { class: className, ...rest } = Astro.props;
+const {
+  class: className,
+  ["aria-label"]: ariaLabel = "Moon",
+  ...rest
+} = Astro.props;
 ---
 
 <svg
@@ -10,7 +14,7 @@ const { class: className, ...rest } = Astro.props;
   stroke-linecap="round"
   stroke-linejoin="round"
   xmlns="http://www.w3.org/2000/svg"
-  aria-label="Color scheme"
+  aria-label={ariaLabel}
   role="img"
   class:list={className}
   {...rest}
