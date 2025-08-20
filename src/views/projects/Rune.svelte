@@ -12,7 +12,6 @@
   const leaveDur = 0.45;
 
   let disp!: SVGFEDisplacementMapElement;
-  let turb!: SVGFETurbulenceElement;
 
   let wobbleTL: gsap.core.Tween | null = null;
   let enterTween: gsap.core.Tween | null = null;
@@ -130,7 +129,6 @@
       color-interpolation-filters="sRGB"
     >
       <feTurbulence
-        bind:this={turb}
         type="fractalNoise"
         baseFrequency="0.12 0.12"
         numOctaves="3"
@@ -188,5 +186,11 @@
   }
   .rune.eihwaz .letters path:not(.letter-eihwaz) {
     display: none;
+  }
+
+  @media screen and (max-width: 720px) {
+    .rune {
+      display: none;
+    }
   }
 </style>

@@ -236,7 +236,7 @@
     }
   }
 
-  @media (prefers-color-scheme: dark) {
+  :root[data-theme="dark"] {
     .keys .key {
       --text-mix: 85%;
       --bg-mix: 90%;

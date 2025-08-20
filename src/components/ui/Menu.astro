@@ -4,16 +4,28 @@ import IconMoon from "@components/icons/IconMoon.astro";
 import IconVolume from "@components/icons/IconVolume.astro";
 import IconHome from "@components/icons/IconHome.astro";
 import IconSun from "@components/icons/IconSun.astro";
+
+// Homepage
+const currentUrl = Astro.url.toString().replace(/\/$/, "");
+const urlBase = Astro.url.origin;
+const isHomepage = currentUrl === urlBase;
+const homepageLinkTitle = isHomepage
+  ? "You are already home :)"
+  : "Go to homepage";
+const homepageLinkHref = isHomepage ? null : "/";
 ---
 
 <style>
-  nav[aria-label="Site settings"] {
+  nav {
     --btn-size: 2.25em;
     --svg-size: 1.25em;
     --pad: 0.25em;
     --tray-gap: 0.25em;
     --n-elements: 3; /** in tray, no menu button */
-    --tray-size: calc(var(--n-elements) * var(--btn-size) + var(--tray-gap));
+    --tray-size: calc(
+      var(--btn-size) * var(--n-elements) + var(--tray-gap) *
+        (var(--n-elements) - 1)
+    );
     position: fixed;
     top: 2em;
     right: 2em;
@@ -26,7 +38,7 @@ import IconSun from "@components/icons/IconSun.astro";
     overflow: hidden;
   }
 
-  nav[aria-label="Site settings"]::before {
+  nav::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -35,7 +47,13 @@ import IconSun from "@components/icons/IconSun.astro";
     clip-path: inset(0 round 999px);
     -webkit-mask-image: radial-gradient(#000 98%, transparent 100%);
 
-    background: color-mix(in oklab, var(--bg-color, white) 65%, transparent);
+    /* background-color: color-mix(in oklab, var(--bg-color) 65%, transparent); */
+    background-color: color-mix(
+      in oklab,
+      rgba(var(--bg-raw), 0.5) 95%,
+      rgba(var(--text-raw), 0.75)
+    );
+
     -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
 
@@ -80,11 +98,17 @@ import IconSun from "@components/icons/IconSun.astro";
   }
 
   details::details-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--tray-gap);
+
     opacity: 0;
     width: 0;
+
     transition:
-      opacity 0.5s ease,
-      width 0.5s ease;
+      opacity 0.25s ease,
+      width 0.15s ease;
   }
 
   details[open]::details-content {
@@ -112,7 +136,11 @@ import IconSun from "@components/icons/IconSun.astro";
     transition: background-color 0.5s ease;
   }
 
-  li:not(:has(label[aria-disabled="true"])):hover {
+  li:has(> *[aria-disabled="true"]) {
+    pointer-events: none;
+  }
+
+  li:not([data-home="true"]):hover {
     background-color: color-mix(in oklab, var(--text-color) 10%, transparent);
   }
 
@@ -128,7 +156,7 @@ import IconSun from "@components/icons/IconSun.astro";
   input[type="checkbox"] {
     position: absolute;
     border-radius: 50%;
-    inset: 0;
+    inset: 2px;
     appearance: none;
     cursor: pointer;
   }
@@ -139,56 +167,62 @@ import IconSun from "@components/icons/IconSun.astro";
     gap: var(--svg-size);
     padding: 0.5em 0;
     transform: translateY(0);
+  }
+
+  .transition-color-scheme {
     transition: transform 0.5s cubic-bezier(0.4, -0.1, 0.55, 1.17);
   }
 
-  @media (prefers-color-scheme: dark) {
-    nav[aria-label="Site settings"]::before {
-      background: rgba(var(--bg-raw), 0.5);
-      /* box-shadow: none; */
-    }
+  :root[data-theme="dark"] .color-scheme {
+    transform: translateY(calc(var(--svg-size) * -2));
+  }
 
-    .color-scheme {
-      transform: translateY(calc(var(--svg-size) * -2));
+  @media screen and (max-width: 1200px) {
+    nav {
+      top: 1em;
+      right: 1em;
+    }
+  }
+
+  @media screen and (max-width: 770px) {
+    nav {
+      display: none;
     }
   }
 </style>
 
 <script>
-  const isHomepage =
-    document.location.href.replace(/\/$/, "") === document.location.origin;
-  const homepageLink = document.getElementById(
-    "homepage-link",
-  ) as HTMLAnchorElement;
-  if (!isHomepage && homepageLink) {
-    homepageLink.title = "Go to homepage";
-    homepageLink.href = "/";
-  }
+  // Theme
+  import { init } from "@utils/theme";
+  const theme = init();
+  document.documentElement.dataset.theme = theme.initialValue.colorScheme;
+  theme.subscribe((p) => (document.documentElement.dataset.theme = p));
 
-  const themeToggle = document.getElementById(
-    "theme-toggle",
-  ) as HTMLInputElement;
-  if (themeToggle) {
-    themeToggle.defaultChecked = true;
-    document.documentElement.dataset.theme = "dark";
-    const onToggle = (e: Event) => {
+  (() => {
+    const toggle = document.getElementById("theme-toggle") as HTMLInputElement;
+    if (!toggle) return;
+    toggle.checked = theme.initialValue.colorScheme === "dark";
+    theme.subscribe((p) => (toggle.checked = p === "dark"));
+
+    const icons = document.querySelector(".color-scheme");
+    const cls = "transition-color-scheme";
+    toggle.addEventListener("change", (e) => {
       if (!e.target) return;
-      const theme = (e.target as HTMLInputElement).checked ? "dark" : "light";
-      document.documentElement.dataset.theme = theme;
-    };
-    themeToggle.addEventListener("change", onToggle);
-  }
+      theme.toggle();
+      if (!icons?.classList.contains(cls)) icons?.classList.add(cls);
+    });
+  })();
 </script>
 
 <nav aria-label="Site settings">
   <details open>
-    <summary aria-label="Open settings">
+    <summary aria-label="Open settings" aria-controls="settings-tray">
       <IconMenu />
     </summary>
 
-    <ul>
-      <li>
-        <a id="homepage-link" title="You are already home :)">
+    <ul id="settings-tray">
+      <li data-home={isHomepage}>
+        <a id="homepage-link" title={homepageLinkTitle} href={homepageLinkHref}>
           <IconHome />
         </a>
       </li>
@@ -201,13 +235,13 @@ import IconSun from "@components/icons/IconSun.astro";
           </span>
         </label>
       </li>
-      <li>
+      <li inert>
         <label
           for="audio-toggle"
           title="Audio coming soon"
           aria-disabled="true"
         >
-          <input id="audio-toggle" type="checkbox" name="audio" disabled />
+          <input id="audio-toggle" type="checkbox" name="audio" />
           <IconVolume />
         </label>
       </li>

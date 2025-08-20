@@ -2,11 +2,12 @@
 import BaseHead from "@components/ui/BaseHead.astro";
 import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
 import LightsaberExclamation from "./LightsaberExclamation.astro";
+import Menu from "@components/ui/Menu.astro";
 
 const { title, description } = Astro.props;
 ---
 
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <BaseHead title={title} description={description} />
     <link
@@ -114,6 +115,7 @@ const { title, description } = Astro.props;
   </head>
 
   <body>
+    <Menu />
     <div class="background gradient-mask force-gpu">
       <svg
         aria-hidden="true"
