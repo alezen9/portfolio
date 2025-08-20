@@ -30,12 +30,15 @@ const homepageLinkHref = isHomepage ? null : "/";
     top: 2em;
     right: 2em;
     display: flex;
+    flex-direction: row-reverse;
     align-items: center;
     color: color-mix(in oklab, var(--text-color) 75%, transparent);
     border-radius: 999px;
     z-index: 10;
     padding: var(--pad);
     overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   nav::before {
@@ -68,16 +71,12 @@ const homepageLinkHref = isHomepage ? null : "/";
     transform: translateZ(0);
   }
 
-  nav details {
-    display: flex;
-    flex-direction: row-reverse;
-    align-items: center;
+  details {
+    display: contents;
   }
 
   summary {
     list-style: none;
-    -webkit-user-select: none;
-    user-select: none;
     cursor: pointer;
     display: grid;
     place-items: center;
@@ -98,11 +97,6 @@ const homepageLinkHref = isHomepage ? null : "/";
   }
 
   details::details-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--tray-gap);
-
     opacity: 0;
     width: 0;
 
@@ -235,16 +229,14 @@ const homepageLinkHref = isHomepage ? null : "/";
           </span>
         </label>
       </li>
-      <li inert>
-        <label
-          for="audio-toggle"
-          title="Audio coming soon"
-          aria-disabled="true"
-        >
-          <input id="audio-toggle" type="checkbox" name="audio" />
-          <IconVolume />
-        </label>
-      </li>
+      <span title="Toggle sound (coming soon)">
+        <li inert>
+          <label for="audio-toggle" aria-disabled="true">
+            <input id="audio-toggle" type="checkbox" name="audio" />
+            <IconVolume />
+          </label>
+        </li>
+      </span>
     </ul>
   </details>
 </nav>
