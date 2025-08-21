@@ -30,69 +30,67 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
 </style>
 
 <ProjectSlide class="revo-realms">
-  <Fragment slot="hero">
-    <header>
-      <h2 class="title">Revo Realms</h2>
-      <p class="tags">
-        <span class="tag">Three.js</span>
-        <span class="tag">TypeScript</span>
-        <span class="tag">WebGPU</span>
-        <span class="tag metric">&lt; 20 draw calls</span>
-        <span class="tag metric">&lt; 8.5ms per frame</span>
-        <span class="tag metric">&gt; 250k foliage instances</span>
-      </p>
-      <p class="description">
-        Born as a 3D open-world portfolio, it grew into a sandbox for
-        experimenting with <code>TSL</code> (Three.js Shading Language), physics
-        and advanced graphics programming and optimization techniques. Built with
-        <code>Three.js</code>, <code>WebGPU</code> and <code>TypeScript</code>,
-        it combines interactive terrain, procedural vegetation, water, fire, and
-        spatial audio, with subtle references to the worlds and stories I love.
-      </p>
-      <ul class="highlights">
-        <li>
-          <span class="highlight">Built</span> a compute-driven foliage pipeline:
-          per-instance soft culling, animation, interaction, and dynamic effects,
-          no CPU round trips, entirely on the GPU.
-        </li>
-        <li>
-          <span class="highlight">Optimized</span> third-party models in <code
-            >Blender</code
-          > via polycount reduction, hidden-geometry removal, and custom texture
-          atlases.
-        </li>
-        <li>
-          <span class="highlight">Created</span> a fire system using a similar compute
-          pipeline to foliage, handling transforms and lifetime fully in a GPU compute
-          shader with pooled particles and custom color blending to convey both heat
-          and depth.
-        </li>
-      </ul>
-    </header>
-    <footer class="links">
-      <a
-        class="icon-link"
-        aria-label="Revo Realms GitHub repo"
-        rel="noopener"
-        href="https://github.com/alezen9/revo-realms"
-        target="_blank"
-      >
-        <IconGitHub class:list={["animate", "icon-github"]} />
-      </a>
-      <a
-        class="icon-link"
-        aria-label="Revo Realms live demo"
-        rel="noopener"
-        href="https://alezen9.github.io/revo-realms/"
-        target="_blank"
-      >
-        <IconExternalLink class:list={["animate", "icon-demo"]} />
-      </a>
-    </footer>
+  <Fragment slot="title">Revo Realms</Fragment>
+  <Fragment slot="description">
+    Born as a 3D open-world portfolio, it grew into a sandbox for experimenting
+    with <code>TSL</code> (Three.js Shading Language), physics and advanced graphics
+    programming and optimization techniques. Built with
+    <code>Three.js</code>, <code>WebGPU</code> and <code>TypeScript</code>, it
+    combines interactive terrain, procedural vegetation, water, fire, and
+    spatial audio, with subtle references to the worlds and stories I love.
   </Fragment>
+  <Fragment slot="tags">
+    <span class="tag">Three.js</span>
+    <span class="tag">TypeScript</span>
+    <span class="tag">WebGPU</span>
+    <span class="tag metric">&lt; 20 draw calls</span>
+    <span class="tag metric">&lt; 8.5ms per frame</span>
+    <span class="tag metric">&gt; 250k foliage instances</span>
+  </Fragment>
+  <Fragment slot="highlights">
+    <li>
+      <span class="highlight">Built</span> a compute-driven foliage pipeline: per-instance
+      soft culling, animation, interaction, and dynamic effects, no CPU round trips,
+      entirely on the GPU.
+    </li>
+    <li>
+      <span class="highlight">Optimized</span> third-party models in <code
+        >Blender</code
+      > via polycount reduction, hidden-geometry removal, and custom texture atlases.
+    </li>
+    <li>
+      <span class="highlight">Created</span> a fire system using a similar compute
+      pipeline to foliage, handling transforms and lifetime fully in a GPU compute
+      shader with pooled particles and custom color blending to convey both heat
+      and depth.
+    </li>
+  </Fragment>
+  <Fragment slot="footer">
+    <a
+      title="Dig in the code on Github"
+      class="icon-link"
+      aria-label="Revo Realms GitHub repo"
+      rel="noopener"
+      href="https://github.com/alezen9/revo-realms"
+      target="_blank"
+    >
+      <IconGitHub class:list={["animate", "icon-github"]} />
+    </a>
+    <a
+      title="Check it live"
+      class="icon-link"
+      aria-label="Revo Realms live demo"
+      rel="noopener"
+      href="https://revo-realms.aleksandargjoreski.dev/"
+      target="_blank"
+    >
+      <IconExternalLink class:list={["animate", "icon-demo"]} />
+    </a>
+  </Fragment>
+
   <Fragment slot="mosaic">
     <figure
-      class="tilt"
+      class="tilt main"
       style="grid-area: a;"
       title="A cozy resting place nearby some water"
     >

@@ -25,62 +25,60 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
 </style>
 
 <ProjectSlide class="cosmic-canvas">
-  <Fragment slot="hero">
-    <header>
-      <h2 class="title">Cosmic Canvas</h2>
-      <p class="tags">
-        <span class="tag">Three.js</span>
-        <span class="tag">R3F</span>
-        <span class="tag">Drei</span>
-        <span class="tag">WebGL</span>
-        <span class="tag metric">&lt; 3ms per frame</span>
-      </p>
-      <p class="description">
-        My first solo <code>Three.js</code> piece (via <code>R3F</code>): a
-        shader-driven study of Jupiter. One compact <code>GLSL</code>
-        material recreates the swirling bands—no textures, just procedural noise,
-        flow, and custom lighting tuned to remain smooth on low-end devices.
-      </p>
-      <ul class="highlights">
-        <li>
-          <span class="highlight">Implemented</span> a compact <code>GLSL</code>
-          material that layers animated noise to drive Jupiter's banding and storm
-          motion.
-        </li>
-        <li>
-          <span class="highlight">Added</span> rim (Fresnel) and specular highlights,
-          with a softened day-night terminator to sell curvature and depth.
-        </li>
-        <li>
-          <span class="highlight">Reused</span> early iterations of the planet shader
-          for four of Jupiter's largest moons, adapting them for surface detail,
-          and framed the scene with Drei's <code>&lt;Stars /&gt;</code> and <code
-            >&lt;Trail /&gt;</code
-          > components to make the satellites stand out.
-        </li>
-      </ul>
-    </header>
-    <footer class="links">
-      <a
-        class="icon-link"
-        aria-label="Cosmic Canvas GitHub repo"
-        rel="noopener"
-        href="https://github.com/alezen9/cosmic-canvas"
-        target="_blank"
-      >
-        <IconGitHub class:list={["animate", "icon-github"]} />
-      </a>
-      <a
-        class="icon-link"
-        aria-label="Cosmic Canvas live demo"
-        rel="noopener"
-        href="https://alezen9.github.io/cosmic-canvas/"
-        target="_blank"
-      >
-        <IconExternalLink class:list={["animate", "icon-demo"]} />
-      </a>
-    </footer>
+  <Fragment slot="title">Cosmic Canvas</Fragment>
+  <Fragment slot="description">
+    My first solo <code>Three.js</code> piece (via <code>R3F</code>): a
+    shader-driven study of Jupiter. One compact <code>GLSL</code>
+    material recreates the swirling bands—no textures, just procedural noise, flow,
+    and custom lighting tuned to remain smooth on low-end devices.
   </Fragment>
+  <Fragment slot="tags">
+    <span class="tag">Three.js</span>
+    <span class="tag">R3F</span>
+    <span class="tag">Drei</span>
+    <span class="tag">WebGL</span>
+    <span class="tag metric">&lt; 3ms per frame</span>
+  </Fragment>
+  <Fragment slot="highlights">
+    <li>
+      <span class="highlight">Implemented</span> a compact <code>GLSL</code>
+      material that layers animated noise to drive Jupiter's banding and storm motion.
+    </li>
+    <li>
+      <span class="highlight">Added</span> rim (Fresnel) and specular highlights,
+      with a softened day-night terminator to sell curvature and depth.
+    </li>
+    <li>
+      <span class="highlight">Reused</span> early iterations of the planet shader
+      for four of Jupiter's largest moons, adapting them for surface detail, and
+      framed the scene with Drei's <code>&lt;Stars /&gt;</code> and <code
+        >&lt;Trail /&gt;</code
+      > components to make the satellites stand out.
+    </li>
+  </Fragment>
+  <Fragment slot="footer">
+    <a
+      title="Dig in the code on Github"
+      class="icon-link"
+      aria-label="Cosmic Canvas GitHub repo"
+      rel="noopener"
+      href="https://github.com/alezen9/cosmic-canvas"
+      target="_blank"
+    >
+      <IconGitHub class:list={["animate", "icon-github"]} />
+    </a>
+    <a
+      title="Check it live"
+      class="icon-link"
+      aria-label="Cosmic Canvas live demo"
+      rel="noopener"
+      href="https://cosmic-canvas.aleksandargjoreski.dev/"
+      target="_blank"
+    >
+      <IconExternalLink class:list={["animate", "icon-demo"]} />
+    </a>
+  </Fragment>
+
   <Fragment slot="mosaic">
     <figure class="tilt" style="grid-area: a;" title="Europa satellite">
       <img
@@ -90,7 +88,7 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
         decoding="async"
       />
     </figure>
-    <figure class="tilt" style="grid-area: b;" title="Great red spot">
+    <figure class="tilt main" style="grid-area: b;" title="Great red spot">
       <img
         src="/projects/cosmic-canvas/b.webp"
         alt="Cosmic Canvas - Great red spot"

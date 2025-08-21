@@ -32,68 +32,66 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
 </style>
 
 <ProjectSlide class="unshaken">
-  <Fragment slot="hero">
-    <header>
-      <h2 class="title">Unshaken</h2>
-      <p class="tags">
-        <span class="tag">Three.js</span>
-        <span class="tag">R3F</span>
-        <span class="tag">Drei</span>
-        <span class="tag">Blender</span>
-      </p>
-      <p class="description">
-        A low-poly homage to one of the most unforgettable video game
-        experiences ever made:
-        <em>Red Dead Redemption II</em>. Modeled and baked in <code
-          >Blender</code
-        >, brought to life with <code>Three.js</code> (via
-        <code>R3F</code>), it depicts Arthur Morgan riding his horse down a hill
-        beneath the warm colors of dawn.
-      </p>
-      <ul class="highlights">
-        <li>
-          <span class="highlight"> Modeled </span> an entire stylized low-poly scene
-          in <code>Blender</code>: from terrain, vegetation, and rocks to
-          characters (Arthur and horse), with manual UV unwrapping and baking
-          everything in a single 4K texture atlas.
-        </li>
-        <li>
-          <span class="highlight">Lit</span> the scene with the Drei's <code
-            >&ltSky /&gt</code
-          >
-          component, matching <code>Blender</code>'s Nishita Sky dawn lighting.
-        </li>
-        <li>
-          <span class="highlight">Added</span> an RDR2-inspired cinematic mode: disabling
-          orbit controls, animating letterbox bars, and rotating the scene set to
-          western ambient music for a cutscene-like experience.
-        </li>
-      </ul>
-    </header>
-    <footer class="links">
-      <a
-        class="icon-link"
-        aria-label="Unshaken GitHub repo"
-        rel="noopener"
-        href="https://github.com/alezen9/unshaken"
-        target="_blank"
-      >
-        <IconGitHub class:list={["animate", "icon-github"]} />
-      </a>
-      <a
-        class="icon-link"
-        aria-label="Unshaken live demo"
-        rel="noopener"
-        href="https://alezen9.github.io/unshaken/"
-        target="_blank"
-      >
-        <IconExternalLink class:list={["animate", "icon-demo"]} />
-      </a>
-    </footer>
+  <Fragment slot="title">Unshaken</Fragment>
+  <Fragment slot="description">
+    A low-poly homage to one of the most unforgettable video game experiences
+    ever made:
+    <em>Red Dead Redemption II</em>. Modeled and baked in <code>Blender</code>,
+    brought to life with <code>Three.js</code> (via
+    <code>R3F</code>), it depicts Arthur Morgan riding his horse down a hill
+    beneath the warm colors of dawn.
   </Fragment>
+  <Fragment slot="tags">
+    <span class="tag">Three.js</span>
+    <span class="tag">R3F</span>
+    <span class="tag">Drei</span>
+    <span class="tag">Blender</span>
+  </Fragment>
+  <Fragment slot="highlights">
+    <li>
+      <span class="highlight"> Modeled </span> an entire stylized low-poly scene
+      in <code>Blender</code>: from terrain, vegetation, and rocks to characters
+      (Arthur and horse), with manual UV unwrapping and baking everything in a
+      single 4K texture atlas.
+    </li>
+    <li>
+      <span class="highlight">Lit</span> the scene with the Drei's <code
+        >&ltSky /&gt</code
+      >
+      component, matching <code>Blender</code>'s Nishita Sky dawn lighting.
+    </li>
+    <li>
+      <span class="highlight">Added</span> an RDR2-inspired cinematic mode: disabling
+      orbit controls, animating letterbox bars, and rotating the scene set to western
+      ambient music for a cutscene-like experience.
+    </li>
+  </Fragment>
+  <Fragment slot="footer">
+    <a
+      title="Dig in the code on Github"
+      class="icon-link"
+      aria-label="Unshaken GitHub repo"
+      rel="noopener"
+      href="https://github.com/alezen9/unshaken"
+      target="_blank"
+    >
+      <IconGitHub class:list={["animate", "icon-github"]} />
+    </a>
+    <a
+      title="Check it live"
+      class="icon-link"
+      aria-label="Unshaken live demo"
+      rel="noopener"
+      href="https://unshaken.aleksandargjoreski.dev/"
+      target="_blank"
+    >
+      <IconExternalLink class:list={["animate", "icon-demo"]} />
+    </a>
+  </Fragment>
+
   <Fragment slot="mosaic">
     <figure
-      class="tilt"
+      class="tilt main"
       style="grid-area: a;"
       title="May I stand unshaken amidst a crashing world"
     >

@@ -236,31 +236,27 @@ const { class: className, ...rest } = Astro.props;
 
   @media screen and (max-width: 720px) {
     .project .mosaic {
-      grid-template: "a" / 1fr;
+      display: flex;
       height: 20vh;
     }
 
-    .project .mosaic::after {
-      position: absolute;
-      content: "";
-      inset: calc(var(--padding) * -1);
-      background: linear-gradient(
-        to bottom,
-        var(--background-color),
-        transparent 45%
-      );
-    }
-
-    .project .mosaic figure:not(:first-of-type) {
+    .project .mosaic figure:not(.main) {
       display: none;
     }
-    .project .mosaic figure:first-of-type {
+    .project .mosaic figure.main {
       position: absolute;
       inset: calc(var(--padding) * -1);
       bottom: 0;
+      border-radius: 0;
+      pointer-events: none;
       width: calc(100% + var(--padding) * 2);
       height: calc(100% + var(--padding));
     }
+
+    .tilt {
+      all: unset;
+    }
+
     .project .mosaic img {
       object-position: center;
     }
@@ -279,7 +275,23 @@ const { class: className, ...rest } = Astro.props;
 <li class="slide" {...rest}>
   <article class:list={["content", "project", className]}>
     <div class="hero">
-      <slot name="hero" />
+      <header>
+        <h2 class="title">
+          <slot name="title" />
+        </h2>
+        <p class="tags">
+          <slot name="tags" />
+        </p>
+        <p class="description">
+          <slot name="description" />
+        </p>
+        <ul class="highlights">
+          <slot name="highlights" />
+        </ul>
+      </header>
+      <footer class="links">
+        <slot name="footer" />
+      </footer>
     </div>
     <div class="mosaic">
       <slot name="mosaic" />
