@@ -1,0 +1,5 @@
+@property --text-accent {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}

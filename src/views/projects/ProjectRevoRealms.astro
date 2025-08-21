@@ -1,0 +1,133 @@
+---
+import IconGitHub from "@components/icons/IconGitHub.astro";
+import ProjectSlide from "./project-slide.astro";
+import Rune from "./Rune.svelte";
+import IconExternalLink from "@components/icons/IconExternalLink.astro";
+---
+
+<style is:global>
+  .revo-realms {
+    --text-accent: rgb(143, 116, 87);
+  }
+  .revo-realms .mosaic {
+    grid-template-areas:
+      ". d d b b"
+      "c c r b b"
+      "c c a a a"
+      "c c a a a"
+      "w w a a a";
+  }
+
+  .revo-realms .mosaic img {
+    object-position: top;
+    filter: brightness(1.5);
+  }
+
+  .raido {
+    grid-area: r;
+    color: var(--text-accent);
+  }
+</style>
+
+<ProjectSlide class="revo-realms">
+  <Fragment slot="hero">
+    <header>
+      <h2 class="title">Revo Realms</h2>
+      <p class="tags">
+        <span class="tag">Three.js</span>
+        <span class="tag">TypeScript</span>
+        <span class="tag">WebGPU</span>
+        <span class="tag metric">&lt; 20 draw calls</span>
+        <span class="tag metric">&lt; 8.5ms per frame</span>
+        <span class="tag metric">&gt; 250k foliage instances</span>
+      </p>
+      <p class="description">
+        Born as a 3D open-world portfolio, it grew into a sandbox for
+        experimenting with <code>TSL</code> (Three.js Shading Language), physics
+        and advanced graphics programming and optimization techniques. Built with
+        <code>Three.js</code>, <code>WebGPU</code> and <code>TypeScript</code>,
+        it combines interactive terrain, procedural vegetation, water, fire, and
+        spatial audio, with subtle references to the worlds and stories I love.
+      </p>
+      <ul class="highlights">
+        <li>
+          <span class="highlight">Built</span> a compute-driven foliage pipeline:
+          per-instance soft culling, animation, interaction, and dynamic effects,
+          no CPU round trips, entirely on the GPU.
+        </li>
+        <li>
+          <span class="highlight">Optimized</span> third-party models in <code
+            >Blender</code
+          > via polycount reduction, hidden-geometry removal, and custom texture
+          atlases.
+        </li>
+        <li>
+          <span class="highlight">Created</span> a fire system using a similar compute
+          pipeline to foliage, handling transforms and lifetime fully in a GPU compute
+          shader with pooled particles and custom color blending to convey both heat
+          and depth.
+        </li>
+      </ul>
+    </header>
+    <footer class="links">
+      <a
+        class="icon-link"
+        aria-label="Revo Realms GitHub repo"
+        rel="noopener"
+        href="https://github.com/alezen9/revo-realms"
+        target="_blank"
+      >
+        <IconGitHub class:list={["animate", "icon-github"]} />
+      </a>
+      <a
+        class="icon-link"
+        aria-label="Revo Realms live demo"
+        rel="noopener"
+        href="https://alezen9.github.io/revo-realms/"
+        target="_blank"
+      >
+        <IconExternalLink class:list={["animate", "icon-demo"]} />
+      </a>
+    </footer>
+  </Fragment>
+  <Fragment slot="mosaic">
+    <figure class="tilt" style="grid-area: a;">
+      <img
+        src="/projects/revo-realms/a.webp"
+        alt="Revo Realms - Lake"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure class="tilt" style="grid-area: b;">
+      <img
+        src="/projects/revo-realms/b.webp"
+        alt="Revo Realms - Leviathan Axe and Fire"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure class="tilt" style="grid-area: c;">
+      <img
+        src="/projects/revo-realms/c.webp"
+        alt="Revo Realms - Vegetation and Dragon Ball"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure class="tilt" style="grid-area: d;">
+      <img
+        src="/projects/revo-realms/d.webp"
+        alt="Revo Realms - JoJo and One Piece"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <Rune client:load className="raido" />
+    <p class="caption">
+      <span class="name">Raido</span>
+      <span>A journey in motion</span>
+      <span>A collision of worlds</span>
+    </p>
+  </Fragment>
+</ProjectSlide>

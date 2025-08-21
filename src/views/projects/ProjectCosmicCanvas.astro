@@ -1,0 +1,116 @@
+---
+import IconGitHub from "@components/icons/IconGitHub.astro";
+import ProjectSlide from "./project-slide.astro";
+import Rune from "./Rune.svelte";
+import IconExternalLink from "@components/icons/IconExternalLink.astro";
+---
+
+<style is:global>
+  .cosmic-canvas {
+    --text-accent: rgb(205, 156, 7);
+  }
+  .cosmic-canvas .mosaic {
+    grid-template-areas:
+      "r r c c c"
+      "b b c c c"
+      "b b a a a"
+      "b b a a a"
+      "w w a a a";
+  }
+
+  .tiwaz {
+    grid-area: r;
+    color: var(--text-accent);
+  }
+</style>
+
+<ProjectSlide class="cosmic-canvas">
+  <Fragment slot="hero">
+    <header>
+      <h2 class="title">Cosmic Canvas</h2>
+      <p class="tags">
+        <span class="tag">Three.js</span>
+        <span class="tag">R3F</span>
+        <span class="tag">Drei</span>
+        <span class="tag">WebGL</span>
+        <span class="tag metric">&lt; 3ms per frame</span>
+      </p>
+      <p class="description">
+        My first solo <code>Three.js</code> piece (via <code>R3F</code>): a
+        shader-driven study of Jupiter. One compact <code>GLSL</code>
+        material recreates the swirling bands—no textures, just procedural noise,
+        flow, and custom lighting tuned to remain smooth on low-end devices.
+      </p>
+      <ul class="highlights">
+        <li>
+          <span class="highlight">Implemented</span> a compact <code>GLSL</code>
+          material that layers animated noise to drive Jupiter's banding and storm
+          motion.
+        </li>
+        <li>
+          <span class="highlight">Added</span> rim (Fresnel) and specular highlights,
+          with a softened day-night terminator to sell curvature and depth.
+        </li>
+        <li>
+          <span class="highlight">Reused</span> early iterations of the planet shader
+          for four of Jupiter's largest moons, adapting them for surface detail,
+          and framed the scene with Drei's <code>&lt;Stars /&gt;</code> and <code
+            >&lt;Trail /&gt;</code
+          > components to make the satellites stand out.
+        </li>
+      </ul>
+    </header>
+    <footer class="links">
+      <a
+        class="icon-link"
+        aria-label="Cosmic Canvas GitHub repo"
+        rel="noopener"
+        href="https://github.com/alezen9/cosmic-canvas"
+        target="_blank"
+      >
+        <IconGitHub class:list={["animate", "icon-github"]} />
+      </a>
+      <a
+        class="icon-link"
+        aria-label="Cosmic Canvas live demo"
+        rel="noopener"
+        href="https://alezen9.github.io/cosmic-canvas/"
+        target="_blank"
+      >
+        <IconExternalLink class:list={["animate", "icon-demo"]} />
+      </a>
+    </footer>
+  </Fragment>
+  <Fragment slot="mosaic">
+    <figure class="tilt" style="grid-area: a;">
+      <img
+        src="/projects/cosmic-canvas/a.webp"
+        alt="Cosmic Canvas - Front view"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure class="tilt" style="grid-area: b;">
+      <img
+        src="/projects/cosmic-canvas/b.webp"
+        alt="Cosmic Canvas - Half shade view"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure class="tilt" style="grid-area: c;">
+      <img
+        src="/projects/cosmic-canvas/c.webp"
+        alt="Cosmic Canvas - Jupiter and Io"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <Rune client:load className="tiwaz" />
+    <p class="caption">
+      <span class="name">Tiwaz</span>
+      <span>Sky father's mark </span>
+      <span>Noise shaping the frame</span>
+    </p>
+  </Fragment>
+</ProjectSlide>

@@ -1,0 +1,288 @@
+---
+const { class: className, ...rest } = Astro.props;
+---
+
+<style is:global>
+  .project {
+    --border-radius: 0.25em;
+    --padding: 2em;
+    display: grid;
+    grid-template-areas: "hero mosaic";
+    grid-template-columns: 1fr 1fr;
+    padding: var(--padding);
+    gap: 2em;
+    max-width: min(2048px, 100dvw);
+    margin: auto;
+  }
+
+  .project .mosaic {
+    position: relative;
+    display: grid;
+    box-sizing: border-box;
+    grid-area: mosaic;
+    min-height: 0;
+    min-width: 0;
+    gap: 0.25em;
+    padding: 5.5em 0 0 0;
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    perspective: 4000px;
+  }
+
+  .project .mosaic figure {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow:
+      1px 1px 1px rgba(0, 0, 0, 0.03),
+      2px 2px 4px rgba(0, 0, 0, 0.06),
+      5px 5px 9px rgba(0, 0, 0, 0.09),
+      10px 10px 15px rgba(0, 0, 0, 0.12),
+      15px 15px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .project .mosaic img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .project .hero {
+    grid-area: hero;
+    background-color: var(--background-color);
+    height: 100%;
+    overflow: hidden;
+    max-width: max(500px, 100%);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1em;
+    padding-right: 5em;
+  }
+
+  .project .hero .title {
+    font-size: var(--step-5);
+    font-weight: 600;
+    line-height: 1.15;
+    margin: 0;
+    color: var(--text-accent);
+    margin-bottom: 0.5em;
+  }
+
+  .project .hero p,
+  .project .hero ul {
+    font-size: 0.9em;
+    text-align: justify;
+    max-width: 100%;
+  }
+
+  .project .hero ul {
+    position: relative;
+    margin-top: 2em;
+    list-style-type: square;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  .project .hero ul li {
+    position: relative;
+  }
+
+  .project .hero ul li::before {
+    --bg: color-mix(in srgb, var(--text-accent) 10%, var(--background-color));
+    position: absolute;
+    content: "";
+    inset: -0.25em -1em;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--bg) 7.5%,
+      transparent 75%
+    );
+    z-index: -1;
+  }
+
+  .project .hero h3 {
+    font-size: 1em;
+  }
+
+  .project .hero .links {
+    display: flex;
+    gap: 1em;
+    align-items: end;
+  }
+
+  .project .icon-github {
+    width: 1.75em;
+  }
+
+  .project .icon-demo {
+    width: 1.5em;
+  }
+
+  .project .highlight {
+    filter: grayscale(0.25) saturate(3);
+  }
+
+  .project .hero .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+  }
+
+  .project .tag {
+    --color: var(--text-accent);
+    --percentage: 40%;
+    position: relative;
+    overflow: hidden;
+    background-color: color-mix(
+      in oklab,
+      var(--color) var(--percentage),
+      transparent
+    );
+    padding-inline: 0.5em;
+    border-radius: var(--border-radius);
+  }
+  .project .metric::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    backdrop-filter: hue-rotate(180deg);
+  }
+
+  .project .mosaic .caption {
+    grid-area: w;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: transparent;
+    transition: color 0.5s ease;
+    text-align: center;
+    padding: 0.5em;
+    font-family: "Berserker-Regular";
+    font-size: 0.85em;
+  }
+
+  .project .mosaic .caption .name {
+    position: relative;
+    font-weight: bolder;
+    text-transform: uppercase;
+    margin-bottom: 0.5lh;
+  }
+
+  .project .mosaic .caption .name::after {
+    position: absolute;
+    content: "•";
+    left: 50%;
+    bottom: -0.75lh;
+    transform: translateX(-50%);
+    font-weight: bolder;
+    text-transform: uppercase;
+  }
+
+  .project .mosaic:has(.rune:hover) .caption {
+    color: var(--text-accent);
+    border-color: var(--text-accent);
+  }
+
+  .project .mosaic .rune {
+    color: var(--text-accent);
+    grid-area: r;
+  }
+
+  @media (orientation: portrait) {
+    .project {
+      grid-template-areas: "mosaic" "hero";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      gap: 2em;
+    }
+
+    .project .hero {
+      min-height: 0;
+      min-width: 0;
+      height: 100%;
+      width: 100%;
+      padding: 0;
+    }
+
+    .project .hero .title {
+      font-size: 2.25em;
+    }
+
+    .project .hero .description {
+      max-width: 100%;
+    }
+
+    .project .mosaic {
+      height: 40vh;
+      padding-top: 0;
+    }
+  }
+
+  @media screen and (max-width: 1200px) {
+    .project .hero .title {
+      font-size: 2.25em;
+    }
+  }
+
+  @media screen and (max-width: 720px) {
+    .project .mosaic {
+      grid-template: "a" / 1fr;
+      height: 20vh;
+    }
+
+    .project .mosaic::after {
+      position: absolute;
+      content: "";
+      inset: calc(var(--padding) * -1);
+      background: linear-gradient(
+        to bottom,
+        var(--background-color),
+        transparent 45%
+      );
+    }
+
+    .project .mosaic figure:not(:first-of-type) {
+      display: none;
+    }
+    .project .mosaic figure:first-of-type {
+      position: absolute;
+      inset: calc(var(--padding) * -1);
+      bottom: 0;
+      width: calc(100% + var(--padding) * 2);
+      height: calc(100% + var(--padding));
+    }
+    .project .mosaic img {
+      object-position: center;
+    }
+  }
+
+  @media screen and (max-width: 430px) {
+    .project .mosaic {
+      height: 30vh;
+    }
+    .project .hero .highlights {
+      display: none;
+    }
+  }
+</style>
+
+<li class="slide" {...rest}>
+  <article class:list={["content", "project", className]}>
+    <div class="hero">
+      <slot name="hero" />
+    </div>
+    <div class="mosaic">
+      <slot name="mosaic" />
+    </div>
+  </article>
+</li>
