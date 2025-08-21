@@ -288,7 +288,6 @@ ul {
   color-scheme: dark;
   --bg-raw: var(--bg-dark);
   --text-raw: var(--text-light);
-  color-scheme: dark;
 
   & .highlight {
     color: color-mix(in srgb, var(--text-accent) 30%, var(--text-color));

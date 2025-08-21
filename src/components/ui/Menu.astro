@@ -21,7 +21,7 @@ const homepageLinkHref = isHomepage ? null : "/";
     --svg-size: 1.25em;
     --pad: 0.25em;
     --tray-gap: 0.25em;
-    --n-elements: 3; /** in tray, no menu button */
+    --n-elements: 2; /** in tray, no menu button */
     --tray-size: calc(
       var(--btn-size) * var(--n-elements) + var(--tray-gap) *
         (var(--n-elements) - 1)
@@ -229,14 +229,14 @@ const homepageLinkHref = isHomepage ? null : "/";
           </span>
         </label>
       </li>
-      <span title="Toggle sound (coming soon)">
+      <!-- <span title="Toggle sound (coming soon)">
         <li inert>
           <label for="audio-toggle" aria-disabled="true">
             <input id="audio-toggle" type="checkbox" name="audio" />
             <IconVolume />
           </label>
         </li>
-      </span>
+      </span> -->
     </ul>
   </details>
 </nav>
