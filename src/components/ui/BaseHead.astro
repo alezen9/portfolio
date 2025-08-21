@@ -8,7 +8,7 @@ export type Props = {
   imageSrc?: string;
 };
 
-const CF_TOKEN = "e13295d929f8494b9e774f33814e1ebe";
+const CF_TOKEN = import.meta.env.PUBLIC_CF_BEACON_TOKEN;
 const isProd = import.meta.env.PROD;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
@@ -17,12 +17,12 @@ const { title, description, imageSrc } = Astro.props;
 ---
 
 <!-- Cloudflare Web Analytics -->{
-  isProd && (
+  isProd && CF_TOKEN && (
     <script
       is:inline
       defer
       src="https://static.cloudflareinsights.com/beacon.min.js"
-      data-cf-beacon={`{"token": ${CF_TOKEN}}`}
+      data-cf-beacon={JSON.stringify({ token: CF_TOKEN })}
     />
   )
 }
