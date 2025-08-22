@@ -37,7 +37,6 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
     <span class="tag">R3F</span>
     <span class="tag">Drei</span>
     <span class="tag">WebGL</span>
-    <span class="tag metric">&lt; 3ms per frame</span>
   </Fragment>
   <Fragment slot="highlights">
     <li>
@@ -54,6 +53,12 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
       framed the scene with Drei's <code>&lt;Stars /&gt;</code> and <code
         >&lt;Trail /&gt;</code
       > components to make the satellites stand out.
+    </li>
+    <li class="performance">
+      <span class="highlight">Performance:</span>
+      ~2.5 ms per frame on a MacBook Pro M2 (120 FPS+, capped by display refresh
+      rate). Current use of per-satellite materials leaves easy wins (e.g., material
+      reuse) to reduce cost even further.
     </li>
   </Fragment>
   <Fragment slot="footer">

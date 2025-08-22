@@ -38,8 +38,6 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
     <span class="tag">R3F</span>
     <span class="tag">Blender</span>
     <span class="tag">WebGL</span>
-    <span class="tag metric">50k particles</span>
-    <span class="tag metric">&lt; 3.5ms per frame</span>
   </Fragment>
   <Fragment slot="highlights">
     <li>
@@ -60,6 +58,12 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
       <span class="highlight">Shaped</span> each particle procedurally in
       <code>GLSL</code> (circular → hexagonal) using masks, avoiding alpha textures
       entirely.
+    </li>
+    <li class="performance">
+      <span class="highlight">Performance:</span>
+      Maintains &lt; 3 ms per frame (120 FPS+, refresh-rate limited) on a MacBook
+      Pro M2, even with 50k particles and unoptimized geometry/materials, leaving
+      plenty of headroom for a richer environment or additional effects.
     </li>
   </Fragment>
   <Fragment slot="footer">

@@ -92,6 +92,7 @@ const { class: className, ...rest } = Astro.props;
 
   .project .hero ul li {
     position: relative;
+    z-index: 1;
   }
 
   .project .hero ul li::before {
@@ -266,6 +267,26 @@ const { class: className, ...rest } = Astro.props;
     .project .mosaic {
       height: 30vh;
     }
+
+    .project .hero .highlights {
+      padding-inline-start: 0;
+    }
+
+    .project .hero ul li::before {
+      background: linear-gradient(
+        to right,
+        transparent,
+        var(--bg) 37.5%,
+        transparent 100%
+      );
+    }
+
+    .project .hero .highlights li:not(.performance) {
+      display: none;
+    }
+  }
+
+  @media screen and (max-width: 385px) {
     .project .hero .highlights {
       display: none;
     }
