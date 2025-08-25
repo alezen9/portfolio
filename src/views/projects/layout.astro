@@ -7,7 +7,7 @@ import Menu from "@components/ui/Menu.astro";
   <head>
     <BaseHead
       title="AG | Personal Projects"
-      description="..."
+      description="A collection of projects I've worked on, from frontend engineering to experiments with Three.js, WebGL and WebGPU."
       imageSrc="/og-images/projects.jpg"
     />
     <link
@@ -19,14 +19,14 @@ import Menu from "@components/ui/Menu.astro";
     />
     <link
       rel="preload"
-      href="/gradient-mask.webp"
+      href="/utils/gradient-mask.webp"
       as="image"
       type="image/webp"
       crossorigin
     />
     <link
       rel="preload"
-      href="/god-of-war-mask.svg"
+      href="/utils/god-of-war-mask.svg"
       as="image"
       type="image/svg+xml"
     />
@@ -87,8 +87,8 @@ import Menu from "@components/ui/Menu.astro";
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        -webkit-mask-image: url(/god-of-war-mask.svg);
-        mask-image: url(/god-of-war-mask.svg);
+        -webkit-mask-image: url(/utils/god-of-war-mask.svg);
+        mask-image: url(/utils/god-of-war-mask.svg);
         mask-repeat: no-repeat;
         mask-position: 15%;
         mask-size: contain;
@@ -128,7 +128,7 @@ import Menu from "@components/ui/Menu.astro";
         position: absolute;
         inset: 0;
         pointer-events: none;
-        background: url(/god-of-war-mask.svg);
+        background: url(/utils/god-of-war-mask.svg);
         background-repeat: no-repeat;
         background-position: 80% center;
         background-size: auto 150vh;

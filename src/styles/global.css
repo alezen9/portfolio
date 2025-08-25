@@ -250,7 +250,7 @@ ul {
   --p-x: calc(var(--pointer-x, 0) * 1%);
   --p-y: calc(var(--pointer-y, 0) * 1%);
 
-  mask-image: url(/gradient-mask.webp);
+  mask-image: url(/utils/gradient-mask.webp);
   --size: var(--mask-size, 200px);
   mask-size: var(--size) var(--size);
   mask-repeat: no-repeat;

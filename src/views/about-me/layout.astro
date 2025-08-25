@@ -3,13 +3,15 @@ import BaseHead from "@components/ui/BaseHead.astro";
 import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
 import LightsaberExclamation from "./LightsaberExclamation.astro";
 import Menu from "@components/ui/Menu.astro";
-
-const { title, description } = Astro.props;
 ---
 
 <html lang="en" data-theme="dark">
   <head>
-    <BaseHead title={title} description={description} />
+    <BaseHead
+      title="AG | About Me"
+      description="I'm Aleksandar Gjoreski, a Frontend Engineer who moved from Node-rendered sites to React, Tailwind design systems and full-stack ownership, now diving deeper into 3D graphics. Here's how the journey is unfolding."
+      imageSrc="/og-images/about-me.jpg"
+    />
     <link
       rel="preload"
       href="/fonts/soloiststraight1.woff2"
@@ -19,7 +21,7 @@ const { title, description } = Astro.props;
     />
     <link
       rel="preload"
-      href="/gradient-mask.webp"
+      href="/utils/gradient-mask.webp"
       as="image"
       type="image/webp"
       crossorigin
