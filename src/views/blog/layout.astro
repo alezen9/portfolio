@@ -1,0 +1,35 @@
+---
+import BaseHead from "@components/ui/BaseHead.astro";
+import Menu from "@components/ui/Menu.astro";
+---
+
+<html lang="en" data-theme="dark">
+  <head>
+    <BaseHead title="AG | Blog" description="..." />
+    <style>
+      .wrapper {
+        --text-accent: rgb(45, 114, 98);
+        box-sizing: border-box;
+        width: 100%;
+        max-width: min(80ch, 90dvw);
+        min-height: 100dvh;
+        margin: 0 auto;
+        padding: 2em;
+        display: flex;
+        flex-direction: column;
+        gap: 4em;
+      }
+
+      .tagline {
+        font-size: clamp(1.75rem, 6vw, 4.5rem);
+      }
+    </style>
+  </head>
+  <body>
+    <Menu />
+    <main class="wrapper">
+      <h1 class="tagline">My buroggu</h1>
+      <slot />
+    </main>
+  </body>
+</html>
