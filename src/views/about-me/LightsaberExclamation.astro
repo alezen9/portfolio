@@ -1,23 +1,71 @@
-<style>
+---
+type Props = {
+  color?: "blue" | "green";
+  delayAnimationSeconds?: number;
+  rotate?: "clockwise" | "counterclockwise";
+};
+
+const {
+  color = "blue",
+  delayAnimationSeconds = 0,
+  rotate,
+  ...rest
+} = Astro.props;
+
+const SABER_COLORS = {
+  // blue: "#3EC2FF",
+  // green: "#20E85C",
+  blue: "#4BC9FF",
+  green: "#2FF924",
+};
+
+const rotationDirection = !rotate ? 0 : rotate === "clockwise" ? 1 : -1;
+---
+
+<style
+  define:vars={{
+    "saber-color": SABER_COLORS[color],
+    delay: delayAnimationSeconds,
+    "rotation-direction": rotationDirection,
+  }}
+>
   svg {
+    --saber-core: #fefeff;
     height: 1em;
     width: auto;
-    transform: translate(-0.15em, 0.015em);
+    transform: translateY(0.02em);
+    transform-origin: center 92.5%;
+    animation: swing 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation-delay: calc(1.5s + var(--delay) * 1s + 5s);
+  }
+
+  .saber path.primary {
+    fill: var(--saber-core, white);
+  }
+
+  .saber path.secondary {
+    stroke: var(--saber-color, white);
+    filter: contrast(1.5);
   }
 
   .saber path {
     transform-origin: center 70%;
-    transform: scaleY(0);
-    will-change: transform;
-    animation: ignite 0.75s ease-in-out forwards 1.5s;
+    translate: 0 0.075em;
+    scale: 0.5 0;
+    rotate: 0deg;
+    will-change: scale;
+    animation: ignite 0.75s ease-in-out forwards;
+    animation-delay: calc(1.5s + var(--delay) * 1s);
   }
 
   .dot {
     transform-origin: center 97.5%;
-    transform: scale(0.9);
+    transform: scale(0.8);
   }
 
   .dot-gradient {
+    border-radius: 5em;
+    scale: 0.8;
     background: conic-gradient(
       from 90deg,
       rgba(139, 139, 139, 1) 0deg,
@@ -29,57 +77,56 @@
     );
     opacity: 1;
     width: 100%;
+    filter: brightness(0.75);
   }
 
   @keyframes ignite {
-    from {
-      transform: scaleY(0);
-    }
     to {
-      transform: scaleY(0.85);
+      scale: 1 0.75;
+    }
+  }
+
+  @keyframes swing {
+    to {
+      rotate: calc(360deg * var(--rotation-direction));
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
+    svg {
+      animation: none;
+    }
     .saber path {
       animation: none;
-      transform: scaleY(0.85);
+      transform: scaleY(0.75);
     }
   }
 </style>
 
-<!-- <svg
+<svg
   viewBox="0 0 47 136"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
-  aria-label="igniting lightsaber"
+  aria-hidden="true"
+  focusable="false"
+  {...rest}
 >
-  <g
-    clip-path="url(#paint0_angular_44_10_clip_path)"
-    data-figma-skip-parse="true"
-    ><g transform="matrix(0 0.0155 -0.0155 0 23.5 120.5)"
-      ><foreignObject x="-1064.52" y="-1064.52" width="2129.03" height="2129.03"
-        ><div class="dot-gradient" style="height:100%;"></div></foreignObject
-      ></g
-    ></g
-  ><circle
-    cx="23.5"
-    cy="120.5"
-    r="15.5"
-    data-figma-gradient-fill='{"type":"GRADIENT_ANGULAR","stops":[{"color":{"r":0.85098040103912354,"g":0.85098040103912354,"b":0.85098040103912354,"a":1.0},"position":0.1250},{"color":{"r":0.45098039507865906,"g":0.45098039507865906,"b":0.45098039507865906,"a":1.0},"position":0.47115385532379150},{"color":{"r":0.85098040103912354,"g":0.85098040103912354,"b":0.85098040103912354,"a":1.0},"position":0.62980771064758301},{"color":{"r":0.45098039507865906,"g":0.45098039507865906,"b":0.45098039507865906,"a":1.0},"position":0.96153843402862549}],"stopsVar":[{"color":{"r":0.85098040103912354,"g":0.85098040103912354,"b":0.85098040103912354,"a":1.0},"position":0.1250},{"color":{"r":0.45098039507865906,"g":0.45098039507865906,"b":0.45098039507865906,"a":1.0},"position":0.47115385532379150},{"color":{"r":0.85098040103912354,"g":0.85098040103912354,"b":0.85098040103912354,"a":1.0},"position":0.62980771064758301},{"color":{"r":0.45098039507865906,"g":0.45098039507865906,"b":0.45098039507865906,"a":1.0},"position":0.96153843402862549}],"transform":{"m00":1.8982025288627816e-15,"m01":-31.0,"m02":39.0,"m10":31.0,"m11":1.8982025288627816e-15,"m12":105.0},"opacity":1.0,"blendMode":"NORMAL","visible":true}'
-  ></circle>
-  <g class="saber" filter="url(#filter0_f_44_10)">
-    <path d="M10 10H37L34 96H13L10 10Z" fill="#A4EEFF"></path>
+  <g transform="matrix(0 0.0155 -0.0155 0 23.5 120.5)">
+    <foreignObject x="-1064.52" y="-1064.52" width="2129.03" height="2129.03">
+      <div class="dot-gradient" style="height:100%;"></div>
+    </foreignObject>
+  </g>
+  <circle cx="23.5" cy="120.5" r="15.5"></circle>
+  <g class="saber" filter="url(#filter0_f_192_31)">
+    <path class="primary" d="M10 10H37L34 96H13L10 10Z"></path>
     <path
+      class="secondary"
       d="M33.8936 13L31.1025 93H15.8975L13.1064 13H33.8936Z"
-      stroke="#09CEFB"
       stroke-width="6"></path>
   </g>
   <defs>
-    <clipPath id="paint0_angular_44_10_clip_path"
-      ><circle class="dot" cx="23.5" cy="120.5" r="15.5"></circle></clipPath
-    ><filter
-      id="filter0_f_44_10"
+    <filter
+      id="filter0_f_192_31"
       x="0"
       y="0"
       width="47"
@@ -93,71 +140,8 @@
         in="SourceGraphic"
         in2="BackgroundImageFix"
         result="shape"></feBlend>
-      <feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_44_10"
+      <feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_192_31"
       ></feGaussianBlur>
     </filter>
   </defs>
-</svg> -->
-
-<svg viewBox="0 0 102 149" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g class="saber" filter="url(#filter0_df_108_231)">
-    <path d="M25.5 25H77L69.4884 105H32.9884L25.5 25Z" fill="#A4EEFF"></path>
-    <path
-      d="M73.7051 28L66.7568 102H35.7207L28.7939 28H73.7051Z"
-      stroke="#09CEFB"
-      stroke-width="6"></path>
-  </g>
-  <g
-    clip-path="url(#paint0_angular_108_231_clip_path)"
-    data-figma-skip-parse="true"
-    ><g transform="matrix(0 0.0185 -0.021 0 51 130.5)"
-      ><foreignObject x="-1054.05" y="-1054.05" width="2108.11" height="2108.11"
-        ><div class="dot-gradient" style="height:100%;"></div></foreignObject
-      ></g
-    ></g
-  ><rect
-    x="30"
-    y="112"
-    width="42"
-    height="37"
-    data-figma-gradient-fill='{"type":"GRADIENT_ANGULAR","stops":[{"color":{"r":0.85098040103912354,"g":0.85098040103912354,"b":0.85098040103912354,"a":1.0},"position":0.1250},{"color":{"r":0.45098039507865906,"g":0.45098039507865906,"b":0.45098039507865906,"a":1.0},"position":0.47115385532379150},{"color":{"r":0.85098040103912354,"g":0.85098040103912354,"b":0.85098040103912354,"a":1.0},"position":0.62980771064758301},{"color":{"r":0.45098039507865906,"g":0.45098039507865906,"b":0.45098039507865906,"a":1.0},"position":0.96153843402862549}],"stopsVar":[{"color":{"r":0.85098040103912354,"g":0.85098040103912354,"b":0.85098040103912354,"a":1.0},"position":0.1250},{"color":{"r":0.45098039507865906,"g":0.45098039507865906,"b":0.45098039507865906,"a":1.0},"position":0.47115385532379150},{"color":{"r":0.85098040103912354,"g":0.85098040103912354,"b":0.85098040103912354,"a":1.0},"position":0.62980771064758301},{"color":{"r":0.45098039507865906,"g":0.45098039507865906,"b":0.45098039507865906,"a":1.0},"position":0.96153843402862549}],"transform":{"m00":2.5717584698381913e-15,"m01":-42.0,"m02":72.0,"m10":37.0,"m11":2.2655967169872299e-15,"m12":112.0},"opacity":1.0,"blendMode":"NORMAL","visible":true}'
-  ></rect>
-  <defs>
-    <filter
-      id="filter0_df_108_231"
-      x="0.5"
-      y="0"
-      width="101.5"
-      height="130"
-      filterUnits="userSpaceOnUse"
-      color-interpolation-filters="sRGB"
-    >
-      <feFlood flood-opacity="0" result="BackgroundImageFix"></feFlood>
-      <feColorMatrix
-        in="SourceAlpha"
-        type="matrix"
-        values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-        result="hardAlpha"></feColorMatrix>
-      <feOffset></feOffset>
-      <feGaussianBlur stdDeviation="12.5"></feGaussianBlur>
-      <feComposite in2="hardAlpha" operator="out"></feComposite>
-      <feColorMatrix
-        type="matrix"
-        values="0 0 0 0 0 0 0 0 0 0.733333 0 0 0 0 1 0 0 0 1 0"></feColorMatrix>
-      <feBlend
-        mode="lighten"
-        in2="BackgroundImageFix"
-        result="effect1_dropShadow_108_231"></feBlend>
-      <feBlend
-        mode="normal"
-        in="SourceGraphic"
-        in2="effect1_dropShadow_108_231"
-        result="shape"></feBlend>
-      <feGaussianBlur stdDeviation="6" result="effect2_foregroundBlur_108_231"
-      ></feGaussianBlur>
-    </filter>
-    <clipPath id="paint0_angular_108_231_clip_path"
-      ><rect class="dot" x="30" y="112" width="42" height="37"></rect></clipPath
-    ></defs
-  >
 </svg>
