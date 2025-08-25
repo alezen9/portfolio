@@ -43,12 +43,18 @@ const { class: className, ...rest } = Astro.props;
       15px 15px 24px rgba(0, 0, 0, 0.15);
   }
 
+  .project .mosaic figure:hover img {
+    scale: 1.05;
+  }
+
   .project .mosaic img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center;
+    transition: scale 0.5s ease;
+    will-change: scale;
   }
 
   .project .hero {
@@ -289,6 +295,16 @@ const { class: className, ...rest } = Astro.props;
   @media screen and (max-width: 385px) {
     .project .hero .highlights {
       display: none;
+    }
+  }
+
+  @media (pointer: coarse), (prefers-reduced-motion: reduce) {
+    .project .mosaic figure img {
+      transition: none;
+      will-change: auto;
+    }
+    .project .mosaic figure:hover img {
+      scale: 1;
     }
   }
 </style>

@@ -296,12 +296,12 @@ ul {
 
 @media (prefers-reduced-motion: reduce) {
   .tilt {
-    will-change: none;
+    will-change: auto;
     transform: none;
   }
 
   .icon-link {
-    will-change: none;
+    will-change: auto;
     transition: none;
   }
   .icon-link:hover {

@@ -13,8 +13,6 @@ const {
 } = Astro.props;
 
 const SABER_COLORS = {
-  // blue: "#3EC2FF",
-  // green: "#20E85C",
   blue: "#4BC9FF",
   green: "#2FF924",
 };
@@ -33,10 +31,9 @@ const rotationDirection = !rotate ? 0 : rotate === "clockwise" ? 1 : -1;
     --saber-core: #fefeff;
     height: 1em;
     width: auto;
-    transform: translateY(0.02em);
     transform-origin: center 92.5%;
     animation: swing 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    animation-delay: calc(1.5s + var(--delay) * 1s + 5s);
+    animation-delay: calc(1.5s + var(--delay, 0) * 1s + 5s);
   }
 
   .saber path.primary {
@@ -55,17 +52,16 @@ const rotationDirection = !rotate ? 0 : rotate === "clockwise" ? 1 : -1;
     rotate: 0deg;
     will-change: scale;
     animation: ignite 0.75s ease-in-out forwards;
-    animation-delay: calc(1.5s + var(--delay) * 1s);
+    animation-delay: calc(1.5s + var(--delay, 0) * 1s);
   }
 
   .dot {
     transform-origin: center 97.5%;
-    transform: scale(0.8);
+    scale: 0.8;
   }
 
   .dot-gradient {
-    border-radius: 5em;
-    scale: 0.8;
+    border-radius: 0.1em;
     background: conic-gradient(
       from 90deg,
       rgba(139, 139, 139, 1) 0deg,
@@ -76,8 +72,8 @@ const rotationDirection = !rotate ? 0 : rotate === "clockwise" ? 1 : -1;
       rgba(139, 139, 139, 1) 360deg
     );
     opacity: 1;
+    height: 100%;
     width: 100%;
-    filter: brightness(0.75);
   }
 
   @keyframes ignite {
@@ -98,25 +94,23 @@ const rotationDirection = !rotate ? 0 : rotate === "clockwise" ? 1 : -1;
     }
     .saber path {
       animation: none;
-      transform: scaleY(0.75);
+      scale: 1 0.75;
     }
   }
 </style>
 
 <svg
-  viewBox="0 0 47 136"
+  viewBox="0 0 47 130"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
   aria-hidden="true"
   focusable="false"
   {...rest}
 >
-  <g transform="matrix(0 0.0155 -0.0155 0 23.5 120.5)">
-    <foreignObject x="-1064.52" y="-1064.52" width="2129.03" height="2129.03">
-      <div class="dot-gradient" style="height:100%;"></div>
-    </foreignObject>
-  </g>
-  <circle cx="23.5" cy="120.5" r="15.5"></circle>
+  <foreignObject x="13.5" y="110" width="20" height="20">
+    <div class="dot-gradient"></div>
+  </foreignObject>
+
   <g class="saber" filter="url(#filter0_f_192_31)">
     <path class="primary" d="M10 10H37L34 96H13L10 10Z"></path>
     <path
@@ -130,7 +124,7 @@ const rotationDirection = !rotate ? 0 : rotate === "clockwise" ? 1 : -1;
       x="0"
       y="0"
       width="47"
-      height="106"
+      height="130"
       filterUnits="userSpaceOnUse"
       color-interpolation-filters="sRGB"
     >
@@ -145,3 +139,15 @@ const rotationDirection = !rotate ? 0 : rotate === "clockwise" ? 1 : -1;
     </filter>
   </defs>
 </svg>
+
+<!-- 
+
+style="background:conic-gradient(from 90deg,rgba(139, 139, 139, 1) 0deg,rgba(217, 217, 217, 1) 45deg,rgba(115, 115, 115, 1) 169.615deg,rgba(217, 217, 217, 1) 226.731deg,rgba(115, 115, 115, 1) 346.154deg,rgba(139, 139, 139, 1) 360deg);height:100%;width:100%;opacity:1"
+
+  <rect class="dot" x="27" y="117" width="23" height="23" rx="3"></rect>
+
+
+    <clipPath id="paint0_angular_197_54_clip_path">
+      <rect x="27" y="117" width="23" height="23" rx="3"></rect>
+    </clipPath>
+-->
