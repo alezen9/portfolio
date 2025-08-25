@@ -16,11 +16,19 @@
     "colorSrc": "/manga/bleach/yamamoto_color.webp"
   },
   {
+    "bwSrc": "/manga/one_piece/gear5_bw.webp",
+    "colorSrc": "/manga/one_piece/gear5_color.webp"
+  },
+  {
     "bwSrc": "/manga/jojo/jlo_zeppeli_bw.webp",
     "colorSrc": "/manga/jojo/jlo_zeppeli_color.webp"
   },
   {
     "bwSrc": "/manga/one_piece/jaya_bw.webp",
     "colorSrc": "/manga/one_piece/jaya_color.webp"
+  },
+  {
+    "bwSrc": "/manga/bleach/aizen_bw.webp",
+    "colorSrc": "/manga/bleach/aizen_color.webp"
   }
 ]
