@@ -116,6 +116,20 @@ import Layout from "./layout.astro";
     font-size: 0.9em;
   }
 
+  a {
+    letter-spacing: 0;
+    font-family: inherit;
+    font-weight: inherit;
+    font-size: inherit;
+    color: color-mix(in srgb, var(--text-accent) 50%, var(--text-color));
+    margin-inline: 0.5em;
+    text-decoration: underline;
+  }
+  a::before,
+  a::after {
+    display: none;
+  }
+
   @media screen and (max-width: 480px) {
     .section::before {
       opacity: 1;
@@ -189,6 +203,16 @@ import Layout from "./layout.astro";
       through
       <code>Nginx</code>, when I finally got it working, it felt like magic, and
       it cemented my love for the web.
+    </p>
+    <p>
+      I recently brought it back to life after years of inactivity, mostly as a
+      showcase or museum artifact, you can
+      <a
+        href="https://ddreamkol.aleksandargjoreski.dev"
+        target="_blank"
+        title="Check out my very first website: DDreamkol">see it here</a
+      >
+      (untouched since 2018, plenty has happened since then).
     </p>
     <p>
       While taking university classes, I also dove into self-driven learning: <code
