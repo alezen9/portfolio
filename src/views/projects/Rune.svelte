@@ -70,7 +70,7 @@
 
 <svg
   class={`rune force-gpu ${className}`}
-  viewBox="0 0 276 275"
+  viewBox="0 0 275 275"
   fill="none"
   stroke="currentColor"
   xmlns="http://www.w3.org/2000/svg"
@@ -116,6 +116,20 @@
       stroke-linecap="round"
       stroke-linejoin="round"
     ></path>
+    <path
+      class="letter-ansuz"
+      d="M122 206V73L173 130M122 114.5L173 171.5"
+      stroke-width="14"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path
+      class="letter-wunjo"
+      d="M121 205.5V133.467M121 133.467V74L172.5 103.734L121 133.467Z"
+      stroke-width="14"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
   </g>
   <circle cx="137.852" cy="137.104" r="104" stroke-width="2"></circle>
 
@@ -175,6 +189,13 @@
   .rune.tiwaz path.frame {
     rotate: 120deg;
   }
+  .rune.ansuz path.frame {
+    rotate: -45deg;
+  }
+  .rune.wunjo path.frame {
+    rotate: 182deg;
+  }
+
   .rune.sowilo .letters path:not(.letter-sowilo) {
     display: none;
   }
@@ -185,6 +206,12 @@
     display: none;
   }
   .rune.eihwaz .letters path:not(.letter-eihwaz) {
+    display: none;
+  }
+  .rune.ansuz .letters path:not(.letter-ansuz) {
+    display: none;
+  }
+  .rune.wunjo .letters path:not(.letter-wunjo) {
     display: none;
   }
 

@@ -1,0 +1,178 @@
+---
+import IconGitHub from "@components/icons/IconGitHub.astro";
+import ProjectSlide from "./project-slide.astro";
+import Rune from "./Rune.svelte";
+import IconExternalLink from "@components/icons/IconExternalLink.astro";
+---
+
+<style is:global>
+  .futbob {
+    --text-accent: rgb(42, 156, 71);
+  }
+  .futbob .mosaic {
+    grid-template-areas:
+      "b b b b ."
+      "b b b b ."
+      "d d r w w"
+      "d d a a a"
+      ". . a a a";
+  }
+
+  :root[data-theme="dark"] .futbob .mosaic img[data-mode="light"] {
+    display: none;
+  }
+  :root[data-theme="light"] .futbob .mosaic img[data-mode="dark"] {
+    display: none;
+  }
+
+  .futbob .mosaic img {
+    object-position: top;
+  }
+
+  .futbob .mosaic .main img {
+    object-position: top right;
+  }
+</style>
+
+<ProjectSlide class="futbob">
+  <Fragment slot="title">Futbob</Fragment>
+  <Fragment slot="description">
+    A side project born from my love of football and the weekly matches with
+    friends. We wanted a way to track stats like goals and assists, organize
+    games, and handle shared costs. I designed, built, and deployed the platform
+    end-to-end: a <code>Next.js</code> PWA frontend with a
+    <code>Node.js</code> + <code>GraphQL</code> + <code>MongoDB</code> backend. It
+    ran live in 2020/21 and, while development paused before the match engine was
+    finalized, I recently brought it back online as a “museum piece” of that journey
+  </Fragment>
+  <Fragment slot="tags">
+    <span class="tag tech">Next.js</span>
+    <span class="tag tech">MUI</span>
+    <span class="tag tech">Node.js</span>
+    <span class="tag tech">GraphQL</span>
+    <span class="tag tech">MongoDB</span>
+  </Fragment>
+  <Fragment slot="highlights">
+    <li>
+      <span class="highlight">Designed & built</span> the entire stack solo, from
+      data models to UI flows, using <code>Next.js</code> and
+      <code>Node.js</code> + <code>GraphQL</code>.
+    </li>
+    <li>
+      <span class="highlight">Implemented</span> player and pitch management: FIFA-style
+      stat graphs, dynamic overall ratings, and field details (location, turf, dimensions,
+      costs).
+    </li>
+    <li>
+      <span class="highlight">Added</span> authentication, encryption, Google OAuth,
+      and email flows with <code>Nodemailer</code> for account verification and password
+      resets.
+    </li>
+    <li>
+      <span class="highlight">Deployed</span> on a custom domain with
+      <code>Vercel</code> (frontend) and <code>Render</code> (backend), gaining hands-on
+      experience with deployment pipelines.
+    </li>
+  </Fragment>
+  <Fragment slot="footer">
+    <a
+      title="Dig in the frontend code on Github"
+      class="icon-link"
+      aria-label="Futbob Frontend GitHub repo"
+      rel="noopener"
+      href="https://github.com/alezen9/FutBob-Frontend"
+      target="_blank"
+    >
+      <IconGitHub class:list={["animate", "icon-github"]} />
+    </a>
+    <a
+      title="Dig in the backend code on Github"
+      class="icon-link"
+      aria-label="Futbob Backend GitHub repo"
+      rel="noopener"
+      href="https://github.com/alezen9/FutBob-Backend"
+      target="_blank"
+    >
+      <IconGitHub class:list={["animate", "icon-github"]} />
+    </a>
+    <a
+      title="Check it live"
+      class="icon-link"
+      aria-label="Futbob live demo"
+      rel="noopener"
+      href="https://futbob.aleksandargjoreski.dev/"
+      target="_blank"
+    >
+      <IconExternalLink class:list={["animate", "icon-demo"]} />
+    </a>
+  </Fragment>
+
+  <Fragment slot="mosaic">
+    <figure
+      class="tilt main"
+      style="grid-area: a;"
+      title="May I stand futbob amidst a crashing world"
+    >
+      <img
+        data-mode="light"
+        src="/projects/futbob/light/a.webp"
+        alt="futbob - Threejs Scene"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        data-mode="dark"
+        src="/projects/futbob/dark/a.webp"
+        alt="futbob - Threejs Scene"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure
+      class="tilt"
+      style="grid-area: b;"
+      title="May I stand futbob amidst a crashing world"
+    >
+      <img
+        data-mode="light"
+        src="/projects/futbob/light/b.webp"
+        alt="futbob - Threejs Scene"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        data-mode="dark"
+        src="/projects/futbob/dark/b.webp"
+        alt="futbob - Threejs Scene"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure
+      class="tilt"
+      style="grid-area: d;"
+      title="May I stand futbob amidst a crashing world"
+    >
+      <img
+        data-mode="light"
+        src="/projects/futbob/light/d.webp"
+        alt="futbob - Threejs Scene"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        data-mode="dark"
+        src="/projects/futbob/dark/d.webp"
+        alt="futbob - Threejs Scene"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <Rune client:load className="wunjo" />
+    <p class="caption">
+      <span class="name">Wunjo</span>
+      <span>Joy in fellowship</span>
+      <span>Stats that tell our story</span>
+    </p>
+  </Fragment>
+</ProjectSlide>

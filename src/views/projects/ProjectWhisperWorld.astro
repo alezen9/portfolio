@@ -1,0 +1,92 @@
+---
+import IconGitHub from "@components/icons/IconGitHub.astro";
+import ProjectSlide from "./project-slide.astro";
+import Rune from "./Rune.svelte";
+---
+
+<style is:global>
+  .whisper-world {
+    --text-accent: var(--text-color);
+  }
+  .whisper-world .mosaic {
+    grid-template-areas:
+      "a a a a a"
+      "a a a a a"
+      "a a a a a"
+      "a a a a a"
+      "w w w r r";
+  }
+
+  .whisper-world .mosaic img {
+    object-fit: fill;
+  }
+</style>
+
+<ProjectSlide class="whisper-world">
+  <Fragment slot="title">Whisper World</Fragment>
+  <Fragment slot="description">
+    WhisperWorld is a client-server chat app written in <code>C</code>, built to
+    dive deeper into systems programming and TCP/IP. Powered by <code
+      >libuv</code
+    > for async I/O and <code>CMake</code> for builds, it gave me hands-on practice
+    with memory management, networking, and modular design. The original idea was
+    to rebuild it in other languages to compare ecosystems and approaches.
+  </Fragment>
+  <Fragment slot="tags">
+    <span class="tag">C</span>
+    <span class="tag">libuv</span>
+    <span class="tag">CMake</span>
+    <span class="tag">TCP/IP</span>
+  </Fragment>
+  <Fragment slot="highlights">
+    <li>
+      <span class="highlight">Built</span> a multi-client chat server and client
+      in
+      <code>C</code> with broadcasting and connection management.
+    </li>
+    <li>
+      <span class="highlight">Integrated</span>
+      <code>libuv</code> for non-blocking, event-driven I/O, replacing the initial
+      <code>select()</code> implementation.
+    </li>
+    <li>
+      <span class="highlight">Migrated</span> build setup from a simple
+      <code>Makefile</code> to <code>CMake</code> with auto-fetched dependencies
+      and cross-platform support.
+    </li>
+    <li>
+      <span class="highlight">Explored</span> edge cases like partial reads, oversize
+      payloads, and connection drops, while planning next steps such as an event
+      queue and custom protocol abstraction.
+    </li>
+  </Fragment>
+  <Fragment slot="footer">
+    <a
+      title="Dig in the code on Github"
+      class="icon-link"
+      aria-label="Whisper World GitHub repo"
+      rel="noopener"
+      href="https://github.com/alezen9/whisper-world-c"
+      target="_blank"
+    >
+      <IconGitHub class:list={["animate", "icon-github"]} />
+    </a>
+  </Fragment>
+
+  <Fragment slot="mosaic">
+    <figure class="tilt main" style="grid-area: a;" title="Local chat example">
+      <img
+        src="/projects/whisper-world/a.webp"
+        alt="Whisper World - Local chat example"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <Rune client:load className="ansuz" />
+    <p class="caption">
+      <span class="name">Ansuz</span>
+      <span>Sky father's mark </span>
+      <span>Noise shaping the frame</span>
+    </p>
+  </Fragment>
+</ProjectSlide>
