@@ -80,6 +80,11 @@ const { class: className, ...rest } = Astro.props;
     margin-bottom: 0.5em;
   }
 
+  .project .hero .title small {
+    font-size: 0.35em;
+    font-weight: 200;
+  }
+
   .project .hero p,
   .project .hero ul {
     font-size: 0.9em;
@@ -319,6 +324,7 @@ const { class: className, ...rest } = Astro.props;
       <header>
         <h2 class="title">
           <slot name="title" />
+          <small>[<slot name="year" />]</small>
         </h2>
         <p class="tags">
           <slot name="tags" />

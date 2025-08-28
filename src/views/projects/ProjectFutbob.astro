@@ -29,6 +29,10 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
     object-position: top;
   }
 
+  .futbob .mosaic .card img {
+    object-position: 80%;
+  }
+
   .futbob .mosaic .main img {
     object-position: top right;
   }
@@ -36,6 +40,7 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
 
 <ProjectSlide class="futbob">
   <Fragment slot="title">Futbob</Fragment>
+  <Fragment slot="year">2021</Fragment>
   <Fragment slot="description">
     A side project born from my love of football and the weekly matches with
     friends. We wanted a way to track stats like goals and assists, organize
@@ -46,11 +51,11 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
     finalized, I recently brought it back online as a “museum piece” of that journey
   </Fragment>
   <Fragment slot="tags">
-    <span class="tag tech">Next.js</span>
-    <span class="tag tech">MUI</span>
-    <span class="tag tech">Node.js</span>
-    <span class="tag tech">GraphQL</span>
-    <span class="tag tech">MongoDB</span>
+    <span class="tag">Next.js</span>
+    <span class="tag">MUI</span>
+    <span class="tag">Node.js</span>
+    <span class="tag">GraphQL</span>
+    <span class="tag">MongoDB</span>
   </Fragment>
   <Fragment slot="highlights">
     <li>
@@ -108,62 +113,54 @@ import IconExternalLink from "@components/icons/IconExternalLink.astro";
   </Fragment>
 
   <Fragment slot="mosaic">
-    <figure
-      class="tilt main"
-      style="grid-area: a;"
-      title="May I stand futbob amidst a crashing world"
-    >
+    <figure class="tilt main" style="grid-area: a;" title="Player stats">
       <img
         data-mode="light"
         src="/projects/futbob/light/a.webp"
-        alt="futbob - Threejs Scene"
+        alt="Futbob - Player stats"
         loading="lazy"
         decoding="async"
       />
       <img
         data-mode="dark"
         src="/projects/futbob/dark/a.webp"
-        alt="futbob - Threejs Scene"
+        alt="Futbob - Player stats"
         loading="lazy"
         decoding="async"
       />
     </figure>
-    <figure
-      class="tilt"
-      style="grid-area: b;"
-      title="May I stand futbob amidst a crashing world"
-    >
+    <figure class="tilt" style="grid-area: b;" title="List of players">
       <img
         data-mode="light"
         src="/projects/futbob/light/b.webp"
-        alt="futbob - Threejs Scene"
+        alt="Futbob - Player list"
         loading="lazy"
         decoding="async"
       />
       <img
         data-mode="dark"
         src="/projects/futbob/dark/b.webp"
-        alt="futbob - Threejs Scene"
+        alt="Futbob - Player list"
         loading="lazy"
         decoding="async"
       />
     </figure>
     <figure
-      class="tilt"
+      class="tilt card"
       style="grid-area: d;"
-      title="May I stand futbob amidst a crashing world"
+      title="Player overall score card"
     >
       <img
         data-mode="light"
         src="/projects/futbob/light/d.webp"
-        alt="futbob - Threejs Scene"
+        alt="Futbob - Overall score card"
         loading="lazy"
         decoding="async"
       />
       <img
         data-mode="dark"
         src="/projects/futbob/dark/d.webp"
-        alt="futbob - Threejs Scene"
+        alt="Futbob - Overall score card"
         loading="lazy"
         decoding="async"
       />

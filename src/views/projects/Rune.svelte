@@ -130,7 +130,15 @@
       stroke-linecap="round"
       stroke-linejoin="round"
     />
+    <path
+      class="letter-gebo"
+      d="M110 205.5L163 69M110 69L163 205.5"
+      stroke-width="14"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
   </g>
+
   <circle cx="137.852" cy="137.104" r="104" stroke-width="2"></circle>
 
   <defs>
@@ -195,6 +203,9 @@
   .rune.wunjo path.frame {
     rotate: 182deg;
   }
+  .rune.gebo path.frame {
+    rotate: 0;
+  }
 
   .rune.sowilo .letters path:not(.letter-sowilo) {
     display: none;
@@ -212,6 +223,9 @@
     display: none;
   }
   .rune.wunjo .letters path:not(.letter-wunjo) {
+    display: none;
+  }
+  .rune.gebo .letters path:not(.letter-gebo) {
     display: none;
   }
 

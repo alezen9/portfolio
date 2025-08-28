@@ -1,0 +1,129 @@
+---
+import IconGitHub from "@components/icons/IconGitHub.astro";
+import ProjectSlide from "./project-slide.astro";
+import Rune from "./Rune.svelte";
+import IconExternalLink from "@components/icons/IconExternalLink.astro";
+---
+
+<style is:global>
+  .ddreamkol {
+    --text-accent: rgb(0, 100, 176);
+  }
+  .ddreamkol .mosaic {
+    grid-template-areas:
+      "a a a w w"
+      "a a a b b"
+      ". . r b b"
+      "c c c c c"
+      "c c c c c";
+  }
+
+  .ddreamkol .mosaic img {
+    object-position: top;
+  }
+</style>
+
+<ProjectSlide class="ddreamkol">
+  <Fragment slot="title">DDreamkol</Fragment>
+  <Fragment slot="year">2018</Fragment>
+  <Fragment slot="description">
+    DDreamkol was my very first project, started in 2018 while I was still at
+    university. It was a community platform for my valley in Macedonia, with bus
+    schedules, history notes, photos, and a page for our annual football
+    tournament. Built in <code>Node.js</code>, serving a mix of plain <code
+      >HTML</code
+    > and <code>Pug</code> templates, it blended both server-rendered and static
+    content (long before I knew the terms SSR and SSG). I recently revived it in
+    mid-2025 as a kind of time capsule — a piece of where it all began.
+  </Fragment>
+  <Fragment slot="tags">
+    <span class="tag">Node.js</span>
+    <span class="tag">Pug</span>
+    <span class="tag">HTML</span>
+  </Fragment>
+  <Fragment slot="highlights">
+    <li>
+      <span class="highlight">Created</span> a <code>Node.js</code> platform serving
+      both <code>HTML</code>
+      and <code>Pug</code> templates, mixing SSR and static content.
+    </li>
+    <li>
+      <span class="highlight">Implemented</span> community features like photo uploads
+      with manual approval and an open forum.
+    </li>
+    <li>
+      <span class="highlight">Built</span> a dedicated football tournament page with
+      teams and photos.
+    </li>
+    <li>
+      <span class="highlight">Deployed</span> first on a rented server with <code
+        >Nginx</code
+      >
+      and static IP, then revived in mid-2025 on <code>Vercel</code> with a custom
+      subdomain.
+    </li>
+  </Fragment>
+  <Fragment slot="footer">
+    <a
+      title="Dig in the frontend code on Github"
+      class="icon-link"
+      aria-label="Futbob Frontend GitHub repo"
+      rel="noopener"
+      href="https://github.com/alezen9/ddreamkol"
+      target="_blank"
+    >
+      <IconGitHub class:list={["animate", "icon-github"]} />
+    </a>
+    <a
+      title="Check it live"
+      class="icon-link"
+      aria-label="Futbob live demo"
+      rel="noopener"
+      href="https://ddreamkol.aleksandargjoreski.dev/"
+      target="_blank"
+    >
+      <IconExternalLink class:list={["animate", "icon-demo"]} />
+    </a>
+  </Fragment>
+
+  <Fragment slot="mosaic">
+    <figure class="tilt main" style="grid-area: a;" title="Landing page">
+      <img
+        src="/projects/ddreamkol/a.webp"
+        alt="DDreamkol - Landing page"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure
+      class="tilt"
+      style="grid-area: b;"
+      title="My home village page: Nerezi"
+    >
+      <img
+        src="/projects/ddreamkol/b.webp"
+        alt="DDreamkol - Nerezi village page"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure
+      class="tilt"
+      style="grid-area: c;"
+      title="A small history section dedicated to the valley"
+    >
+      <img
+        src="/projects/ddreamkol/c.webp"
+        alt="DDreamkol - A bit of history about the valley"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <Rune client:load className="gebo" />
+    <p class="caption">
+      <span class="name">Gebo</span>
+      <span>A gift to the community</span>
+      <span>Roots in every line of code</span>
+    </p>
+  </Fragment>
+</ProjectSlide>
