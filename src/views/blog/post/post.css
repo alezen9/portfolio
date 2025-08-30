@@ -43,7 +43,8 @@ h3 {
   font-size: clamp(1.2rem, 2.5vw, 1.5rem);
 }
 
-p {
+p,
+li {
   font-size: 0.95em;
   max-width: 100%;
 }

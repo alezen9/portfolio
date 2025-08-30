@@ -76,21 +76,27 @@ Before diving deep into each stage, it helps to have a high-level map of what ac
 At a conceptual level, the pipeline looks like this:
 
 1. Parsing
-
-- HTML is parsed into the DOM (Document Object Model).
-- CSS is parsed into the CSSOM (CSS Object Model).
+   - HTML is parsed into the DOM (Document Object Model).
+   - CSS is parsed into the CSSOM (CSS Object Model).
 
 2. Style
+   - The DOM and CSSOM are combined.
+   - Each element gets its computed styles (the final property values after cascade, inheritance, and variables are resolved).
 
-- The DOM and CSSOM are combined.
-- Each element gets its computed styles (the final property values after cascade, inheritance, and variables are resolved). 3. Layout (a.k.a. reflow)
-- The browser uses those styles to calculate geometry: positions, sizes, line breaks.
-- Output is a layout tree (a map of where everything goes). 4. Paint (Rasterization)
-- Elements are turned into drawing commands (display list), then rasterized into tiles (bitmaps). 5. Compositing
-- Some elements are promoted into independent layers (often GPU-backed).
-- The compositor thread assembles these layers into the final frame. 6. Display
-- The GPU swaps the backbuffer with the frontbuffer during vsync, and pixels hit the screen.
+3. Layout (a.k.a. reflow)
+   - The browser uses those styles to calculate geometry: positions, sizes, line breaks.
+   - Output is a layout tree (a map of where everything goes).
 
-⸻
+4. Paint (Rasterization)
+   - Elements are turned into drawing commands (display list), then rasterized into tiles (bitmaps).
 
-You don't need to remember every detail yet — just keep this sequence in mind. It's the backbone we'll return to as we look at each stage in more detail.
+5. Compositing
+   - Some elements are promoted into independent layers (often GPU-backed).
+   - The compositor thread assembles these layers into the final frame.
+
+6. Display
+   - The GPU swaps the backbuffer with the frontbuffer during vsync, and pixels hit the screen.
+
+<br />
+You don't need to remember every detail yet — just keep this sequence in mind.
+It's the backbone we'll return to as we look at each stage in more detail.

@@ -1,18 +1,23 @@
-## Style (a.k.a. Style Recalculation)
+## Style Recalculation (or Computed Styles)
 
-Once the browser has both the DOM and the CSSOM, it can finally decide what each element should look like. This stage is often called style calculation or style recalc.
+Once the browser has both the DOM and the CSSOM, it can finally resolve what each element should look like.<br />
+This stage is sometimes referred to as just _Style Calculation_.<br />
 
-What happens here
+> **Note:** In Chrome DevTools Performance panel it appears as **Recalculate Style** under _Main_ expandable, and in the Elements panel you can see the results under the **Computed** tab.
 
-The browser walks the DOM tree and matches each node against rules in the CSSOM.
+<br />
 
-It applies the cascade (specificity, importance, source order) and inheritance rules.
+### What happens here:
 
-Custom properties (`--variables`) are resolved.
+1. The browser walks the DOM tree and matches each node against rules in the CSSOM.
+2. It applies the cascade (specificity, importance, source order) and inheritance rules.
+3. Custom properties (`--variables`) are resolved, unlike normal properties, variables are not resolved until this stage.
+4. Each element ends up with a ==computed style==: every property has an absolute value.
 
-The result is the computed style for each element: every property now has an absolute, resolved value.
+<br />
+<br />
 
-Example
+Example:
 
 ```html
 <div class="box">Hello</div>
@@ -30,35 +35,72 @@ Example
 
 Computed style for the `<div class="box">`:
 
-```yml
+```
 color: rgb(255, 0, 0)
 font-size: 16px
 display: block
 margin: 0px
 ```
 
-Notice how relative values (`1rem, var(--main-color)`) are turned into absolute values (`16px, rgb(255,0,0)`).
+Notice how relative values (`1rem, var(--main-color)`) are turned into absolute values (`16px, rgb(255,0,0)`).<br />
+Browsers also fill in defaults (`display: block, margin: 0`), even if you didn't set them explicitly.
 
-CSS Variables and Scope
+<br />
+<br />
 
-This is where CSS variables behave differently from normal properties:
+### CSS Variables and Scope
 
-If you update a variable in JS:
+This is where CSS variables behave differently from normal properties.<br />
+They cascade, inherit, and resolve at style recalculation time, which has important performance implications.
+
+<br />
+
+**Scope:**
+
+- A variable is visible from the node where it is defined, down through all of its descendants (unless overridden).
+- Defining `--color` on `:root` makes it available to every element in the page.
+- Defining it on a specific element limits its scope to that element and its subtree.
+
+<br />
+<br />
+
+**Updates via JavaScript:**<br />
+When you update a variable:
 
 ```javascript
 element.style.setProperty("--main-color", "blue");
 ```
 
-the browser only recalculates styles for nodes where that variable is used.
+- The browser recalculates styles for the element and any of its descendants, since variables inherit.
+- If the variable is defined on `:root`, then any element in the page could potentially be affected.<br />
+  Modern engines track which elements actually reference the variable and only recalc those nodes,
+  but since the scope is global, the dependency graph can still be large.
 
-If the variable is defined at :root, then every descendant that uses it may need to be recalculated.
+<br />
+<br />
 
-If the variable is scoped on a single element, only that element and its children are affected.
+**Types of properties:**<br />
 
-This is why scoping variables wisely matters: updating a root-level variable every frame can trigger style recalculations across the entire page.
+- If the variable controls a non-inherited property (e.g. `border-color`), only the element using it needs recalculation.
+- If it controls an inherited property (e.g. `color`, `font-size`), children may also need recalculation.
+- If it controls geometry/layout (e.g. `width`, `height`, `transform: scale(var(--x))`), the element's layout changes,
+  which invalidates its entire subtree: children that don't use the variable directly still need recalculation.
 
-Output of this stage
+<br />
+<br />
 
-A computed style map: each DOM element has a resolved set of styles (think of it as a big object with key-value pairs).
+**Deduplication:**<br />
+If a child is marked dirty both because it uses the variable and because its parent's layout changed, the browser won't recalc it twice.
+Engines coalesce multiple invalidation reasons so ==each node is recalculated at most once per pass==.
 
-This map becomes the input for the next stage: layout, where geometry (positions and sizes) is calculated.
+> **Note:** CSS variables don't behave like constants that are resolved at parse time — they remain “live.”
+> Their definition scope determines the potential set of affected nodes, while usage determines which nodes actually trigger recalculation.
+> This flexibility is what makes them powerful, but also what can make updating root-level variables every frame very expensive.
+
+<br />
+
+The output of this stage is a computed style map where each DOM element has a
+resolved set of styles, think of it as a big object with key-value pairs.
+
+This map becomes the input for the next stage: ==Layout==, where geometry
+(positions and sizes) is calculated.
