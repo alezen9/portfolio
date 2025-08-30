@@ -1,0 +1,96 @@
+import laggy from "../videos/laggy.mp4";
+import smooth from "../videos/smooth.mp4";
+
+Recently, while working on my portfolio website, I ran into a performance issue that completely threw me off.
+
+On the homepage, I use a circular mask that reveals a colored panel on top of a black-and-white panel.
+I was updating the mask's position every frame using a CSS variable set via JavaScript.
+On Chrome, it ran buttery smooth, on Safari on the other hand it lagged noticeably... of course.
+\
+\
+\
+Here's a comparison between the before and after fix on Safari v18.6:
+
+<div class="comparison">
+  <figure>
+    <video src={laggy} type="video/mp4" autoplay loop muted playsInline />
+    <figcaption>Before</figcaption>
+  </figure>
+  <figure>
+    <video src={smooth} type="video/mp4" autoplay loop muted playsInline />
+    <figcaption>After</figcaption>
+  </figure>
+</div>
+
+\
+\
+\
+It's not unusable, but definitely frustrating.
+At first I thought: _"It should be an easy fix, let me see"_, it turned out to be an underestimate from my end.
+
+I spent quite a bit of time trying to fix it:
+scoping CSS variables locally instead of on `:root`, reducing the mask size, simplified some other
+logic...nothing made a difference.
+
+I tried scoping CSS variables locally instead of on `:root`, reducing the mask size, simplifying logic... nothing made a difference.
+
+At that point, I wasn't thinking about the rendering pipeline or GPU promotion at all but
+I was determined to provide a decent animation experience on every browser.
+
+After a lot of trial and error, I stumbled across a <a href="https://stackoverflow.com/a/67022519" target="_blank" rel="noopener">Stack Overflow answer</a> suggesting this one-liner:
+
+```css
+transform: translateZ(0);
+```
+
+My mindset was simply: _“I've already tried so many things, one more won't hurt”_
+And suddenly... Safari was smooth as butter.
+
+That tiny one-liner pushed me down a rabbit hole.
+What on earth just happened? Why did this fix work?
+And how can I better understand the browser so next time I don't have to rely on magic incantations from the internet?
+
+## Why Bother with the Rendering Pipeline?
+
+When I first hit that Safari issue, I was throwing darts in the dark: trying different tweaks, scoping CSS variables, reducing sizes, hoping something would stick.
+The `translateZ(0)` fix worked, but I didn't understand why.
+
+That's the thing about frontend performance problems: sometimes they look random, and every browser seems to behave a little differently.
+But under the hood, every browser follows the same broad sequence of steps to turn HTML and CSS into pixels on the screen, even if the exact implementation details differ.
+More on this point later on.
+This sequence is called the rendering pipeline.
+
+Knowing how that pipeline works doesn't just satisfy curiosity, it changes the way you debug and build:
+
+- You stop guessing. Instead of _"maybe reducing the mask size will help"_, you can check: is the bottleneck <span class="highlight">style</span>, <span class="highlight">layout</span>, <span class="highlight">paint</span>, or <span class="highlight">compositing</span>?
+- You know which properties are safe to animate. transform and opacity are compositor-friendly, while top, left, or width force layout and paint.
+- You see why browser differences happen. Chrome and Safari use different heuristics for promoting elements to GPU layers, which explains why my fix was needed in one and not the other.
+- You make better design calls early. You'll know when a heavy blur, mask, or filter will eat GPU cycles, and when it's safe to use them.
+
+In other words: understanding the rendering pipeline gives frontend developers a kind of x-ray vision. You don't need to memorize every detail, but even a rough mental model helps you reason about performance issues instead of relying on Stack Overflow magic.
+
+## The Rendering Pipeline in a Nutshell
+
+Before diving deep into each stage, it helps to have a high-level map of what actually happens when a browser renders a page.
+
+At a conceptual level, the pipeline looks like this:
+
+1. Parsing
+
+- HTML is parsed into the DOM (Document Object Model).
+- CSS is parsed into the CSSOM (CSS Object Model).
+
+2. Style
+
+- The DOM and CSSOM are combined.
+- Each element gets its computed styles (the final property values after cascade, inheritance, and variables are resolved). 3. Layout (a.k.a. reflow)
+- The browser uses those styles to calculate geometry: positions, sizes, line breaks.
+- Output is a layout tree (a map of where everything goes). 4. Paint (Rasterization)
+- Elements are turned into drawing commands (display list), then rasterized into tiles (bitmaps). 5. Compositing
+- Some elements are promoted into independent layers (often GPU-backed).
+- The compositor thread assembles these layers into the final frame. 6. Display
+- The GPU swaps the backbuffer with the frontbuffer during vsync, and pixels hit the screen.
+
+⸻
+
+You don't need to remember every detail yet — just keep this sequence in mind. It's the backbone we'll return to as we look at each stage in more detail.

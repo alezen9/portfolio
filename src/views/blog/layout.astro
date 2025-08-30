@@ -1,14 +1,15 @@
 ---
 import BaseHead from "@components/ui/BaseHead.astro";
 import Menu from "@components/ui/Menu.astro";
+import BlogHead from "./BlogHead.astro";
 ---
 
 <html lang="en" data-theme="dark">
   <head>
     <BaseHead title="AG | Blog" description="..." />
-    <style>
+    <BlogHead />
+    <style is:global>
       .wrapper {
-        --text-accent: rgb(45, 114, 98);
         box-sizing: border-box;
         width: 100%;
         max-width: min(80ch, 90dvw);
@@ -22,13 +23,14 @@ import Menu from "@components/ui/Menu.astro";
 
       .tagline {
         font-size: clamp(1.75rem, 6vw, 4.5rem);
+        font-family: "Okashi-Regular";
       }
     </style>
   </head>
   <body>
     <Menu />
     <main class="wrapper">
-      <h1 class="tagline">My buroggu</h1>
+      <h1 class="tagline">Chie no Mori</h1>
       <slot />
     </main>
   </body>

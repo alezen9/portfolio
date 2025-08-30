@@ -1,0 +1,11 @@
+.comparison {
+  display: grid;
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+}
+
+.comparison video {
+  width: 100%;
+  pointer-events: none;
+}

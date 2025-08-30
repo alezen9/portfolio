@@ -1,0 +1,10 @@
+---
+import Layout from "./layout.astro";
+import { type CollectionEntry } from "astro:content";
+
+type Props = CollectionEntry<"blog">["data"];
+---
+
+<Layout {...Astro.props}>
+  <slot />
+</Layout>

@@ -1,0 +1,53 @@
+### Display (Buffers & Vsync)
+
+At this point, the compositor has assembled all the layers into a single frame. The last step is to actually put those pixels on the screen.
+
+Double buffering
+
+The GPU maintains two buffers:
+
+Front buffer → currently visible on screen.
+
+Back buffer → where the next frame is being drawn.
+
+Once the back buffer is ready, it swaps with the front buffer.
+
+This swap happens in sync with the monitor's refresh rate (vsync) to avoid tearing.
+
+Triple buffering
+
+Some systems use three buffers: front + two back buffers.
+
+This allows the GPU to keep working on a new frame even if one back buffer is waiting for vsync.
+
+Benefit: smoother scheduling, less stutter.
+
+Trade-off: uses more GPU memory, can add a bit of latency (you might see a frame one refresh later).
+
+Why vsync matters
+
+Monitors refresh at fixed intervals (60Hz, 120Hz, etc.).
+
+If the browser delivers a frame on time, it looks smooth.
+
+If it misses the window, that frame is delayed until the next refresh — causing a visible stutter.
+
+This is why we talk about the frame budget: ~16ms per frame at 60Hz, ~8ms per frame at 120Hz.
+
+End of the journey
+
+From raw HTML + CSS text, we went through:
+
+Parsing → DOM + CSSOM
+
+Style → computed styles
+
+Layout → geometry (layout tree)
+
+Paint → rasterized tiles
+
+Compositing → layers assembled by compositor thread
+
+Display → buffers swapped on vsync
+
+And that's how your code turns into pixels.

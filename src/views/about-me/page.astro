@@ -116,20 +116,6 @@ import Layout from "./layout.astro";
     font-size: 0.9em;
   }
 
-  a {
-    letter-spacing: 0;
-    font-family: inherit;
-    font-weight: inherit;
-    font-size: inherit;
-    color: color-mix(in srgb, var(--text-accent) 50%, var(--text-color));
-    margin-inline: 0.5em;
-    text-decoration: underline;
-  }
-  a::before,
-  a::after {
-    display: none;
-  }
-
   @media screen and (max-width: 480px) {
     .section::before {
       opacity: 1;

@@ -1,0 +1,101 @@
+:root {
+  --border-radius: 0.25em;
+}
+
+figure {
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+figcaption {
+  position: relative;
+  font-size: 0.8em;
+  opacity: 0.75;
+  padding-left: 2ch;
+}
+
+figcaption::before {
+  position: absolute;
+  inset: 0;
+  width: 2ch;
+  content: "\2303";
+}
+
+h1 {
+  color: color-mix(in oklab, var(--accent-torii) 50%, var(--text-color));
+  margin-block: 1em 2em;
+}
+
+:root[data-theme="light"] {
+  h1 {
+    color: color-mix(in oklab, var(--accent-torii) 85%, var(--text-color));
+  }
+}
+
+h2 {
+  margin-top: 3em;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+h3 {
+  margin-top: 1.5em;
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+}
+
+p {
+  font-size: 0.95em;
+  max-width: 100%;
+}
+
+blockquote {
+  position: relative;
+  padding-left: 0.5em;
+}
+blockquote::before {
+  position: absolute;
+  content: "";
+  inset: 0;
+  width: 0.5em;
+  border-left: 2px solid currentColor;
+  opacity: 0.5;
+}
+
+.highlight {
+  filter: saturate(1.5);
+}
+
+pre {
+  position: relative;
+  border-radius: var(--border-radius);
+  padding: 1em;
+  overflow-x: auto;
+  margin-bottom: 2em;
+}
+
+pre:is([data-language="plaintext"], [data-language="text"]) code {
+  color: rgb(var(--text-light));
+}
+
+pre code {
+  white-space: pre-wrap;
+  padding: 0;
+}
+
+pre::after {
+  position: absolute;
+  top: 0.4em;
+  right: 0.6em;
+  content: attr(data-language);
+  font-size: 0.7em;
+  font-family: var(--font-sans);
+  background: color-mix(in oklab, var(--accent-bamboo) 20%, transparent);
+  color: white;
+  padding: 0.1em 0.5em;
+  border-radius: 0.25em;
+  opacity: 0.8;
+}
+
+pre code {
+  background: transparent;
+}

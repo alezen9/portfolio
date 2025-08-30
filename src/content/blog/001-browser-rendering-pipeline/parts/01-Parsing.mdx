@@ -1,0 +1,112 @@
+## Parsing: DOM and CSSOM
+
+When the browser loads a page, the first thing it does is parse the source files.<br />
+Parsing is the act of taking raw text, HTML or CSS, and turning it into structured data that the engine can work with.
+
+<br />
+
+### HTML → DOM
+
+The HTML parser, called _HTMLTreeBuilder_ in both Blink and WebKit, _HTML5 Tree Builder_ in Gecko,
+reads the markup and outputs the DOM (==Document Object Model==).
+
+> **Note:** Blink powers Chrome and other Chromium-based browsers, WebKit backs Safari,
+> while Gecko runs the show in Firefox.
+
+<br />
+<br />
+
+The DOM isn't stored as `JSON` or `XML` on disk, it lives entirely in memory as a tree of objects, each representing an element, attribute, or text node.
+
+Example:
+
+{/* prettier-ignore */}
+```html
+<div id="main" class="box highlight">
+  <h1>Hello World!</h1>
+  <p>Nice to meet you.</p>
+</div>
+```
+
+Conceptually becomes:
+
+```
+Element: "DIV"
+  attributes:
+    class: "box highlight"
+    id: "main"
+  children:
+    - Element: "H1"
+        children:
+          - Text("Hello World!")
+    - Element: "P"
+        children:
+          - Text("Nice to meet you.")
+```
+
+Which JavaScript can interact with using APIs like:
+
+- `document.querySelector("div")`
+- `node.textContent`
+- etc...
+
+<br />
+
+> **Note:** An element's attributes are technically stored in a `NamedNodeMap` (a map-like structure where each attribute name is unique),
+> while its children are stored in a `NodeList` (an ordered list of nodes, which can be elements, text nodes, or comments).
+> In practice: attributes behave like a map, children like a list.
+
+<br />
+<br />
+
+### CSS → CSSOM
+
+The CSS parser, literally named _CSSParser_ in Blink and WebKit while Gecko uses a _Rust-based Servo parser_, reads stylesheets
+and outputs the CSSOM (==CSS Object Model==).
+
+Like the DOM, it's an in-memory object graph: rules, selectors, and declarations.
+
+Example:
+
+```css
+.box {
+  color: red;
+}
+
+.highlight {
+  background-color: black;
+}
+```
+
+Conceptually becomes:
+
+```
+Rule
+  selectorText: ".box"
+  declarations:
+    color: red
+
+Rule
+  selectorText: ".highlight"
+  declarations:
+    background-color: black
+```
+
+Exposed to JavaScript as:
+
+- `document.styleSheets`
+- `CSSStyleRule`
+- `CSSStyleDeclaration`
+
+<br />
+
+> **Note:** If we had two selectors such as `.box.highlight` and `.highlight.box`, they both match the same elements,
+> but in the CSSOM the `selectorText` string is preserved exactly as written.
+> This means they appear as different strings, and therefore as two distinct rules, even though they're equivalent in matching.
+
+<br />
+<br />
+
+Together, ==DOM== and ==CSSOM== form the input to the next stage: ==Style Recalculation==,
+where the browser decides what each element actually looks like
+after applying cascade, inheritance, and variables.

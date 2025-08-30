@@ -1,0 +1,61 @@
+### Layout (a.k.a. Reflow)
+
+Once every element has its computed styles, the browser's next job is to figure out where things actually go on the page. This step is called layout, or sometimes reflow when it happens again after changes.
+
+What happens here
+
+The browser builds a layout tree (also called a frame tree).
+
+Each node in the tree gets geometry information: its position, width, height, margins, line breaks, etc.
+
+Inline text is measured and split into line boxes.
+
+Relative values (%, em, vh) are resolved against parents and viewport sizes.
+
+Why “reflow”?
+
+Because this process isn't one-and-done:
+
+If you resize the window, insert content, or change styles that affect geometry, the browser may need to run layout again.
+
+That's a reflow. Depending on how much changed, it could affect just one subtree or cascade through the whole page.
+
+Example
+
+```html
+<div class="box">Hello</div>
+```
+```css
+.box {
+  width: 200px;
+  padding: 10px;
+  margin-left: 100px;
+}
+```
+
+Layout tree entry (conceptual):
+
+```yml
+DIV.box
+  x: 100
+  y: 0
+  width: 200
+  height: 20
+  padding: 10
+```
+
+The browser now knows exactly where that box and its content should sit on the page.
+
+Why layout can be expensive
+
+Layout depends on relationships between elements (flexbox, grid, percentages).
+
+A change in one place can ripple through siblings, children, or even the whole document.
+
+Example: changing width of a container might trigger a reflow for all its children.
+
+Output of this stage
+
+A layout tree with precise box positions and dimensions.
+
+This becomes the input for the paint stage, where the browser actually starts drawing things.

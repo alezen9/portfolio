@@ -1,0 +1,48 @@
+### Paint (a.k.a. Rasterization)
+
+At this point, the browser knows what every element looks like (computed styles) and where everything goes (layout tree). The next step is to actually draw pixels.
+
+What happens here
+
+The browser walks the layout tree and generates a display list — a sequence of draw commands like:
+
+```
+FillRect(x=0, y=0, w=200, h=100, color=red)
+DrawText("Hello", font=Arial, size=16, x=108, y=70)
+```
+
+These commands are not pixels yet. Think of them as vector instructions.
+
+The display list is then rasterized (turned into bitmaps).
+
+CPU vs GPU
+
+The CPU usually constructs the display list.
+
+Rasterization (drawing those commands into pixels) can happen on CPU or GPU, depending on the browser, driver, and platform.
+
+Chrome, for example, uses Skia as the graphics library to rasterize tiles, often GPU-accelerated. Safari relies on Core Graphics / Core Animation.
+
+Tiling
+
+Instead of painting the whole page at once, the browser splits it into tiles (e.g. 256 \00d7 256px).
+
+Each tile is rasterized independently, often in parallel across threads or GPU cores.
+
+Why? If only a small part of the screen changes, only those tiles need repainting.
+
+👉 You can visualize this in Chrome DevTools by enabling “Paint flashing” — tiles that repaint flash green.
+
+Why paint can be expensive
+
+Some CSS properties are cheap: background-color, border.
+
+Others are heavy: large shadows, gradients, mask-image, filters, backdrop filters.
+
+Animating paint-heavy properties means new tiles must be rasterized every frame → jank.
+
+Output of this stage
+
+A set of rasterized tiles (bitmaps).
+
+These tiles are then handed off to the compositor, which decides how to stack and move them.

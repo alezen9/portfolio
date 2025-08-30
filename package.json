@@ -9,19 +9,21 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/mdx": "^4.3.1",
+    "@astrojs/mdx": "^4.3.4",
     "@astrojs/preact": "^4.1.0",
     "@astrojs/rss": "^4.0.12",
-    "@astrojs/sitemap": "^3.4.1",
+    "@astrojs/sitemap": "^3.5.1",
     "@astrojs/svelte": "^7.1.0",
-    "astro": "^5.12.1",
+    "astro": "^5.13.4",
     "gsap": "^3.13.0",
     "preact": "^10.26.9",
     "sharp": "^0.34.2",
-    "svelte": "^5.38.1"
+    "svelte": "^5.38.1",
+    "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
     "@tweakpane/core": "^2.0.5",
+    "@types/mdast": "^4.0.4",
     "prettier": "^3.6.2",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-svelte": "^3.4.0",

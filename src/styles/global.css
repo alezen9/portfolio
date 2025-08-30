@@ -19,7 +19,7 @@
   --text-dark: 15, 15, 15;
   --text-raw: var(--text-dark);
   --text-color: rgb(var(--text-raw));
-  --text-accent: rgb(9, 206, 251);
+  --text-accent: var(--text-color);
 
   --font-sans: "RedHatText", system-ui, -apple-system, sans-serif;
   --font-mono: "RobotoMono", "SFMono-Regular", monospace;
@@ -43,6 +43,8 @@
 * {
   margin: 0;
   box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -118,11 +120,9 @@ code {
 a {
   position: relative;
   width: fit-content;
-  color: currentColor;
-  text-decoration: none;
-  font-family: var(--font-mono);
-  letter-spacing: 3px;
-  font-weight: 500;
+  color: color-mix(in oklab, var(--text-accent) 50%, var(--text-color));
+  text-underline-offset: 0.25em;
+  text-decoration-color: color-mix(in oklab, currentColor 55%, transparent);
 }
 
 a[aria-disabled="true"],
@@ -132,42 +132,6 @@ label[aria-disabled="true"] {
   user-select: none;
   text-decoration: none;
   opacity: 0.25;
-}
-
-a:not(:has(> svg:only-child))::before {
-  position: absolute;
-  content: "";
-  bottom: 0;
-  left: 0;
-  width: 0;
-  transition: width 0.2s ease-in-out;
-  will-change: width;
-  height: 1px;
-  background-color: var(--text-color);
-}
-
-a:not(:has(> svg:only-child))::after {
-  --size: 4px;
-  position: absolute;
-  content: "";
-  bottom: calc((var(--size) / 2) * -1);
-  right: -10%;
-  transform: rotate(45deg);
-  border-top: 1px solid;
-  border-right: 1px solid;
-  width: var(--size);
-  height: var(--size);
-  opacity: 0;
-  will-change: opacity;
-}
-
-a:not(:has(> svg:only-child)):hover::before {
-  width: 110%;
-}
-
-a:not(:has(> svg:only-child)):hover::after {
-  opacity: 1;
-  transition: opacity 0.2s ease-in-out 0.2s;
 }
 
 svg {

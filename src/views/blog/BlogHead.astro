@@ -1,0 +1,53 @@
+<link
+  rel="preload"
+  href="/fonts/Okashi-Regular.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+<style is:global>
+  @font-face {
+    font-family: "Okashi-Regular";
+    src: url("/fonts/Okashi-Regular.woff2") format("woff2");
+    font-display: swap;
+  }
+  :root {
+    --accent-torii: rgb(187, 56, 40); /* torii red */
+    --accent-bamboo: rgb(55, 120, 75); /* bamboo green */
+    --accent-sakura: rgb(233, 153, 183); /* sakura pink */
+    --text-accent: var(--accent-torii);
+  }
+  body::before {
+    position: fixed;
+    inset: 0;
+    content: "";
+    z-index: -2;
+    background: radial-gradient(
+      circle at bottom right,
+      color-mix(in oklab, var(--accent-bamboo) 10%, var(--background-color)),
+      var(--background-color) 50%
+    );
+  }
+
+  body::after {
+    position: fixed;
+    inset: 0;
+    content: "";
+    z-index: -1;
+    mix-blend-mode: darken;
+    background: radial-gradient(
+      circle at top left,
+      color-mix(in oklab, var(--accent-bamboo) 10%, var(--background-color)),
+      var(--background-color) 50%
+    );
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 6vw, 4rem);
+    font-family: "Okashi-Regular";
+  }
+
+  :root[data-theme="dark"] body::after {
+    mix-blend-mode: lighten;
+  }
+</style>

@@ -1,0 +1,64 @@
+### Compositing & Layers
+
+By now, the browser has rasterized tiles for everything that needs to be drawn. But it still needs to figure out how to stack them together into the final frame. This step is called compositing.
+
+Layers: not everything is equal
+
+Most elements just get painted into their parent's layer.
+
+But some elements are “promoted” to their own compositing layer.
+
+Think of Photoshop: instead of merging everything onto one canvas, some pieces stay separate so they can be moved around independently.
+
+What triggers a new layer?
+
+Browsers use heuristics (rules of thumb). Common triggers:
+
+- transform (e.g. translate, scale, rotate)
+- opacity
+- will-change
+- position: fixed or sticky
+- filter, mask, clip-path
+- \<video>, \<canvas>
+
+In your case: the moving circular mask wasn't promoted to a layer by Safari, so every frame triggered a repaint. Adding:
+
+`transform: translateZ(0);`
+
+forced Safari to promote it to a GPU layer. Once promoted, Safari could just move the layer's bitmap instead of repainting the mask every frame → smooth.
+
+Main thread vs compositor thread
+
+Main thread does style → layout → paint.
+
+Compositor thread is separate: it takes rasterized layers and assembles them into the final frame.
+
+If something changes that only affects compositor properties (like transform or opacity), the compositor thread can animate it at 60fps (or 120fps) without involving the main thread.
+
+If you change properties that affect layout or paint, the main thread gets dragged back into the process → slower.
+
+GPU transforms
+
+Once an element is on its own layer, transform operations are handled by the GPU:
+
+Internally, it's just matrix multiplication on the layer's texture.
+
+Cheap, smooth, hardware-accelerated.
+
+This is why transform: translateX(...) is safe to animate, while left: ... is not — left requires layout → paint → composite.
+
+Why compositing isn't always free
+
+More layers = more GPU memory. Overusing will-change or translateZ(0) everywhere can blow up VRAM.
+
+Text rendering quirks. On some systems, promoted layers disable subpixel antialiasing → text may look blurrier.
+
+Upload cost. Every layer has to be uploaded to the GPU once painted.
+
+So: compositing is powerful, but you want to use it surgically, not blindly.
+
+Output of this stage
+
+The compositor thread now has a set of layers and instructions on how to stack and move them.
+
+The final step: the GPU swaps buffers and those pixels appear on screen.

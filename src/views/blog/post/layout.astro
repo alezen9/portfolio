@@ -1,23 +1,35 @@
 ---
 import BaseHead from "@components/ui/BaseHead.astro";
 import Menu from "@components/ui/Menu.astro";
+import { type CollectionEntry } from "astro:content";
+import BlogHead from "../BlogHead.astro";
+import "./post.css";
+
+type Props = CollectionEntry<"blog">["data"];
+
+const { title, description } = Astro.props;
 ---
 
 <html lang="en" data-theme="dark">
   <head>
-    <BaseHead title="AG | Blog detail" description="..." />
+    <BaseHead title={`AG | ${title}`} description={description} />
+    <BlogHead />
+
     <style>
       .wrapper {
-        --text-accent: rgb(45, 114, 98);
         box-sizing: border-box;
         width: 100%;
         max-width: min(80ch, 90dvw);
         min-height: 100dvh;
         margin: 0 auto;
         padding: 2em;
-        display: flex;
-        flex-direction: column;
-        gap: 4em;
+      }
+
+      @media screen and (max-width: 480px) {
+        .wrapper {
+          padding: 2em;
+          max-width: 100dvw;
+        }
       }
     </style>
   </head>

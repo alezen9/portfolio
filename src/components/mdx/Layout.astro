@@ -1,0 +1,28 @@
+---
+type Props = {
+  columns?: number;
+  rows?: number;
+  gap?: number;
+};
+
+const { columns = 1, rows = 1, gap = 0, ...rest } = Astro.props;
+---
+
+<style
+  define:vars={{
+    columns,
+    rows,
+    gap,
+  }}
+>
+  div {
+    display: grid;
+    grid-template-columns: repeat(var(--columns), 1fr);
+    grid-template-rows: repeat(var(--rows), 1fr);
+    gap: calc(1em * var(--gap));
+  }
+</style>
+
+<div {...rest}>
+  <slot />
+</div>

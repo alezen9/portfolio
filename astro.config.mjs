@@ -4,13 +4,20 @@ import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import svelte from "@astrojs/svelte";
 import preact from "@astrojs/preact";
+import { remarkHighlightPlugin } from "./src/utils/remarkHighlightPlugin";
 
-// https://astro.build/config
 export default defineConfig({
   site: "https://aleksandargjoreski.dev",
   base: "/",
   trailingSlash: "ignore",
-  integrations: [mdx(), sitemap(), preact(), svelte()],
+  integrations: [
+    mdx({
+      remarkPlugins: [remarkHighlightPlugin],
+    }),
+    sitemap(),
+    preact(),
+    svelte(),
+  ],
   devToolbar: {
     enabled: false,
   },
