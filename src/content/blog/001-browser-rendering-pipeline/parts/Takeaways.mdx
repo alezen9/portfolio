@@ -1,4 +1,4 @@
-### Practical Takeaways
+## Practical Takeaways
 
 All this talk about DOMs, CSSOMs, tiles, and compositor threads is useful only if it helps you write smoother, more predictable frontends. Here are some concrete lessons I pulled out of this deep dive (and that my Safari bug made painfully clear):
 
@@ -8,13 +8,13 @@ All this talk about DOMs, CSSOMs, tiles, and compositor threads is useful only i
 
 ❌ Expensive (triggers layout or paint): top, left, width, height, color, box-shadow, background-image, filter
 
-Rule of thumb: if it affects geometry or pixels, it’ll likely cause a reflow or repaint.
+Rule of thumb: if it affects geometry or pixels, it'll likely cause a reflow or repaint.
 
 2. Use GPU promotion surgically
 
 translateZ(0) or will-change: transform; can force a new GPU layer → smoother animations.
 
-Don’t scatter them everywhere: more layers = more GPU memory + possible text rendering quirks.
+Don't scatter them everywhere: more layers = more GPU memory + possible text rendering quirks.
 
 Add them only when you need smooth animations on a particular element.
 
@@ -24,7 +24,7 @@ Updating a variable on :root affects every descendant that uses it → broad sty
 
 Scoping variables to the smallest subtree possible limits recalculation cost.
 
-If you’re updating something every frame (like I was with my mask), consider where that variable lives.
+If you're updating something every frame (like I was with my mask), consider where that variable lives.
 
 4. Watch for layout thrashing
 
@@ -32,9 +32,9 @@ Mixing reads (getBoundingClientRect()) and writes (element.style.height = ...) i
 
 Batch reads first, then writes.
 
-5. Use DevTools to see what’s happening
+5. Use DevTools to see what's happening
 
-Chrome: Performance panel, “Paint flashing”, Layers tab.
+Chrome: Performance panel, "Paint flashing”, Layers tab.
 
 Safari: Timeline + Layer Compositing diagnostics.
 
@@ -50,12 +50,12 @@ Every stage you can skip (e.g. no layout, no paint, compositor-only animation) g
 
 7. Keep perspective
 
-You don’t need to memorize every detail of Skia, Core Animation, or GPU buffers.
+You don't need to memorize every detail of Skia, Core Animation, or GPU buffers.
 
 A mental model of the pipeline (Parse → Style → Layout → Paint → Composite → Display) is enough to reason about why something stutters.
 
 Wrapping Up
 
-My Safari bug started with a shrug — “one more thing to try” — and ended up giving me a much clearer picture of what browsers are actually doing under the hood.
+My Safari bug started with a shrug — "one more thing to try” — and ended up giving me a much clearer picture of what browsers are actually doing under the hood.
 
-The fix was simple (translateZ(0)), but the real value came from understanding why it worked. Once you see how browsers go from code to pixels, the mystery around “random” jank mostly disappears. You can spot bottlenecks, choose the right properties to animate, and debug issues with confidence — instead of blindly pasting in magic one-liners from the internet.
+The fix was simple (translateZ(0)), but the real value came from understanding why it worked. Once you see how browsers go from code to pixels, the mystery around "random” jank mostly disappears. You can spot bottlenecks, choose the right properties to animate, and debug issues with confidence — instead of blindly pasting in magic one-liners from the internet.

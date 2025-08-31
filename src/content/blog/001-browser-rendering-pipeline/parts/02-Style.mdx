@@ -91,11 +91,12 @@ element.style.setProperty("--main-color", "blue");
 If a child is marked dirty both because it uses the variable and because its parent's layout changed, the browser won't recalc it twice.
 Engines coalesce multiple invalidation reasons so ==each node is recalculated at most once per pass==.
 
-> **Note:** CSS variables don't behave like constants that are resolved at parse time — they remain “live.”
+> **Note:** CSS variables don't behave like constants that are resolved at parse time — they remain "live.”
 > Their definition scope determines the potential set of affected nodes, while usage determines which nodes actually trigger recalculation.
 > This flexibility is what makes them powerful, but also what can make updating root-level variables every frame very expensive.
 
 <br />
+
 ### Output of this stage
 
 The output of this stage is a computed style map where each DOM element has a

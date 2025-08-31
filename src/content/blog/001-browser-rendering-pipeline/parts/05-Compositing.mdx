@@ -1,64 +1,84 @@
-## Compositing & Layers
+## Compositing
 
-By now, the browser has rasterized tiles for everything that needs to be drawn. But it still needs to figure out how to stack them together into the final frame. This step is called compositing.
+By now, the browser has rasterized tiles for everything that needs to be drawn. But it still needs to figure out how to stack them together into the final frame.  
+This step is called compositing.
 
-Layers: not everything is equal
+<br />
 
-Most elements just get painted into their parent's layer.
+### Layers: not all elements are equal
 
-But some elements are “promoted” to their own compositing layer.
+Most elements just get painted into their parent's layer.  
+But some elements are "promoted” to their own compositing layer.
 
-Think of Photoshop: instead of merging everything onto one canvas, some pieces stay separate so they can be moved around independently.
+Think of Photoshop: instead of merging everything onto one canvas, some pieces stay separate so they can be moved and blended independently.
 
-What triggers a new layer?
+Browsers use heuristics to decide which elements deserve their own layer:
 
-Browsers use heuristics (rules of thumb). Common triggers:
+- `transform` (e.g. `translate`, `scale`, `rotate`)
+- `opacity`
+- `will-change`
+- `position: fixed` or `sticky`
+- `filter`, `mask`, `clip-path`
+- `<video>`, `<canvas>`
 
-- transform (e.g. translate, scale, rotate)
-- opacity
-- will-change
-- position: fixed or sticky
-- filter, mask, clip-path
-- \<video>, \<canvas>
+<br />
 
-In your case: the moving circular mask wasn't promoted to a layer by Safari, so every frame triggered a repaint. Adding:
+Not every case is promoted: a small transformed icon might stay in its parent layer, while a large moving panel gets a GPU-backed layer.
 
-`transform: translateZ(0);`
+**In my scenario**: Safari didn't promote the moving circular mask by default (its heuristics didn't consider it worth a layer),
+so every frame triggered a repaint. Adding `transform: translateZ(0);` forced Safari to create a dedicated GPU layer.  
+Once promoted, Safari could just move the layer's bitmap instead of repainting the mask every frame &rarr; smooth.
 
-forced Safari to promote it to a GPU layer. Once promoted, Safari could just move the layer's bitmap instead of repainting the mask every frame → smooth.
+<br />
 
-Main thread vs compositor thread
+### Main thread vs compositor thread
 
-Main thread does style → layout → paint.
+- **Main thread** handles: Style &rarr; Layout &rarr; Paint.
+- **Compositor thread** (separate, usually one per tab) assembles rasterized layers into frames.
 
-Compositor thread is separate: it takes rasterized layers and assembles them into the final frame.
+If only compositor-friendly properties change (`transform`, `opacity`, `filter`),  
+the compositor thread can animate them smoothly at the display's refresh rate (e.g. 60Hz, 120Hz, or higher) without waiting on the main thread.
 
-If something changes that only affects compositor properties (like transform or opacity), the compositor thread can animate it at 60fps (or 120fps) without involving the main thread.
+If a change affects Layout or Paint (`width`, `top`, `color`), the main thread is pulled back in, slowing things down.
 
-If you change properties that affect layout or paint, the main thread gets dragged back into the process → slower.
+### GPU transforms
 
-GPU transforms
+Once an element is on its own layer, **transform and opacity changes are applied on the GPU**.  
+Internally, this is done by shaders applying matrix multiplications to the layer's texture in screen space (no need to re-draw the content).
 
-Once an element is on its own layer, transform operations are handled by the GPU:
+**Cheap, smooth, hardware-accelerated.**
 
-Internally, it's just matrix multiplication on the layer's texture.
+This is why `transform: translateX(...)` is safe to animate, while `left: ...` isn't.  
+`left` forces: Layout &rarr; Paint &rarr; Composite.
 
-Cheap, smooth, hardware-accelerated.
+### Why compositing isn't always free
 
-This is why transform: translateX(...) is safe to animate, while left: ... is not — left requires layout → paint → composite.
+- **More layers = more GPU memory**  
+  Overusing `will-change` or `translateZ(0)` can blow up GPU memory.
 
-Why compositing isn't always free
+- **CPU &rarr; GPU upload cost**  
+   Every new or updated layer must be uploaded from system memory to GPU memory (VRAM).  
+   This is a universal bottleneck in graphics pipelines, not just browsers.
 
-More layers = more GPU memory. Overusing will-change or translateZ(0) everywhere can blow up VRAM.
+  > **Note:** This transfer crosses the CPU↔GPU bus (PCIe on desktop, shared bus on mobile), which is orders of magnitude slower than the GPU's own internal bandwidth.  
+  >  In other words: GPUs are insanely fast once data is in VRAM, but _getting it there_ is slow.  
+  >  That's why minimizing repaints and unnecessary layer promotions matters for performance.
 
-Text rendering quirks. On some systems, promoted layers disable subpixel antialiasing → text may look blurrier.
+  > **Fun fact:** In game development, this is often referred to as the _PCIe tax_.
 
-Upload cost. Every layer has to be uploaded to the GPU once painted.
+  > **Note:** In Chrome DevTools, Performance panel, you can see upload cost show up as **Commit** events, where the browser flushes updated tiles/textures to the GPU.
 
-So: compositing is powerful, but you want to use it surgically, not blindly.
+- **Blending cost**  
+  Multiple overlapping translucent layers mean more GPU work per pixel.
 
-Output of this stage
+- **Text quirks.**  
+  Promoted layers may disable subpixel antialiasing &rarr; text can look blurrier.
 
-The compositor thread now has a set of layers and instructions on how to stack and move them.
+So Compositing is powerful, but you want to use it surgically, not everywhere.
 
-The final step: the GPU swaps buffers and those pixels appear on screen.
+<br />
+
+### Output of this stage
+
+The compositor thread now has a set of layers and instructions on how to stack and move them.  
+These layers are handed to the GPU, which blends them into the final frame.

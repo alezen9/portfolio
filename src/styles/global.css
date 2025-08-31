@@ -146,7 +146,7 @@ svg.animate {
 }
 
 .highlight {
-  color: color-mix(in srgb, var(--text-accent) 50%, var(--text-color));
+  color: color-mix(in oklab, var(--text-accent) 50%, var(--text-color));
 }
 
 hr {
@@ -254,7 +254,7 @@ ul {
   --text-raw: var(--text-light);
 
   & .highlight {
-    color: color-mix(in srgb, var(--text-accent) 30%, var(--text-color));
+    color: color-mix(in oklab, var(--text-accent) 30%, var(--text-color));
   }
 }
 

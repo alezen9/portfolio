@@ -107,7 +107,7 @@ const { class: className, ...rest } = Astro.props;
   }
 
   .project .hero ul li::before {
-    --bg: color-mix(in srgb, var(--text-accent) 10%, var(--background-color));
+    --bg: color-mix(in oklab, var(--text-accent) 10%, var(--background-color));
     position: absolute;
     content: "";
     inset: -0.25em -1em;

@@ -50,7 +50,7 @@ li {
   max-width: 100%;
 }
 
-blockquote {
+/* blockquote {
   position: relative;
   padding-left: 0.5em;
 }
@@ -61,6 +61,22 @@ blockquote::before {
   width: 0.5em;
   border-left: 2px solid currentColor;
   opacity: 0.5;
+} */
+
+blockquote {
+  position: relative;
+  border-radius: var(--border-radius);
+  background: linear-gradient(
+    to right,
+    color-mix(in oklab, var(--accent-torii) 20%, var(--background-color)),
+    transparent
+  );
+  padding: 1em;
+  margin-block: 0.75em;
+}
+
+blockquote p:last-of-type {
+  margin: 0;
 }
 
 .highlight {
