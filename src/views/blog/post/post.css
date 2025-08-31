@@ -72,7 +72,7 @@ pre {
   border-radius: var(--border-radius);
   padding: 1em;
   overflow-x: auto;
-  margin-bottom: 2em;
+  margin-bottom: 1.5em;
 }
 
 pre:is([data-language="plaintext"], [data-language="text"]) code {

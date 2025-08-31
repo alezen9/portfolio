@@ -7,5 +7,6 @@
 
 .comparison video {
   width: 100%;
+  aspect-ratio: 1154 / 720; /* my 2 videos dimensions */
   pointer-events: none;
 }

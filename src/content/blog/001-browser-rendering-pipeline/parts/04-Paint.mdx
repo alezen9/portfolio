@@ -1,10 +1,13 @@
 ## Paint & Rasterization
 
-At this point, the browser knows what every element looks like (computed styles) and where everything goes (layout tree). The next step is to actually draw pixels.
+At this point, the browser knows what every element looks like (computed styles) and where everything goes (layout tree).  
+The next step is to actually draw pixels.
 
-What happens here
+<br />
 
-The browser walks the layout tree and generates a display list — a sequence of draw commands like:
+### What happens here
+
+The browser walks the layout tree and generates a ==display list==, a sequence of draw commands like:
 
 ```
 FillRect(x=0, y=0, w=200, h=100, color=red)
@@ -12,37 +15,59 @@ DrawText("Hello", font=Arial, size=16, x=108, y=70)
 ```
 
 These commands are not pixels yet. Think of them as vector instructions.
+Rasterization samples those vector-like commands onto the pixel grid, per tile, producing the bitmap for each tile.
 
-The display list is then rasterized (turned into bitmaps).
+> **Note:** _Rasterization_ is one of several ways to transform geometry into images.  
+> 3D engines might use _ray tracing_ or _path tracing_, but browsers stick to rasterization because it's fast and highly parallelizable.
 
-CPU vs GPU
+<br />
 
-The CPU usually constructs the display list.
+### Where it runs (CPU vs GPU)
 
-Rasterization (drawing those commands into pixels) can happen on CPU or GPU, depending on the browser, driver, and platform.
+The **CPU** typically constructs the display list.  
+Rasterization can happen on either CPU or GPU, depending on engine and hardware.
 
-Chrome, for example, uses Skia as the graphics library to rasterize tiles, often GPU-accelerated. Safari relies on Core Graphics / Core Animation.
+<br />
 
-Tiling
+**Engine differences**
 
-Instead of painting the whole page at once, the browser splits it into tiles (e.g. 256 \00d7 256px).
+- Chrome's Blink, for example, uses ==Skia== as the graphics library to rasterize tiles, GPU-accelerated by default.
+- Safari's WebKit relies on ==Core Graphics== / ==Core Animation==.
+- Firefox's Gecko uses ==WebRender==, which sends the display list directly to the GPU, making rasterization and compositing fully GPU-driven.
+
+<br />
+
+### Tiling
+
+Instead of painting the whole page at once, the browser splits it into tiles (e.g. 256&times;256 px or 512&times;512 px).
 
 Each tile is rasterized independently, often in parallel across threads or GPU cores.
 
-Why? If only a small part of the screen changes, only those tiles need repainting.
+**Why tiles?**  
+If only a small part of the screen changes, only those tiles need to be re-rasterized.
 
-👉 You can visualize this in Chrome DevTools by enabling “Paint flashing” — tiles that repaint flash green.
+> **Note:** You can visualize this in Chrome DevTools by pressing **Cmd+Shift+P** / **Ctrl+Shift+P** to open the Command Menu &rarr; type _"Show Rendering"_ and select it.  
+> In the Rendering drawer enable Paint flashing (repainted regions flash green).
+> You can also toggle Layers borders to outline compositor layers or check GPU memory usage and fps by enabling Frame Rendering Stats.
 
-Why paint can be expensive
+<br />
 
-Some CSS properties are cheap: background-color, border.
+### Why Paint can be expensive
 
-Others are heavy: large shadows, gradients, mask-image, filters, backdrop filters.
+Paint cost scales with how many pixels you touch and how complex each pixel is to compute.  
+Not all properties are equal.
 
-Animating paint-heavy properties means new tiles must be rasterized every frame → jank.
+For example:
 
-Output of this stage
+- Cheap: `background-color`, `border`, simple fills.
+- Expensive: large `box-shadow`s, gradients, `mask-image`, CSS filters, backdrop filters.
+- Large area repaints (e.g. animating `background-color` on `<body>`) are especially costly.
 
-A set of rasterized tiles (bitmaps).
+Animating Paint-heavy properties means new tiles must be rasterized every frame, which can quickly cause jank.
 
-These tiles are then handed off to the compositor, which decides how to stack and move them.
+<br />
+
+### Output of this stage
+
+A set of rasterized tiles (pixel buffers/bitmaps). If rasterized on the CPU, these bitmaps are uploaded as GPU textures. If rasterized on the GPU, they're already textures.
+The compositor then samples and blends them to assemble the frame.
