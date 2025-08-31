@@ -1,29 +1,39 @@
 ## Layout (or Reflow)
 
-Once every element has its computed styles, the browser's next job is to figure out where things actually go on the page. This step is called layout, or sometimes reflow when it happens again after changes.
+Once every element has computed styles, the browser's next job is to figure out where everything actually goes.  
+This stage is called Layout, or Reflow when it runs again after changes.
 
-What happens here
+<br />
 
-The browser builds a layout tree (also called a frame tree).
+### What happens here
 
-Each node in the tree gets geometry information: its position, width, height, margins, line breaks, etc.
+1. The browser builds a **Layout Tree** (also called a **Frame Tree** in Gecko).  
+   An in-memory structure derived from the DOM + computed styles, but filtered down to only **visible, renderable elements**.
 
-Inline text is measured and split into line boxes.
+2. Each node in the tree gets precise geometry from the box model: its position, width, height, padding, borders, margins, line breaks, etc.
 
-Relative values (%, em, vh) are resolved against parents and viewport sizes.
+3. Inline text is measured and split into line boxes.
 
-Why “reflow”?
+4. Relative values (`%`, `em`, `vh`) are resolved against parents and viewport sizes.
 
-Because this process isn't one-and-done:
+<br />
 
-If you resize the window, insert content, or change styles that affect geometry, the browser may need to run layout again.
+### Why “Reflow”?
 
-That's a reflow. Depending on how much changed, it could affect just one subtree or cascade through the whole page.
+Because this process isn't one-and-done.
+
+If you resize the window, insert content, or change styles that affect geometry, the browser may need to run layout again.  
+Depending on what changed, this can affect just one subtree or cascade through the entire page.
+
+<br />
 
 Example
 
+{/* prettier-ignore */}
 ```html
-<div class="box">Hello</div>
+<div class="box">
+  Hello
+</div>
 ```
 
 ```css
@@ -36,7 +46,7 @@ Example
 
 Layout tree entry (conceptual):
 
-```yml
+```
 DIV.box
   x: 100
   y: 0
@@ -47,16 +57,36 @@ DIV.box
 
 The browser now knows exactly where that box and its content should sit on the page.
 
-Why layout can be expensive
+<br />
 
-Layout depends on relationships between elements (flexbox, grid, percentages).
+### Why this stage can be expensive
 
+Layout depends on relationships between elements (flexbox, grid, percentages).  
 A change in one place can ripple through siblings, children, or even the whole document.
 
-Example: changing width of a container might trigger a reflow for all its children.
+Some DOM APIs like `getBoundingClientRect()` or `offsetWidth` can also force a **synchronous layout**, because the browser must flush pending changes and give you an accurate number.  
+That means JS execution pauses until the layout tree is up to date.
 
-Output of this stage
+<br />
 
-A layout tree with precise box positions and dimensions.
+> **Note on `offsetWidth`:**  
+> This property returns an element's rendered width (content + padding + borders, no margins).  
+> But reading it forces the browser to run layout synchronously so the number is correct, pausing JS execution until the layout tree is fresh.  
+> Developers sometimes exploit this:
+>
+> ```js
+> el.classList.remove("animate");
+> void el.offsetWidth; // force layout flush
+> el.classList.add("animate"); // animation restarts
+> ```
+>
+> Here `offsetWidth` is used as a hack to restart a CSS animation. Handy trick, but it comes with a performance cost if overused.
+> Used sparingly it's usually fine, but in loops or animation frames it can cause repeated reflows and jank.
 
-This becomes the input for the paint stage, where the browser actually starts drawing things.
+<br />
+
+### Output of this stage
+
+The Layout Tree, an in-memory structure with precise box positions and dimensions.
+
+This becomes the input for the Paint stage, where the browser actually starts drawing things.

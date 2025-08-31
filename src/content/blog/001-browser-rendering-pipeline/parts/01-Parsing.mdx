@@ -10,12 +10,6 @@ Parsing is the act of taking raw text, HTML or CSS, and turning it into structur
 The HTML parser, called _HTMLTreeBuilder_ in both Blink and WebKit, _HTML5 Tree Builder_ in Gecko,
 reads the markup and outputs the DOM (==Document Object Model==).
 
-> **Note:** Blink powers Chrome and other Chromium-based browsers, WebKit backs Safari,
-> while Gecko runs the show in Firefox.
-
-<br />
-<br />
-
 The DOM isn't stored as `JSON` or `XML` on disk, it lives entirely in memory as a tree of objects, each representing an element, attribute, or text node.
 
 Example:
@@ -53,10 +47,9 @@ Which JavaScript can interact with using APIs like:
 <br />
 
 > **Note:** An element's attributes are technically stored in a `NamedNodeMap` (a map-like structure where each attribute name is unique),
-> while its children are stored in a `NodeList` (an ordered list of nodes, which can be elements, text nodes, or comments).
+> while its children are stored in a `NodeList` (an ordered list of nodes, which can be elements, text nodes, or comments).  
 > In practice: attributes behave like a map, children like a list.
 
-<br />
 <br />
 
 ### CSS → CSSOM
@@ -101,11 +94,12 @@ Exposed to JavaScript as:
 <br />
 
 > **Note:** If we had two selectors such as `.box.highlight` and `.highlight.box`, they both match the same elements,
-> but in the CSSOM the `selectorText` string is preserved exactly as written.
+> but in the CSSOM the `selectorText` string is preserved exactly as written.  
 > This means they appear as different strings, and therefore as two distinct rules, even though they're equivalent in matching.
 
 <br />
-<br />
+
+### Output of this stage
 
 Together, ==DOM== and ==CSSOM== form the input to the next stage: ==Style Recalculation==,
 where the browser decides what each element actually looks like

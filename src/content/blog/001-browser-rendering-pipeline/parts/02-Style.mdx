@@ -15,7 +15,6 @@ This stage is sometimes referred to as just _Style Calculation_.<br />
 4. Each element ends up with a ==computed style==: every property has an absolute value.
 
 <br />
-<br />
 
 Example:
 
@@ -46,7 +45,6 @@ Notice how relative values (`1rem, var(--main-color)`) are turned into absolute 
 Browsers also fill in defaults (`display: block, margin: 0`), even if you didn't set them explicitly.
 
 <br />
-<br />
 
 ### CSS Variables and Scope
 
@@ -64,7 +62,8 @@ They cascade, inherit, and resolve at style recalculation time, which has import
 <br />
 <br />
 
-**Updates via JavaScript:**<br />
+**Updates via JavaScript:**
+
 When you update a variable:
 
 ```javascript
@@ -79,14 +78,13 @@ element.style.setProperty("--main-color", "blue");
 <br />
 <br />
 
-**Types of properties:**<br />
+**Types of properties:**
 
 - If the variable controls a non-inherited property (e.g. `border-color`), only the element using it needs recalculation.
 - If it controls an inherited property (e.g. `color`, `font-size`), children may also need recalculation.
 - If it controls geometry/layout (e.g. `width`, `height`, `transform: scale(var(--x))`), the element's layout changes,
   which invalidates its entire subtree: children that don't use the variable directly still need recalculation.
 
-<br />
 <br />
 
 **Deduplication:**<br />
@@ -98,6 +96,7 @@ Engines coalesce multiple invalidation reasons so ==each node is recalculated at
 > This flexibility is what makes them powerful, but also what can make updating root-level variables every frame very expensive.
 
 <br />
+### Output of this stage
 
 The output of this stage is a computed style map where each DOM element has a
 resolved set of styles, think of it as a big object with key-value pairs.

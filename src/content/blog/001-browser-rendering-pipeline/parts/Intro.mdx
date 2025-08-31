@@ -58,21 +58,21 @@ This sequence is called the ==Rendering Pipeline==.
 
 Knowing how that pipeline works doesn't just satisfy curiosity, it changes the way you debug and build:
 
-- **You stop guessing.**  
-  Instead of _"maybe reducing the mask size will help"_, you can check: _"Is the bottleneck ==Style==, ==Layout==, ==Paint==, or ==Compositing=="_?
+- **You stop guessing**  
+  Instead of _"maybe reducing the mask size will help"_, you can ask yourself: _"Is the bottleneck ==Style==, ==Layout==, ==Paint==, or ==Compositing=="_?
 
-- **You know which properties are safe to animate.**  
-  `transform` and `opacity` are compositor-friendly, while `top`, `left`, or `width` force Layout and Paint.
+- **You know which properties are safe to animate**  
+  `transform` and `opacity` are Compositor-friendly, while `top`, `left`, or `width` force Layout and Paint.
 
-- **You see why browser differences happen.**  
-  Chrome and Safari use different heuristics for promoting elements to GPU layers, which explains why my fix was needed in one and not the other.
+- **You understand why browser differences happen**  
+  Chrome and Safari use different heuristics for promoting elements to GPU layers (which explains why my fix was needed in one and not the other).
 
-- **You make better design calls early.**  
+- **You make better design calls early**  
   You'll know when a heavy blur, mask, or filter will eat GPU cycles, and when it's safe to use them.
 
 <br />
 
-In other words: understanding the rendering pipeline gives frontend developers a kind of x-ray vision.
+In other words: understanding the rendering pipeline makes the invisible steps visible, and actionable.
 
 You don't need to memorize every detail, but even a rough mental model helps you reason about performance issues instead of relying on Stack Overflow magic.
 
@@ -88,22 +88,32 @@ At a conceptual level, every browser engine follows the same six broad stages to
 
 2. **Style Recalculation**
    - The DOM and CSSOM are matched together (the engine resolves which CSS rules apply to which DOM nodes).
-   - Each element gets its computed styles — the final property values after cascade, inheritance, and variables are resolved.
+   - This procudes the computed styles dor each element, where every CSS property, after cascade, inheritance, and variables, has been resolved.
 
 3. **Layout (Reflow)**
    - The browser uses computed styles to calculate geometry: positions, sizes, line breaks.
    - Produces a layout tree (sometimes called the _frame tree_ or _render tree_), which maps where every visible element goes.
+     The layout tree is essentially the DOM filtered down to only visible, renderable elements.
 
 4. **Paint & Rasterization**
-   - Paint: elements are turned into drawing commands (a display list).
-   - Rasterization: those commands are converted into pixels, usually in tiles (bitmaps).
+   - **Paint:** elements are turned into a list of drawing commands: the Display List.
+   - **Rasterization:** instead of converting the entire page into one giant image,
+     the browser splits it into smaller chunks called _tiles_ (often 256&times;256 or 512&times;512 pixels,
+     depending on engine heuristics). Each tile is rasterized into its own bitmap texture.
+     This tiling makes it possible to do partial redraws, only the tiles that changed need to be re-rasterized.
 
 5. **Compositing**
    - Some elements are promoted into independent layers (often GPU-backed).
-   - The compositor thread assembles these layers into the final frame.
+   - The compositor thread assembles the tiles and layers into the final frame.
 
 6. **Display**
-   - Finally, the GPU swaps the backbuffer with the frontbuffer during VSync, and the pixels appear on screen.
+   - Finally, the GPU swaps the backbuffer with the frontbuffer, and the pixels appear on screen.
+     This swap happens in sync with the display's refresh rate (VSync), which defines your frame budget — ~16 ms at 60 Hz, ~8 ms at 120 Hz.
+
+<br />
+
+> **Note:** JavaScript isn't a stage of the rendering pipeline itself, but it can affect nearly every stage.  
+> Scripts can modify the DOM or CSSOM (e.g. `element.style`, `classList.add()`, or `appendChild()`), which forces the browser to re-trigger some parts.
 
 <br />
 
