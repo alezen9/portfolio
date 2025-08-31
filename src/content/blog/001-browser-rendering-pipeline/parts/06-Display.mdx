@@ -1,53 +1,63 @@
 ## Display (Buffers & Vsync)
 
-At this point, the compositor has assembled all the layers into a single frame. The last step is to actually put those pixels on the screen.
+At this point, the compositor has assembled all the layers into a single frame.  
+The last step is to actually put those pixels on the screen.
 
-Double buffering
+<br />
+
+### Double buffering
 
 The GPU maintains two buffers:
 
-Front buffer → currently visible on screen.
+- ==Front buffer==: currently being scanned out to the display.
+- ==Back buffer==: where the next frame is rendered.
 
-Back buffer → where the next frame is being drawn.
+<br />
 
-Once the back buffer is ready, it swaps with the front buffer.
+Once the back buffer is ready, the pointers are swapped, the back becomes the new front, and the old front is reused as the new back.  
+This happens in sync with the monitor's refresh (VSync) so the screen never shows half of one frame and half of another (tearing).
 
-This swap happens in sync with the monitor's refresh rate (vsync) to avoid tearing.
+<br />
 
-Triple buffering
+### Triple buffering
 
-Some systems use three buffers: front + two back buffers.
+Some systems use three buffers: one front + two backs.  
+This allows the GPU to start rendering a new frame even if one back buffer is waiting for VSync.
 
-This allows the GPU to keep working on a new frame even if one back buffer is waiting for vsync.
+**Benefit:** smoother scheduling, less stutter.  
+**Trade-off:** more GPU memory, and input can feel slightly less responsive. A freshly rendered frame might not be shown until the next refresh cycle, adding up to one extra frame of latency.
 
-Benefit: smoother scheduling, less stutter.
+> **Note:** Many platforms dynamically switch between double and triple buffering depending on GPU load and timing conditions.
 
-Trade-off: uses more GPU memory, can add a bit of latency (you might see a frame one refresh later).
+<br />
 
-Why vsync matters
+### Why VSync matters
 
-Monitors refresh at fixed intervals (60Hz, 120Hz, etc.).
+Monitors refresh at fixed intervals (60Hz, 120Hz, 144Hz, etc.).
 
-If the browser delivers a frame on time, it looks smooth.
+- If the browser delivers a frame before the deadline, it's shown smoothly.
+- If it misses, that frame is delayed until the next refresh or dropped, causing a visible ==stutter== hence breaking smooth motion.
+- With VSync off: frames can be shown as soon as they're ready, but you risk ==tearing== (two frames shown in one refresh represented as a jagged split across the screen).
 
-If it misses the window, that frame is delayed until the next refresh — causing a visible stutter.
+<br />
 
-This is why we talk about the frame budget: ~16ms per frame at 60Hz, ~8ms per frame at 120Hz.
+This is why we talk about the frame budget: ~16ms per frame at 60Hz, ~8ms at 120Hz.  
+Consistent pacing matters as much as raw FPS, uneven frame times look choppy even if the average FPS is “high.”
 
-End of the journey
+==Latency== is the third piece of the puzzle: the delay between input (e.g. a keypress) and when its effect becomes visible.  
+Buffering strategies and missed VSync deadlines can both increase it.
+
+<br />
+
+### End of the journey
 
 From raw HTML + CSS text, we went through:
 
-Parsing → DOM + CSSOM
+1. **Parsing** &rarr; DOM + CSSOM
+2. **Style** &rarr; computed styles
+3. **Layout** &rarr; geometry (layout tree)
+4. **Paint** &rarr; display list &rarr; rasterized tiles
+5. **Compositing** &rarr; layers assembled by compositor thread
+6. **Display** &rarr; buffers swapped on VSync
 
-Style → computed styles
-
-Layout → geometry (layout tree)
-
-Paint → rasterized tiles
-
-Compositing → layers assembled by compositor thread
-
-Display → buffers swapped on vsync
-
-And that's how your code turns into pixels.
+That's how your code turns into pixels on the screen.
