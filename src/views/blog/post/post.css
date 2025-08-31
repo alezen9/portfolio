@@ -2,7 +2,8 @@
   --border-radius: 0.25em;
 }
 
-figure {
+figure > img,
+figure > video {
   border-radius: var(--border-radius);
   overflow: hidden;
   filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5));
@@ -99,4 +100,24 @@ pre::after {
 
 pre code {
   background: transparent;
+}
+
+li:has(ul) > p {
+  margin: 0;
+}
+
+li ul {
+  margin-bottom: var(--space-s);
+}
+
+img {
+  display: block;
+  margin: 1em auto;
+  width: 50%;
+}
+
+@media screen and (max-width: 480px) {
+  img {
+    width: 100%;
+  }
 }

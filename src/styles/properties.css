@@ -1,5 +1,53 @@
+@property --bg-light {
+  syntax: "<number>#";
+  inherits: false;
+  initial-value: 220, 220, 220;
+}
+
+@property --bg-dark {
+  syntax: "<number>#";
+  inherits: false;
+  initial-value: 15, 15, 15;
+}
+
+@property --bg-raw {
+  syntax: "<number>#";
+  inherits: false;
+  initial-value: 220, 220, 220;
+}
+
+@property --text-light {
+  syntax: "<number>#";
+  inherits: false;
+  initial-value: 180, 180, 180;
+}
+
+@property --text-dark {
+  syntax: "<number>#";
+  inherits: false;
+  initial-value: 15, 15, 15;
+}
+
+@property --text-raw {
+  syntax: "<number>#";
+  inherits: false;
+  initial-value: 15, 15, 15;
+}
+
+@property --background-color {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: rgb(220, 220, 220);
+}
+
+@property --text-color {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: rgb(15, 15, 15);
+}
+
 @property --text-accent {
   syntax: "<color>";
   inherits: false;
-  initial-value: transparent;
+  initial-value: rgb(15, 15, 15);
 }

@@ -3,7 +3,7 @@ import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import svelte from "@astrojs/svelte";
-import preact from "@astrojs/preact";
+// import preact from "@astrojs/preact";
 import { remarkHighlightPlugin } from "./src/utils/remarkHighlightPlugin";
 
 export default defineConfig({
@@ -11,12 +11,12 @@ export default defineConfig({
   base: "/",
   trailingSlash: "ignore",
   integrations: [
+    sitemap(),
+    // preact(),
+    svelte(),
     mdx({
       remarkPlugins: [remarkHighlightPlugin],
     }),
-    sitemap(),
-    preact(),
-    svelte(),
   ],
   devToolbar: {
     enabled: false,
