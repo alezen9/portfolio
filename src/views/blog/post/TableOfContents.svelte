@@ -99,7 +99,7 @@
 </script>
 
 <nav id="toc" class="toc" aria-label="Table of contents">
-  <p class="title">Table of contents</p>
+  <p class="title">Overview</p>
   {#if map.size > 0}
     <ul transition:fade class="list" id="toc-list">
       {#each map.values() as heading}
