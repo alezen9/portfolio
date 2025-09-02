@@ -1,0 +1,40 @@
+---
+import IconX from "@components/icons/IconX.astro";
+
+type Props = {
+  postLinkX?: string;
+};
+
+const { postLinkX } = Astro.props;
+---
+
+<footer>
+  {
+    postLinkX && (
+      <a class="with-icon" href={postLinkX}>
+        Discuss on
+        <span>
+          <IconX class:list={["icon-x"]} />
+        </span>
+      </a>
+    )
+  }
+</footer>
+
+<style>
+  footer {
+    margin-block: 5.5em 3.5em;
+  }
+
+  a {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    text-wrap: nowrap;
+    gap: 0.5em;
+  }
+
+  .icon-x {
+    height: 0.75em;
+  }
+</style>

@@ -41,7 +41,9 @@ const { title, description } = Astro.props;
     <Menu />
     <TableOfContents client:load="svelte" />
     <main class="wrapper">
-      <slot />
+      <div id="article">
+        <slot />
+      </div>
     </main>
   </body>
 </html>

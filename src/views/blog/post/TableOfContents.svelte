@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
+  import { fade } from "svelte/transition";
 
   type ToCElement = {
     id: string;
@@ -99,13 +100,15 @@
 
 <nav id="toc" class="toc" aria-label="Table of contents">
   <p class="title">Table of contents</p>
-  <ul class="list" id="toc-list">
-    {#each map.values() as heading}
-      <li>
-        <a bind:this={heading.link} href={`#${heading.id}`}>{heading.text}</a>
-      </li>
-    {/each}
-  </ul>
+  {#if map.size > 0}
+    <ul transition:fade class="list" id="toc-list">
+      {#each map.values() as heading}
+        <li>
+          <a bind:this={heading.link} href={`#${heading.id}`}>{heading.text}</a>
+        </li>
+      {/each}
+    </ul>
+  {/if}
 </nav>
 
 <style>
