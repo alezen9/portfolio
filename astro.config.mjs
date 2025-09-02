@@ -5,6 +5,7 @@ import sitemap from "@astrojs/sitemap";
 import svelte from "@astrojs/svelte";
 // import preact from "@astrojs/preact";
 import { remarkHighlightPlugin } from "./src/utils/remarkHighlightPlugin";
+import { rehypeScopedH3Ids } from "./src/utils/rehypeScopeH3Ids";
 
 export default defineConfig({
   site: "https://aleksandargjoreski.dev",
@@ -15,6 +16,7 @@ export default defineConfig({
     // preact(),
     svelte(),
     mdx({
+      rehypePlugins: [rehypeScopedH3Ids],
       remarkPlugins: [remarkHighlightPlugin],
     }),
   ],

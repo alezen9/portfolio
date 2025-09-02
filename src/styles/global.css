@@ -118,11 +118,20 @@ code {
 }
 
 a {
+  --intensity: 50%;
   position: relative;
   width: fit-content;
-  color: color-mix(in oklab, var(--text-accent) 50%, var(--text-color));
+  color: color-mix(
+    in oklab,
+    var(--text-accent) var(--intensity),
+    var(--text-color)
+  );
   text-underline-offset: 0.25em;
-  text-decoration-color: color-mix(in oklab, currentColor 55%, transparent);
+  text-decoration-color: color-mix(
+    in oklab,
+    currentColor var(--intensity),
+    transparent
+  );
 }
 
 a.with-icon {

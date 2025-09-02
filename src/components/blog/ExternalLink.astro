@@ -1,0 +1,39 @@
+---
+import IconYoutube from "@components/icons/IconYouTube.astro";
+import IconArticle from "@components/icons/IconArticle.astro";
+
+type Props = {
+  icon?: "article" | "youtube";
+};
+
+const { icon, ...rest } = Astro.props;
+---
+
+<a {...rest} target="_blank" rel="noopener">
+  <p>
+    {icon === "youtube" && <IconYoutube class:list={["icon-youtube"]} />}
+    {icon === "article" && <IconArticle class:list={["icon-article"]} />}
+  </p>
+  <span>
+    <slot />
+  </span>
+</a>
+
+<style>
+  a {
+    position: relative;
+    display: flex;
+  }
+
+  p {
+    position: absolute;
+    left: 0;
+    top: 0.25em;
+    width: 1.25em;
+    aspect-ratio: 1/1;
+  }
+
+  span {
+    padding-left: 1.75em;
+  }
+</style>

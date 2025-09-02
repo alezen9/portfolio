@@ -1,29 +1,32 @@
 ---
+import IconLinkedIn from "@components/icons/IconLinkedIn.astro";
 import IconX from "@components/icons/IconX.astro";
 
 type Props = {
-  postLinkX?: string;
+  xUrl?: string;
+  linkedInUrl?: string;
 };
 
-const { postLinkX } = Astro.props;
+const { xUrl, linkedInUrl } = Astro.props;
 ---
 
 <footer>
-  {
-    postLinkX && (
-      <a class="with-icon" href={postLinkX}>
-        Discuss on
-        <span>
-          <IconX class:list={["icon-x"]} />
-        </span>
-      </a>
-    )
-  }
+  <a class="with-icon" href={xUrl}>
+    Discuss on X
+    <!-- <IconX class:list={["icon-x"]} /> -->
+  </a>
+  <span>•</span>
+  <a class="with-icon" href={linkedInUrl}>
+    Discuss on LinkedIn
+    <!-- <IconLinkedIn class:list={["icon-linkedin"]} /> -->
+  </a>
 </footer>
 
 <style>
   footer {
     margin-block: 5.5em 3.5em;
+    display: flex;
+    gap: 0.5em;
   }
 
   a {
@@ -34,7 +37,18 @@ const { postLinkX } = Astro.props;
     gap: 0.5em;
   }
 
+  span {
+    opacity: 0.5;
+  }
+
+  svg {
+    width: auto;
+  }
+
   .icon-x {
     height: 0.75em;
+  }
+  .icon-linkedin {
+    height: 1.25em;
   }
 </style>

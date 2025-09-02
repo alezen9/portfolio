@@ -24,12 +24,8 @@ figcaption::before {
 }
 
 h1 {
-  color: color-mix(in oklab, var(--text-accent) 50%, var(--text-color));
+  color: color-mix(in oklab, var(--text-accent) 80%, var(--text-color));
   margin-bottom: 0.25em;
-}
-
-:root[data-theme="light"] h1 {
-  color: color-mix(in oklab, var(--text-accent) 85%, var(--text-color));
 }
 
 h2 {
@@ -128,6 +124,14 @@ img {
   display: block;
   margin: 1em auto;
   width: 50%;
+}
+
+a {
+  --intensity: 65%;
+}
+
+:root[data-theme="light"] a {
+  --intensity: 85%;
 }
 
 @media screen and (max-width: 480px) {
