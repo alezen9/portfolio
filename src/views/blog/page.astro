@@ -34,12 +34,12 @@ const posts = (await getCollection("blog")).sort(
     font-size: 1.5em;
     font-weight: bolder;
     letter-spacing: 5;
-    color: color-mix(in oklab, var(--accent-torii) 50%, var(--text-color));
+    color: color-mix(in oklab, var(--text-accent) 50%, var(--text-color));
   }
 
   :root[data-theme="light"] {
     .title {
-      color: color-mix(in oklab, var(--accent-torii) 85%, var(--text-color));
+      color: color-mix(in oklab, var(--text-accent) 85%, var(--text-color));
     }
   }
 

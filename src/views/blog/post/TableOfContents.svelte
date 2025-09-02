@@ -143,6 +143,7 @@
 
   a:not(.active) {
     color: currentColor;
+    opacity: 0.4;
   }
 
   @media screen and (max-width: 1480px) {

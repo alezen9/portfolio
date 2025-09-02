@@ -32,13 +32,16 @@ const homepageLinkHref = isHomepage ? null : "/";
     display: flex;
     flex-direction: row-reverse;
     align-items: center;
-    color: color-mix(in oklab, var(--text-color) 75%, transparent);
     border-radius: 999px;
     z-index: 10;
     padding: var(--pad);
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
+  }
+
+  nav * {
+    color: color-mix(in oklab, var(--text-color) 75%, transparent);
   }
 
   nav::before {
@@ -94,10 +97,6 @@ const homepageLinkHref = isHomepage ? null : "/";
     width: var(--svg-size);
     aspect-ratio: 1/1;
     filter: contrast(10);
-  }
-
-  a {
-    color: currentColor;
   }
 
   details::details-content {

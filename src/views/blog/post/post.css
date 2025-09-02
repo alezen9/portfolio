@@ -24,13 +24,13 @@ figcaption::before {
 }
 
 h1 {
-  color: color-mix(in oklab, var(--accent-torii) 50%, var(--text-color));
+  color: color-mix(in oklab, var(--text-accent) 50%, var(--text-color));
   margin-block: 1em 2em;
 }
 
 :root[data-theme="light"] {
   h1 {
-    color: color-mix(in oklab, var(--accent-torii) 85%, var(--text-color));
+    color: color-mix(in oklab, var(--text-accent) 85%, var(--text-color));
   }
 }
 
@@ -68,7 +68,7 @@ blockquote {
   border-radius: var(--border-radius);
   background: linear-gradient(
     to right,
-    color-mix(in oklab, var(--accent-torii) 20%, var(--background-color)),
+    color-mix(in oklab, var(--text-accent) 20%, var(--background-color)),
     transparent
   );
   padding: 1em;
