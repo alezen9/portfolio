@@ -1,38 +1,59 @@
 import laggy from "../videos/laggy.mp4";
 import smooth from "../videos/smooth.mp4";
+import Layout from "@components/blog/Layout.astro";
 
 Recently, while working on my portfolio website, I ran into a performance issue that completely threw me off.
 
-On the homepage, I use a circular mask that reveals a colored panel on top of a black-and-white panel.
-I was updating the mask's position every frame using a CSS variable set via JavaScript.  
-On Chrome, it ran buttery smooth, on Safari on the other hand it lagged noticeably... of course.
+On the homepage, I have a circular mask that reveals a colored manga panel on top of a black-and-white one.
+To add interactivity, I made it follow the pointer by updating the mask's position every frame using a CSS variable set via JavaScript.  
+On Chrome, it ran buttery smooth, on Safari on the other hand... it lagged noticeably... of course.
 
 <br />
 <br />
 
-Here's a comparison between the before and after fix on Safari v18.6:
+Before I share with you my learnings, here's a comparison between the before and after fix on Safari v18.6:
 
-<div class="comparison">
+<Layout columns={2} gap={1}>
   <figure>
-    <video src={laggy} type="video/mp4" autoplay loop muted playsInline />
+    <video
+      src={laggy}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720", pointerEvents: "none" }}
+    />
     <figcaption>Before</figcaption>
   </figure>
   <figure>
-    <video src={smooth} type="video/mp4" autoplay loop muted playsInline />
+    <video
+      src={smooth}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720", pointerEvents: "none" }}
+    />
     <figcaption>After</figcaption>
   </figure>
-</div>
+</Layout>
 
 <br />
 <br />
 
-It's not unusable, but definitely frustrating.  
-At first I thought: _"It should be an easy fix, let me see"_, but it turned out I was being too optimistic, thinking I understood something that I, in fact, didn't.
+It was not unusable, but it was definitely frustrating.  
+I postponed this issue for a few days to focus on other features, but I was determined
+to eventually provide a smooth animation experience across all major browsers.
 
-I tried scoping CSS variables locally instead of on `:root`, reducing the mask size, simplifying logic... nothing made a difference.
+Then the time came and I wanted to solve it.  
+At first I thought it would have been an easy fix:
+scope CSS variables locally instead of on `:root`, reduce the mask size, simplify the logic...
+to my surprise nothing made a difference.
 
-At that point, I wasn't thinking about the Rendering Pipeline or GPU promotion at all but
-I was determined to provide a decent animation experience on every major browser.
+At that point, I wasn't thinking about the Rendering Pipeline or GPU promotion at all,
+I was just trying everything I could think of.
 
 After a lot of trial and error, I stumbled across a <a href="https://stackoverflow.com/a/67022519" target="_blank" rel="noopener">Stack Overflow answer</a> suggesting this one-liner:
 
@@ -40,18 +61,44 @@ After a lot of trial and error, I stumbled across a <a href="https://stackoverfl
 transform: translateZ(0);
 ```
 
-My mindset was simply: _"I've already tried so many things, one more won't hurt"_.
+My mindset was simple: _"I've already tried so many things, what's one more?"_ so
+I added it even though it seemed like it shouldn't do anything.
 
 **Suddenly... Safari was smooth as butter...**
 
-What on earth just happened? Why did this work? That tiny one-liner pushed me down a rabbit hole...
+<Layout>
+  <figure>
+    <img
+      src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWVkN2w5eGk5bmx1bTZuNzByOWxvMDV4YzRwbzh1ZWI4bDhrMXQ0dyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/iAYupOdWXQy5a4nVGk/giphy.gif
+"
+      alt="The Big Lebowski What GIF"
+    />
+    <figcaption>Confusion of the highest orda</figcaption>
+  </figure>
+</Layout>
 
-I wanted to better understand the browser so next time I don't have to rely on magic incantations from the internet, so here's what I learned along the way.
+<br />
+
+What on earth just happened? Why did this work?  
+This tiny one-liner pushed me down a rabbit hole...
+
+I thought I knew enough about how browsers transform code into pixels, but this specific issue humbled me quickly.  
+Now I didn't just want to understand why this particular fix worked, I wanted to understand the browser deeply enough
+that I wouldn't need to rely on magic incantations from the web next time.
+
+What started as a simple Safari bug turned into a deep dive I never saw coming thanks to a gentleman's suggestion from the internet and a healthy dose of stubbornness.  
+As usual, I took notes throughout the journey, and I'm happy to share a condensed, better-phrased version in my very first article :)
+
+After all, that's the reason I created this blog in the first place: to share what I learn.
+
+Without further ado, let's jump right into it!
 
 ## Why Bother with the Rendering Pipeline?
 
-The thing about frontend performance problems: sometimes they look random, and every browser seems to behave a little differently.  
-But under the hood, every browser follows the same broad sequence of steps to turn HTML and CSS into pixels on the screen, even if the exact implementation details differ.
+The thing about frontend performance problems is that sometimes they look completely random.  
+Every browser seems to behave a little differently, and they do, but under the hood they follows
+the same broad sequence of steps to turn HTML and CSS into pixels on the screen, even if the exact implementation details differ.
+
 This sequence is called the ==Rendering Pipeline==.
 
 <br />
@@ -62,19 +109,19 @@ Knowing how that pipeline works doesn't just satisfy curiosity, it changes the w
   Instead of _"maybe reducing the mask size will help"_, you can ask yourself: _"Is the bottleneck ==Style==, ==Layout==, ==Paint==, or ==Compositing=="_?
 
 - **You know which properties are safe to animate**  
-  `transform` and `opacity` are Compositor-friendly, while `top`, `left`, or `width` force Layout and Paint.
+  `transform` and `opacity` are Compositor-friendly, while `top`, `left`, or `width` force ==Layout== and ==Paint==.
 
 - **You understand why browser differences happen**  
-  Chrome and Safari use different heuristics for promoting elements to GPU layers (which explains why my fix was needed in one and not the other).
+  Chrome and Safari use different heuristics for promoting elements to GPU layers (which explains why the one-liner made a difference in one and not the other).
 
 - **You make better design calls early**  
-  You'll know when a heavy blur, mask, or filter will eat GPU cycles, and when it's safe to use them.
+  You'll know when a heavy blur or mask will eat GPU cycles, and when it's safe to use them.
 
 <br />
 
 In other words: understanding the rendering pipeline makes the invisible steps visible, and actionable.
 
-You don't need to memorize every detail, but even a rough mental model helps you reason about performance issues instead of relying on Stack Overflow magic.
+**You don't need to memorize every detail**, even a rough mental model helps you reason about performance issues instead of relying on Stack Overflow magic.
 
 ## The Rendering Pipeline in a Nutshell
 
@@ -88,7 +135,7 @@ At a conceptual level, every browser engine follows the same six broad stages to
 
 2. **Style Recalculation**
    - The DOM and CSSOM are matched together (the engine resolves which CSS rules apply to which DOM nodes).
-   - This procudes the computed styles dor each element, where every CSS property, after cascade, inheritance, and variables, has been resolved.
+   - This procudes the computed styles for each element, where every CSS property, after cascade, inheritance, and variables, has been resolved.
 
 3. **Layout (Reflow)**
    - The browser uses computed styles to calculate geometry: positions, sizes, line breaks.
@@ -112,7 +159,7 @@ At a conceptual level, every browser engine follows the same six broad stages to
 
 <br />
 
-> **Note:** JavaScript isn't a stage of the rendering pipeline itself, but it can affect nearly every stage.  
+> **Note:** JavaScript isn't a stage of the rendering pipeline itself, but it can affect nearly every phase.  
 > Scripts can modify the DOM or CSSOM (e.g. `element.style`, `classList.add()`, or `appendChild()`), which forces the browser to re-trigger some parts.
 
 <br />
