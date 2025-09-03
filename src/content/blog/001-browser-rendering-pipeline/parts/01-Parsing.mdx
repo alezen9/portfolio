@@ -1,7 +1,21 @@
+import Layout from "@components/blog/Layout.astro";
+
 ## 1. Parsing: DOM and CSSOM
 
 When the browser loads a page, the first thing it does is parse the source files.<br />
 Parsing is the act of taking raw text, HTML or CSS, and turning it into structured data that the engine can work with.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnhpd3ZlbmpnMTF5YW5qNnI1MnZ1dG9sOGduODR0aXBzamlrenA5ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/PgMyWsUNKjzMaHz1DK/giphy.gif"
+      alt="The Covenant translator - interpreter conversation"
+    />
+    <figcaption>The engine prefers "Interpreter" on its résumé</figcaption>
+  </figure>
+</Layout>
 
 <br />
 
@@ -57,7 +71,7 @@ Which JavaScript can interact with using APIs like:
 The CSS parser, literally named _CSSParser_ in Blink and WebKit while Gecko uses a _Rust-based Servo parser_, reads stylesheets
 and outputs the CSSOM (==CSS Object Model==).
 
-Like the DOM, it's an in-memory object graph: rules, selectors, and declarations.
+Like the DOM, it's an in-memory object graph that describes rules, selectors, and declarations.
 
 Example:
 
@@ -95,7 +109,7 @@ Exposed to JavaScript as:
 
 > **Note:** If we had two selectors such as `.box.highlight` and `.highlight.box`, they both match the same elements,
 > but in the CSSOM the `selectorText` string is preserved exactly as written.  
-> This means they appear as different strings, and therefore as two distinct rules, even though they're equivalent in matching.
+> Since they appear as different strings, they will appear as two distinct rules, even though they're equivalent in matching.
 
 <br />
 
