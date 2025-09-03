@@ -1,18 +1,24 @@
 ---
 import IconMenu from "@components/icons/IconMenu.astro";
 import IconMoon from "@components/icons/IconMoon.astro";
-import IconVolume from "@components/icons/IconVolume.astro";
 import IconHome from "@components/icons/IconHome.astro";
 import IconSun from "@components/icons/IconSun.astro";
+import IconDocument from "@components/icons/IconDocument.astro";
 
-// Homepage
 const currentUrl = Astro.url.toString().replace(/\/$/, "");
 const urlBase = Astro.url.origin;
+
+// Homepage
 const isHomepage = currentUrl === urlBase;
 const homepageLinkTitle = isHomepage
   ? "You are already home :)"
   : "Go to homepage";
 const homepageLinkHref = isHomepage ? null : "/";
+
+// Blog
+const isBlog = currentUrl === `${urlBase}/blog`;
+const blogLinkTitle = isBlog ? "Already there :)" : "Go to blog";
+const blogLinkHref = isBlog ? null : "/blog";
 ---
 
 <style>
@@ -137,7 +143,7 @@ const homepageLinkHref = isHomepage ? null : "/";
     pointer-events: none;
   }
 
-  li:not([data-home="true"]):hover {
+  li:not([data-page="true"]):hover {
     background-color: color-mix(in oklab, var(--text-color) 10%, transparent);
   }
 
@@ -218,11 +224,16 @@ const homepageLinkHref = isHomepage ? null : "/";
     </summary>
 
     <ul id="settings-tray">
-      <li data-home={isHomepage}>
+      <li data-page={isHomepage}>
         <a id="homepage-link" title={homepageLinkTitle} href={homepageLinkHref}>
           <IconHome />
         </a>
       </li>
+      <!-- <li data-page={isBlog}>
+        <a id="blog-link" title={blogLinkTitle} href={blogLinkHref}>
+          <IconDocument />
+        </a>
+      </li> -->
       <li>
         <label for="theme-toggle" title="Toggle appearance">
           <input id="theme-toggle" type="checkbox" name="theme" />
@@ -232,14 +243,6 @@ const homepageLinkHref = isHomepage ? null : "/";
           </span>
         </label>
       </li>
-      <!-- <span title="Toggle sound (coming soon)">
-        <li inert>
-          <label for="audio-toggle" aria-disabled="true">
-            <input id="audio-toggle" type="checkbox" name="audio" />
-            <IconVolume />
-          </label>
-        </li>
-      </span> -->
     </ul>
   </details>
 </nav>

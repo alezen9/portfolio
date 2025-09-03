@@ -24,7 +24,7 @@ figcaption::before {
 }
 
 h1 {
-  color: color-mix(in oklab, var(--text-accent) 80%, var(--text-color));
+  color: color-mix(in oklab, var(--text-accent) 65%, var(--text-color));
   margin-bottom: 0.25em;
 }
 

@@ -34,16 +34,13 @@ const posts = (await getCollection("blog")).sort(
     font-size: 1.5em;
     font-weight: bolder;
     letter-spacing: 5;
-    color: color-mix(in oklab, var(--text-accent) 50%, var(--text-color));
+    color: color-mix(in oklab, var(--text-accent) 65%, var(--text-color));
   }
 
-  :root[data-theme="light"] {
-    .title {
-      color: color-mix(in oklab, var(--text-accent) 85%, var(--text-color));
-    }
+  .title {
   }
 
-  .description {
+  .subtitle {
     margin-top: 0;
     font-size: 0.9em;
     font-weight: 400;
@@ -59,11 +56,11 @@ const posts = (await getCollection("blog")).sort(
 <Layout>
   <ul>
     {
-      [...posts, ...posts, ...posts, ...posts].map((post) => (
+      posts.map((post) => (
         <li>
           <a href={`/blog/${post.id}/`}>
             <h2 class="title">{post.data.title}</h2>
-            <h3 class="description">{post.data.subtitle}</h3>
+            <h3 class="subtitle">{post.data.subtitle}</h3>
             <p class="date">
               <FormattedDate date={post.data.pubDate} />
             </p>
