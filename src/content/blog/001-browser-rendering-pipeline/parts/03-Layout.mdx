@@ -1,6 +1,6 @@
 ## 3. Layout (or Reflow)
 
-Once every element has computed styles, the browser's next job is to figure out where everything actually goes.  
+Once every element has its computed styles, the browser's next job is to figure out where everything actually goes.  
 This stage is called Layout, or Reflow when it runs again after changes.
 
 <br />
@@ -8,22 +8,13 @@ This stage is called Layout, or Reflow when it runs again after changes.
 ### What happens here
 
 1. The browser builds a **Layout Tree** (also called a **Frame Tree** in Gecko).  
-   An in-memory structure derived from the DOM + computed styles, but filtered down to only **visible, renderable elements**.
+   An in-memory structure derived from the DOM + computed styles, but filtered down to **only visible, renderable elements**.
 
 2. Each node in the tree gets precise geometry from the box model: its position, width, height, padding, borders, margins, line breaks, etc.
 
 3. Inline text is measured and split into line boxes.
 
-4. Relative values (`%`, `em`, `vh`) are resolved against parents and viewport sizes.
-
-<br />
-
-### Why "Reflow”?
-
-Because this process isn't one-and-done.
-
-If you resize the window, insert content, or change styles that affect geometry, the browser may need to run layout again.  
-Depending on what changed, this can affect just one subtree or cascade through the entire page.
+4. Relative values (`%`, `em`, `vh`, ...) are resolved against parents and viewport sizes.
 
 <br />
 
@@ -38,13 +29,13 @@ Example:
 
 ```css
 .box {
-  width: 200px;
-  padding: 10px;
+  width: 50%;
+  padding: 1rem;
   margin-left: 100px;
 }
 ```
 
-Layout tree entry (conceptual):
+Assuming parent has a content width of 400 px, the Layout Tree entry, conceptually, will look something like:
 
 ```
 DIV.box
@@ -52,10 +43,18 @@ DIV.box
   y: 0
   width: 200
   height: 20
-  padding: 10
+  padding: 16px
 ```
 
 The browser now knows exactly where that box and its content should sit on the page.
+
+<br />
+
+### Why "Reflow”?
+
+Because this isn't a one-time step.  
+Any change that affects geometry: resizing the window, adding/removing elements,
+or updating certain styles, can force the browser to run it again.
 
 <br />
 
@@ -64,8 +63,10 @@ The browser now knows exactly where that box and its content should sit on the p
 Layout depends on relationships between elements (flexbox, grid, percentages).  
 A change in one place can ripple through siblings, children, or even the whole document.
 
-Some DOM APIs like `getBoundingClientRect()` or `offsetWidth` can also force a **synchronous layout**, because the browser must flush pending changes and give you an accurate number.  
-That means JS execution pauses until the layout tree is up to date.
+When you call DOM APIs like `getBoundingClientRect()` or `offsetWidth`,
+the browser must give you the latest, correct numbers. To do that, it may pause JS execution, run layout immediately, then return the result.  
+This is known as a **forced synchronous layout** (or “layout thrash”) and can
+cause jank if it happens repeatedly inside animations or loops.
 
 <br />
 

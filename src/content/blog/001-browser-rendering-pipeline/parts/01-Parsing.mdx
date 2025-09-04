@@ -1,4 +1,5 @@
 import Layout from "@components/blog/Layout.astro";
+import gifInterpreterCovenant from "../videos/gif-security-guard.mp4";
 
 ## 1. Parsing: DOM and CSSOM
 
@@ -9,11 +10,16 @@ Parsing is the act of taking raw text, HTML or CSS, and turning it into structur
 
 <Layout class="lg-small">
   <figure>
-    <img
-      src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnhpd3ZlbmpnMTF5YW5qNnI1MnZ1dG9sOGduODR0aXBzamlrenA5ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/PgMyWsUNKjzMaHz1DK/giphy.gif"
-      alt="The Covenant translator - interpreter conversation"
+    <video
+      src={gifInterpreterCovenant}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "270 / 364" }}
     />
-    <figcaption>The engine prefers "Interpreter" on its résumé</figcaption>
+    <figcaption>The engine's parser validating your code</figcaption>
   </figure>
 </Layout>
 
@@ -32,7 +38,7 @@ Example:
 ```html
 <div id="main" class="box highlight">
   <h1>Hello World!</h1>
-  <p>Nice to meet you.</p>
+  <p>Cool</p>
 </div>
 ```
 
@@ -49,7 +55,7 @@ Element: "DIV"
           - Text("Hello World!")
     - Element: "P"
         children:
-          - Text("Nice to meet you.")
+          - Text("Cool")
 ```
 
 Which JavaScript can interact with using APIs like:

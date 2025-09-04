@@ -217,6 +217,19 @@ ul {
   }
 }
 
+blockquote {
+  position: relative;
+  padding-left: 0.5em;
+}
+blockquote::before {
+  position: absolute;
+  content: "";
+  inset: 0;
+  width: 0.5em;
+  border-left: 2px solid currentColor;
+  opacity: 0.5;
+}
+
 .sr-only {
   border: 0;
   padding: 0;

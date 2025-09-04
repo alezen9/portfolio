@@ -1,6 +1,7 @@
+import Layout from "@components/blog/Layout.astro";
 import laggy from "../videos/laggy.mp4";
 import smooth from "../videos/smooth.mp4";
-import Layout from "@components/blog/Layout.astro";
+import gifBigLebowski from "../videos/gif-big-lebowski.mp4";
 
 Recently, while working on my portfolio website, I ran into a performance issue that completely threw me off.
 
@@ -22,7 +23,7 @@ Before I share with you my learnings, here's a comparison between the before and
       loop
       muted
       playsInline
-      style={{ aspectRatio: "1154 / 720", pointerEvents: "none" }}
+      style={{ aspectRatio: "1154 / 720" }}
     />
     <figcaption>Before</figcaption>
   </figure>
@@ -34,7 +35,7 @@ Before I share with you my learnings, here's a comparison between the before and
       loop
       muted
       playsInline
-      style={{ aspectRatio: "1154 / 720", pointerEvents: "none" }}
+      style={{ aspectRatio: "1154 / 720" }}
     />
     <figcaption>After</figcaption>
   </figure>
@@ -68,9 +69,14 @@ I added it even though it seemed like it shouldn't do anything.
 
 <Layout class="lg-small">
   <figure>
-    <img
-      src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWVkN2w5eGk5bmx1bTZuNzByOWxvMDV4YzRwbzh1ZWI4bDhrMXQ0dyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/iAYupOdWXQy5a4nVGk/giphy.gif"
-      alt="The Big Lebowski What GIF"
+    <video
+      src={gifBigLebowski}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "480 / 258" }}
     />
     <figcaption>Confusion of the highest orda</figcaption>
   </figure>

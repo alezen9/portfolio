@@ -1,3 +1,6 @@
+import Layout from "@components/blog/Layout.astro";
+import gifBobRoss from "../videos/gif-bob-ross.mp4";
+
 ## 4. Paint & Rasterization
 
 At this point, the browser knows what every element looks like (computed styles) and where everything goes (layout tree).  
@@ -5,9 +8,28 @@ The next step is to actually draw pixels.
 
 <br />
 
+<Layout class="lg-small">
+  <figure>
+    <video
+      src={gifBobRoss}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "250 / 192" }}
+    />
+    <figcaption>
+      Meanwhile, Skia / WebRender / CoreGraphics: happy little tiles everywhere
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
 ### What happens here
 
-The browser walks the layout tree and generates a ==display list==, a sequence of draw commands like:
+The browser walks the layout tree and generates a ==Display List==, a sequence of draw commands like:
 
 ```
 FillRect(x=0, y=0, w=200, h=100, color=red)
@@ -15,17 +37,20 @@ DrawText("Hello", font=Arial, size=16, x=108, y=70)
 ```
 
 These commands are not pixels yet. Think of them as vector instructions.
-Rasterization samples those vector-like commands onto the pixel grid, per tile, producing the bitmap for each tile.
+Rasterization samples those commands onto the pixel grid, per tile, producing a bitmap for each tile.
 
-> **Note:** _Rasterization_ is one of several ways to transform geometry into images.  
-> 3D engines might use _ray tracing_ or _path tracing_, but browsers stick to rasterization because it's fast and highly parallelizable.
+> **Note:** _Rasterization_ is just one way to turn geometry into images.  
+> Game engines sometimes use ray or path tracing.
+> In contrast, browser engines always rasterize HTML/CSS content, because it's fast and parallelizable.  
+> Of course, you can implement ray/path tracing manually in `WebGL`or `WebGPU`, typically inside a `<canvas>` element,
+> but that's outside the browser's built-in pipeline.
 
 <br />
 
 ### Where it runs (CPU vs GPU)
 
 The **CPU** typically constructs the display list.  
-Rasterization can happen on either CPU or GPU, depending on engine and hardware.
+Rasterization can run on either one depending on engine, driver, and platform.
 
 <br />
 
@@ -44,11 +69,23 @@ Instead of painting the whole page at once, the browser splits it into tiles (e.
 Each tile is rasterized independently, often in parallel across threads or GPU cores.
 
 **Why tiles?**  
-If only a small part of the screen changes, only those tiles need to be re-rasterized.
+If only a small part of the screen changes, only those tiles need to be re-rasterized instead of redrawing the entire page.
 
-> **Note:** You can visualize this in Chrome DevTools by pressing **Cmd+Shift+P** / **Ctrl+Shift+P** to open the Command Menu &rarr; type _"Show Rendering"_ and select it.  
-> In the Rendering drawer enable Paint flashing (repainted regions flash green).
-> You can also toggle Layers borders to outline compositor layers or check GPU memory usage and fps by enabling Frame Rendering Stats.
+> **Note:** You can visualize them in Chrome DevTools > Render panel > toggle _Layout borders_.
+>
+> \*If the panel is not visible:
+>
+> 1. **Cmd+Shift+P** / **Ctrl+Shift+P** to open the Command Menu.
+> 2. Type "Show Rendering" and select it.
+> 3. The Rendering panel will now be available at the bottom.
+>
+> <br />
+> Other useful toggles: _Paint flashing_ (repainted regions flash green) and
+> _Frame Rendering Stats_ (FPS and GPU memory).
+
+> **Note:** In memory, tiles are typically square (e.g. 256&times;256 or 512&times;512), but what DevTools overlays show can vary.
+> Sometimes they appear as horizontal strips or irregular grids, since engines group or schedule tiles in ways optimized for scrolling and redrawing.
+> The important bit: ==rasterization happens in chunks==, so only changed tiles need to be re-rasterized.
 
 <br />
 
@@ -59,9 +96,16 @@ Not all properties are equal.
 
 For example:
 
-- Cheap: `background-color`, `border`, simple fills.
-- Expensive: large `box-shadow`s, gradients, `mask-image`, CSS filters, backdrop filters.
-- Large area repaints (e.g. animating `background-color` on `<body>`) are especially costly.
+- **Cheap:** `background-color`, `border`, simple fills.
+- **Moderate:** `color`, font, basic images.
+- **Expensive:** large box-shadows, gradients, complex SVGs, heavy text effects.
+- **Filters:** simple per-pixel ones (`brightness()`, `contrast()`, `invert()`) are relatively cheap,
+  but effects like `blur()` or `drop-shadow()` require sampling neighboring pixels and quickly add up.
+- **Backdrop filters:** most costly, since the browser must first capture the pixels behind the element, a.k.a. screen texture, and then reprocess them.
+
+Large area repaints like animating `background-color` on `<body>`, are especially expensive, because they invalidate most or all tiles.
+
+<br />
 
 Animating Paint-heavy properties means new tiles must be rasterized every frame, which can quickly cause jank.
 

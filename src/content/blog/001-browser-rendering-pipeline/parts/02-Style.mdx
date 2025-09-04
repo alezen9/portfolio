@@ -1,9 +1,24 @@
+import Layout from "@components/blog/Layout.astro";
+import performanceTab from "../images/recalculate-styles.webp?url";
+
 ## 2. Style Recalculation (or Computed Styles)
 
 Once the browser has both the DOM and the CSSOM, it can finally resolve what each element should look like.<br />
 This stage is sometimes referred to as just _Style Calculation_.<br />
 
-> **Note:** In Chrome DevTools Performance panel it appears as **Recalculate Style** under _Main_ expandable, and in the Elements panel you can see the results under the **Computed** tab.
+<blockquote>
+  **Note:** In Chrome DevTools > Performance panel, the stage appears as **Recalculate Style** under the _Main_ expandable.  
+  While in DevTools > Elements panel, you can see the results under the **Computed** tab.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img src={performanceTab} alt="---" />
+    <figcaption>DevTools > Performance panel > Main expandable (other stages are visible as well)</figcaption>
+  </figure>
+</Layout>
+</blockquote>
 
 <br />
 
@@ -13,6 +28,10 @@ This stage is sometimes referred to as just _Style Calculation_.<br />
 2. It applies the cascade (specificity, importance, source order) and inheritance rules.
 3. Custom properties (`--variables`) are resolved, unlike normal properties, variables are not resolved until this stage.
 4. Each element ends up with a ==computed style==: every property has an absolute value.
+
+> **Note:** Relative values (`%`, `em`, ...) stay unresolved at this stage,
+> since they depend on the size of the parent or the viewport.  
+> They're resolved during Layout.
 
 <br />
 
@@ -88,7 +107,7 @@ element.style.setProperty("--main-color", "blue");
 <br />
 
 **Deduplication:**<br />
-If a child is marked dirty both because it uses the variable and because its parent's layout changed, the browser won't recalc it twice.
+If a child is marked "dirty", both because it uses the variable and because its parent's layout changed, the browser won't recalc it twice.
 Engines coalesce multiple invalidation reasons so ==each node is recalculated at most once per pass==.
 
 > **Note:** CSS variables don't behave like constants that are resolved at parse time, they remain "live.”
@@ -102,5 +121,5 @@ Engines coalesce multiple invalidation reasons so ==each node is recalculated at
 The output of this stage is a computed style map where each DOM element has a
 resolved set of styles, think of it as a big object with key-value pairs.
 
-This map becomes the input for the next stage: ==Layout==, where geometry
-(positions and sizes) is calculated.
+This map becomes the input for the next stage: ==Layout==, where geometry,
+positions and sizes, is calculated.
