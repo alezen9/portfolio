@@ -3,7 +3,7 @@ import IconMenu from "@components/icons/IconMenu.astro";
 import IconMoon from "@components/icons/IconMoon.astro";
 import IconHome from "@components/icons/IconHome.astro";
 import IconSun from "@components/icons/IconSun.astro";
-import IconDocument from "@components/icons/IconDocument.astro";
+import IconBook from "@components/icons/IconBook.astro";
 
 const currentUrl = Astro.url.toString().replace(/\/$/, "");
 const urlBase = Astro.url.origin;
@@ -231,7 +231,7 @@ const blogLinkHref = isBlog ? null : "/blog";
       </li>
       <!-- <li data-page={isBlog}>
         <a id="blog-link" title={blogLinkTitle} href={blogLinkHref}>
-          <IconDocument />
+          <IconBook />
         </a>
       </li> -->
       <li>

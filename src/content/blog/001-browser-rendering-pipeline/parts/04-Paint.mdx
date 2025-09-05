@@ -36,7 +36,7 @@ FillRect(x=0, y=0, w=200, h=100, color=red)
 DrawText("Hello", font=Arial, size=16, x=108, y=70)
 ```
 
-These commands are not pixels yet. Think of them as vector instructions.
+These commands are not pixels yet. Think of them as vector instructions.  
 Rasterization samples those commands onto the pixel grid, per tile, producing a bitmap for each tile.
 
 > **Note:** _Rasterization_ is just one way to turn geometry into images.  
@@ -71,6 +71,10 @@ Each tile is rasterized independently, often in parallel across threads or GPU c
 **Why tiles?**  
 If only a small part of the screen changes, only those tiles need to be re-rasterized instead of redrawing the entire page.
 
+> **Note:** In memory, tiles are typically square (e.g. 256&times;256 or 512&times;512), but what DevTools overlays show can vary.
+> Sometimes they appear as horizontal strips or irregular grids, since engines group or schedule tiles in ways optimized for scrolling and redrawing.
+> The important bit: ==rasterization happens in chunks==, so only changed tiles need to be re-rasterized.
+
 > **Note:** You can visualize them in Chrome DevTools > Render panel > toggle _Layout borders_.
 >
 > \*If the panel is not visible:
@@ -82,10 +86,6 @@ If only a small part of the screen changes, only those tiles need to be re-raste
 > <br />
 > Other useful toggles: _Paint flashing_ (repainted regions flash green) and
 > _Frame Rendering Stats_ (FPS and GPU memory).
-
-> **Note:** In memory, tiles are typically square (e.g. 256&times;256 or 512&times;512), but what DevTools overlays show can vary.
-> Sometimes they appear as horizontal strips or irregular grids, since engines group or schedule tiles in ways optimized for scrolling and redrawing.
-> The important bit: ==rasterization happens in chunks==, so only changed tiles need to be re-rasterized.
 
 <br />
 

@@ -3,9 +3,9 @@ import { getCollection } from "astro:content";
 import Layout from "./layout.astro";
 import FormattedDate from "@components/ui/FormattedDate.astro";
 
-const posts = (await getCollection("blog")).sort(
-  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
+const posts = (await getCollection("blog"))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .filter((post) => post.data.state === "Revision");
 ---
 
 <style>
@@ -20,6 +20,7 @@ const posts = (await getCollection("blog")).sort(
   li {
     transition: transform 0.2s ease-in-out;
     cursor: pointer;
+    width: fit-content;
   }
 
   a {
@@ -31,13 +32,10 @@ const posts = (await getCollection("blog")).sort(
   }
 
   .title {
-    font-size: 1.5em;
+    font-size: 1.25em;
     font-weight: bolder;
     letter-spacing: 5;
     color: color-mix(in oklab, var(--text-accent) 65%, var(--text-color));
-  }
-
-  .title {
   }
 
   .subtitle {

@@ -2,6 +2,7 @@
 import BaseHead from "@components/ui/BaseHead.astro";
 import Menu from "@components/ui/Menu.astro";
 import BlogHead from "./BlogHead.astro";
+import Bamboo from "./Bamboo.astro";
 ---
 
 <html lang="en" data-theme="dark">
@@ -15,20 +16,35 @@ import BlogHead from "./BlogHead.astro";
         max-width: min(80ch, 90dvw);
         min-height: 100dvh;
         margin: 0 auto;
-        padding: 5.5em 2em 2em 2em;
+        padding: 5.5em 1em 1em 1em;
         display: flex;
         flex-direction: column;
-        gap: 4em;
+        gap: 1em;
       }
 
       .tagline {
-        font-size: clamp(1.75rem, 6vw, 4.5rem);
+        font-size: clamp(3rem, 7.5vw, 15vw);
         font-family: "Okashi-Regular";
+      }
+
+      .bamboo {
+        position: fixed;
+        z-index: -1;
+        opacity: 0.1;
+        bottom: 0;
+        right: -5rem;
+        width: clamp(50vw, 40rem, 100%);
+        height: auto;
+      }
+
+      :root[data-theme="dark"] .bamboo {
+        opacity: 0.075;
       }
     </style>
   </head>
   <body>
     <Menu />
+    <Bamboo class:list={["bamboo"]} />
     <main class="wrapper">
       <h1 class="tagline">Chie no Mori</h1>
       <slot />

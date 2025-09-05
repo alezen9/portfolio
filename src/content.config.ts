@@ -13,7 +13,7 @@ const zBlogPost = z.object({
   description: z.string(),
   pubDate: z.coerce.date(),
   updatedDate: z.coerce.date().optional(),
-  state: z.literal("Draft").optional(),
+  state: z.string().optional(),
 });
 
 export type BlogPost = z.infer<typeof zBlogPost>;
