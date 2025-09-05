@@ -3,8 +3,9 @@
   import panels from "@content/other/manga-panels.json" assert { type: "json" };
   import trackPointerMovement from "@components/scripts/trackPointerMovement";
   import { createInterval } from "@utils/createInterval";
+  import { fade } from "svelte/transition";
 
-  let intervalMs = 15000;
+  const intervalMs = 15000;
   let idx = $state(0);
   const getNextIdx = () => (idx + 1) % panels.length;
   const getEvenIdx = () => {
@@ -29,8 +30,30 @@
   let timerAnimation = $derived(idx % 2 === 0 ? "a" : "b");
   let interval: ReturnType<typeof createInterval>;
 
+  let isReadyBw = $state(false);
+  let isReadyColor = $state(false);
+  let isReady = $derived(isReadyBw && isReadyColor);
+
+  $effect(() => {
+    if (!isReady) return;
+    interval = createInterval(() => {
+      idx = getNextIdx();
+    }, intervalMs);
+    cleanup = trackPointerMovement({
+      rootSelector: ".panel",
+      enableStretching: true,
+    });
+    document.body.style.setProperty("--init-bg-opacity", "0");
+  });
+
+  const onImageLoaded = (type: "bw" | "color") => () => {
+    if (isReady) return;
+    if (type === "bw") isReadyBw = true;
+    if (type === "color") isReadyColor = true;
+  };
+
   const onShiftArrow = (e: KeyboardEvent) => {
-    if (!e.shiftKey || isTransitioning) return;
+    if (!e.shiftKey || isTransitioning || !isReady) return;
     if (e.code !== "ArrowRight") return;
     idx = getNextIdx();
     interval.reset();
@@ -49,13 +72,6 @@
   let cleanup: VoidFunction | undefined;
 
   onMount(() => {
-    interval = createInterval(() => {
-      idx = getNextIdx();
-    }, intervalMs);
-    cleanup = trackPointerMovement({
-      rootSelector: ".panel",
-      enableStretching: true,
-    });
     window.addEventListener("keydown", onShiftArrow);
   });
 
@@ -71,16 +87,23 @@
   ontransitionstart={onTransitionStart}
   ontransitionend={onTransitionEnd}
 >
-  <div class="slot even" style={`opacity: ${evenOpacity};`}>
-    <img role="presentation" class="base" src={evenPanel.bwSrc} alt="" />
+  <div class="slot even" style={`opacity: ${isReady ? evenOpacity : 0};`}>
+    <img
+      role="presentation"
+      class="base"
+      src={evenPanel.bwSrc}
+      alt=""
+      onload={onImageLoaded("bw")}
+    />
     <img
       role="presentation"
       class="reveal force-gpu"
       src={evenPanel.colorSrc}
       alt=""
+      onload={onImageLoaded("color")}
     />
   </div>
-  <div class="slot odd" style={`opacity: ${oddOpacity};`}>
+  <div class="slot odd" style={`opacity: ${isReady ? oddOpacity : 0};`}>
     <img role="presentation" class="base" src={oddPanel.bwSrc} alt="" />
     <img
       role="presentation"
@@ -90,38 +113,40 @@
     />
   </div>
 </div>
-<div class="keys">
-  <span class="key">Shift</span>
-  <span class="key">&rarr;</span>
-  <span
-    class={`timer countdown-${timerAnimation}`}
-    style={`--duration: ${intervalMs}ms`}
-  >
-    <svg
-      viewBox="0 0 40 40"
-      role="progressbar"
-      aria-label="Panel timer"
-      aria-valuemin="0"
-      aria-valuemax="100"
-      aria-valuenow="100"
-      fill="none"
-      stroke="currentColor"
+{#if isReady}
+  <div class="keys" transition:fade>
+    <span class="key">Shift</span>
+    <span class="key">&rarr;</span>
+    <span
+      class={`timer countdown-${timerAnimation}`}
+      style={`--duration: ${intervalMs}ms`}
     >
-      <!-- Track -->
-      <!-- <circle cx="20" cy="20" r="18" opacity="0.2" stroke-width="3" /> -->
+      <svg
+        viewBox="0 0 40 40"
+        role="progressbar"
+        aria-label="Panel timer"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="100"
+        fill="none"
+        stroke="currentColor"
+      >
+        <!-- Track -->
+        <!-- <circle cx="20" cy="20" r="18" opacity="0.2" stroke-width="3" /> -->
 
-      <circle
-        class="timer__progress"
-        cx="20"
-        cy="20"
-        r="18"
-        stroke-width="5"
-        stroke-linecap="round"
-        pathLength="1"
-      ></circle>
-    </svg>
-  </span>
-</div>
+        <circle
+          class="timer__progress"
+          cx="20"
+          cy="20"
+          r="18"
+          stroke-width="5"
+          stroke-linecap="round"
+          pathLength="1"
+        ></circle>
+      </svg>
+    </span>
+  </div>
+{/if}
 
 <style>
   .panel {
