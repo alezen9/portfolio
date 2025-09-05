@@ -68,8 +68,7 @@ DOM APIs like `getBoundingClientRect()` or `offsetWidth` can also force synchron
 the browser pauses JavaScript, updates the layout tree, and only then returns the result.  
 This is sometimes called layout thrashing when it happens repeatedly in animations or loops.
 
-> **Note on `offsetWidth`:**  
-> This property returns an element's rendered width (content + padding + borders, no margins).  
+> `offsetWidth` returns an element's rendered width (content + padding + borders, no margins).  
 > But reading it forces layout to run synchronously, pausing JS execution until the tree is up to date.
 > Developers sometimes exploit this:
 >

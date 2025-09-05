@@ -24,7 +24,7 @@ This way, animations often only require moving an existing layer's texture, not 
 ### Layer promotion
 
 Most elements just get painted into their parent's layer.  
-But some are “promoted” to their own compositing layer, which can then move or animate independently.
+But some are "promoted” to their own compositing layer, which can then move or animate independently.
 
 Think of Photoshop: instead of flattening everything onto one canvas, some layers stay separate.
 
@@ -54,7 +54,7 @@ if repainting is cheaper, it won't promote.
 
 <br />
 
-> **In my case**: Safari didn't promote the moving circular mask by default.
+> **In my case**, Safari didn't promote the moving circular mask by default.
 > Its heuristics didn't treat `mask`/`mask-image` as worth a separate layer so every frame forced a repaint.  
 > Adding `transform: translateZ(0);` fixed it, because a 3D transform are a strong promotion trigger.
 >
@@ -72,7 +72,7 @@ I tried a few different hints to convince Safari to promote the masked element:
 
 So while `transform` and `opacity` are generally strong candidates for promotion,
 properties like mask aren't consistently recognized across engines. That's why sometimes you need
-a “force-promotion” trick like a 3D transform.
+a "force-promotion” trick like a 3D transform.
 
 <br />
 

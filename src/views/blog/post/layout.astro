@@ -23,7 +23,7 @@ const { title, description } = Astro.props;
       .wrapper {
         box-sizing: border-box;
         width: 100%;
-        max-width: min(80ch, 90dvw);
+        max-width: min(80ch, 100dvw);
         min-height: 100dvh;
         margin: 0 auto;
         padding: 2em;
@@ -31,8 +31,7 @@ const { title, description } = Astro.props;
 
       @media screen and (max-width: 480px) {
         .wrapper {
-          padding: 2em;
-          max-width: 100dvw;
+          padding: 1.5em;
         }
       }
     </style>

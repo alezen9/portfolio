@@ -40,13 +40,14 @@
         </time>
       </span>
       <span>&nbsp • &nbsp</span>
-      <span>By: <em>Aleksandar Gjoreski</em></span>
+      <span>By: <em>Aleksandar Gjoreski&nbsp;</em></span>
     </p>
   </div>
 </header>
 
 <style>
   header {
+    width: 100%;
     margin-block: 3.5em 5.5em;
   }
 

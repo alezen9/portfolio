@@ -9,10 +9,10 @@ Here are some concrete lessons I pulled out of this deep dive (and that my Safar
 
 2. **==Use GPU promotion sparingly==**
    - `will-change` or `translateZ(0)` can smooth animations by creating new layers.
-   - But more layers = more memory and sometimes blurrier text.
+   - But more layers = more VRAM + more blending cost + sometimes blurrier text.
 
 3. **==Scope CSS variables wisely==**
-   - Updates on `:root` can trigger wide style recalcs.
+   - Updating `:root` variables can trigger recalcs across the whole page.
    - Define them closer to where they're used if you're changing them often.
 
 4. **==Avoid layout thrashing==**
@@ -33,15 +33,15 @@ Here are some concrete lessons I pulled out of this deep dive (and that my Safar
    ```
 
 5. **==Profile, don't guess==**
-   - DevTools tells you where the bottleneck is (Style, Layout, Paint, Composite).
-   - Use tools like Chrome's Performance panel or Safari's Timeline instead of guessing.
+   - DevTools shows you where time goes: Style, Layout, Paint, Composite.
+   - Use Chrome's Performance panel or Safari's Timeline to confirm before optimizing.
 
 6. **==Respect the frame budget==**
-   - 16ms @60Hz, 8ms @120Hz.
-   - Each stage you can skip (e.g. compositor-only animation) is free headroom.
+   - 16ms @60 Hz, 8ms @120 Hz.
+   - Every stage you can skip (e.g. no layout/paint, compositor-only animation) buys you headroom.
 
 7. **==Keep perspective==**
-   - You don't need to memorize Skia, Core Animation, or WebRender.
+   - You don't need to memorize Skia, Core Animation, or WebRender internals.
    - A mental model of the pipeline is enough to reason about stutter.
-   - And don't code in fear: premature optimization can indeed be a trap.  
-     First build, then measure, then fix. With experience, many "good defaults" come naturally.
+   - Don't code in fear: premature optimization is a trap. Build first &rarr; measure &rarr; then fix.
+     With experience, many "good defaults" come naturally.

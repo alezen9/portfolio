@@ -39,7 +39,7 @@ DrawText("Hello", font=Arial, size=16, x=108, y=70)
 These commands are ordered according to stacking contexts (z-index, paint order). Later commands draw on top of earlier ones.  
 They're still instructions, not pixels. Rasterization samples them onto the pixel grid, per tile, producing bitmaps.
 
-> **Note:** _Rasterization_ is just one way to turn geometry into images.  
+> _Rasterization_ is just one way to turn geometry into images.  
 > Game engines sometimes use ray/path tracing, but browsers rasterize HTML/CSS because it's fast and parallelizable.
 > Ray or path tracing in browsers is totally achiveable via `WebGL`/`WebGPU`
 > typically inside a `<canvas>` element, not part of the built-in pipeline.
@@ -69,7 +69,7 @@ Each tile is rasterized independently, often in parallel across threads or GPU c
 **Why tiles?**  
 If only a small part of the screen changes, only those tiles need to be re-rasterized instead of redrawing the entire page.
 
-> **Note:** Tile boundaries are an internal detail and aren't consistently exposed in DevTools.
+> Tile boundaries are an internal detail and aren't consistently exposed in DevTools.
 >
 > - Paint flashing shows repainted regions, not tile borders.
 > - The Layers/Rendering overlays show compositor layer edges, which may look like large horizontal

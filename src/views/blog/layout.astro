@@ -13,10 +13,10 @@ import Bamboo from "./Bamboo.astro";
       .wrapper {
         box-sizing: border-box;
         width: 100%;
-        max-width: min(80ch, 90dvw);
+        max-width: min(80ch, 100dvw);
         min-height: 100dvh;
         margin: 0 auto;
-        padding: 4em 1em 1em 1em;
+        padding: 4em 1.5em 1.5em 1.5em;
         display: flex;
         flex-direction: column;
         gap: 1em;
@@ -41,6 +41,9 @@ import Bamboo from "./Bamboo.astro";
       }
 
       @media screen and (max-width: 480px) {
+        .wrapper {
+          padding: 1.5em;
+        }
         svg {
           width: 100%;
         }

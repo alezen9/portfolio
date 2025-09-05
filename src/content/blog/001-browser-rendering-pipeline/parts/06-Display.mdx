@@ -1,7 +1,8 @@
 ## 6. Display (Buffers & Vsync)
 
-At this point, the compositor has assembled all the layers into a single frame.  
-The last step is to actually put those pixels on the screen.
+t this point, the compositor has blended all layers into a final framebuffer in GPU memory.  
+But before those pixels hit the screen, the browser and GPU need a strategy to avoid artifacts like tearing
+and to keep motion looking smooth. That's where ==buffering== and ==VSync== come in.
 
 <br />
 
@@ -9,43 +10,66 @@ The last step is to actually put those pixels on the screen.
 
 The GPU maintains two buffers:
 
-- ==Front buffer==: currently being scanned out to the display.
-- ==Back buffer==: where the next frame is rendered.
+- **Front buffer:** currently being scanned out to the display.
+- **Back buffer:** where the next frame is rendered.
 
 <br />
 
-Once the back buffer is ready, the pointers are swapped, the back becomes the new front, and the old front is reused as the new back.  
-This happens in sync with the monitor's refresh (VSync) so the screen never shows half of one frame and half of another (tearing).
+Once the back buffer is ready, the pointers are swapped, the back becomes the new front,
+and the old front is reused as the new back.  
+This happens in sync with the monitor's refresh (VSync) so the screen never displays part
+of an old frame mixed with part of a new one (tearing)
 
 <br />
 
 ### Triple buffering
 
 Some systems use three buffers: one front + two backs.  
-This allows the GPU to start rendering a new frame even if one back buffer is waiting for VSync.
+This allows the GPU to start rendering a new frame even if one back buffer is still waiting for VSync.
 
-**Benefit:** smoother scheduling, less stutter.  
-**Trade-off:** more GPU memory, and input can feel slightly less responsive. A freshly rendered frame might not be shown until the next refresh cycle, adding up to one extra frame of latency.
+- **Benefit:** smoother scheduling, less stutter.
+- **Trade-off:** more VRAM, and added latency: a finished frame may wait an extra refresh before showing up.
 
-> **Note:** Many platforms dynamically switch between double and triple buffering depending on GPU load and timing conditions.
+> Many platforms dynamically switch between double and triple buffering depending on GPU load and timing conditions.
 
 <br />
 
 ### Why VSync matters
 
-Monitors refresh at fixed intervals (60Hz, 120Hz, 144Hz, etc.).
+Monitors refresh at fixed intervals (60 Hz, 120 Hz, 144 Hz, etc.).
 
 - If the browser delivers a frame before the deadline, it's shown smoothly.
-- If it misses, that frame is delayed until the next refresh or dropped, causing a visible ==stutter== hence breaking smooth motion.
-- With VSync off: frames can be shown as soon as they're ready, but you risk ==tearing== (two frames shown in one refresh represented as a jagged split across the screen).
+- If it misses, that frame is delayed until the next refresh or dropped, causing a visible ==stutter==.
+- With **VSync off**: frames can be shown immediately, but you risk ==tearing== (two frames spliced in one refresh).
 
 <br />
 
-This is why we talk about the frame budget: ~16ms per frame at 60Hz, ~8ms at 120Hz.  
-Consistent pacing matters as much as raw FPS, uneven frame times look choppy even if the average FPS is “high.”
+> Modern monitors support _Variable Refresh Rate_ (**VRR**), known as NVIDIA G-Sync or AMD FreeSync.  
+> Instead of the GPU waiting for the next fixed tick, the monitor adapts its refresh cycle to match when a frame is ready.
+> This nearly eliminates tearing and stutter, and reduces latency, but only works if both GPU and display support it.  
+> Browsers typically stick to fixed VSync for predictability, but VRR can help in full-screen or `WebGPU` contexts.
 
-==Latency== is the third piece of the puzzle: the delay between input (e.g. a keypress) and when its effect becomes visible.  
-Buffering strategies and missed VSync deadlines can both increase it.
+<br />
+
+### The three axes of smoothness
+
+When people say "it feels smooth,” they're usually describing three things at once:
+
+- **FPS:** Did we make enough frames per second?
+- **Frame pacing:** Were those frames delivered evenly on time?
+- **Latency:** How long did it take from input (a click, a keypress) to the screen reacting?
+
+<br />
+
+All three matter.  
+High FPS without pacing feels jittery. Even pacing without responsiveness feels sluggish.
+
+<br />
+
+This is why we talk about the frame budget: at 60 Hz, the GPU has ~16 ms to deliver a frame; at 120 Hz, just ~8 ms.
+Consistent pacing and low latency matter just as much as raw FPS.
+
+Buffering strategies and missed deadlines affect all three axes: too few buffers risks tearing, too many risks added latency.
 
 <br />
 

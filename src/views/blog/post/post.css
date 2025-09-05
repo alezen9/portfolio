@@ -154,8 +154,12 @@ a {
   --intensity: 85%;
 }
 
-@media screen and (min-width: 480px) {
+.lg-small {
+  margin: 0 15%;
+}
+
+@media screen and (max-width: 480px) {
   .lg-small {
-    margin: 0 15%;
+    margin: 0;
   }
 }
