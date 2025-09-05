@@ -36,14 +36,13 @@ FillRect(x=0, y=0, w=200, h=100, color=red)
 DrawText("Hello", font=Arial, size=16, x=108, y=70)
 ```
 
-These commands are not pixels yet. Think of them as vector instructions.  
-Rasterization samples those commands onto the pixel grid, per tile, producing a bitmap for each tile.
+These commands are ordered according to stacking contexts (z-index, paint order). Later commands draw on top of earlier ones.  
+They're still instructions, not pixels. Rasterization samples them onto the pixel grid, per tile, producing bitmaps.
 
 > **Note:** _Rasterization_ is just one way to turn geometry into images.  
-> Game engines sometimes use ray or path tracing.
-> In contrast, browser engines always rasterize HTML/CSS content, because it's fast and parallelizable.  
-> Of course, you can implement ray/path tracing manually in `WebGL`or `WebGPU`, typically inside a `<canvas>` element,
-> but that's outside the browser's built-in pipeline.
+> Game engines sometimes use ray/path tracing, but browsers rasterize HTML/CSS because it's fast and parallelizable.
+> Ray or path tracing in browsers is totally achiveable via `WebGL`/`WebGPU`
+> typically inside a `<canvas>` element, not part of the built-in pipeline.
 
 <br />
 
@@ -64,54 +63,55 @@ Rasterization can run on either one depending on engine, driver, and platform.
 
 ### Tiling
 
-Instead of painting the whole page at once, the browser splits it into tiles (e.g. 256&times;256 px or 512&times;512 px).
-
+Instead of painting the whole page at once, the browser splits it into tiles (commonly 256&times;256 or 512&times;512 pixels, though engines may pick other sizes).
 Each tile is rasterized independently, often in parallel across threads or GPU cores.
 
 **Why tiles?**  
 If only a small part of the screen changes, only those tiles need to be re-rasterized instead of redrawing the entire page.
 
-> **Note:** In memory, tiles are typically square (e.g. 256&times;256 or 512&times;512), but what DevTools overlays show can vary.
-> Sometimes they appear as horizontal strips or irregular grids, since engines group or schedule tiles in ways optimized for scrolling and redrawing.
-> The important bit: ==rasterization happens in chunks==, so only changed tiles need to be re-rasterized.
-
-> **Note:** You can visualize them in Chrome DevTools > Render panel > toggle _Layout borders_.
+> **Note:** Tile boundaries are an internal detail and aren't consistently exposed in DevTools.
 >
-> \*If the panel is not visible:
+> - Paint flashing shows repainted regions, not tile borders.
+> - The Layers/Rendering overlays show compositor layer edges, which may look like large horizontal
+>   or vertical strips if a layer spans the viewport.
 >
-> 1. **Cmd+Shift+P** / **Ctrl+Shift+P** to open the Command Menu.
-> 2. Type "Show Rendering" and select it.
-> 3. The Rendering panel will now be available at the bottom.
+> In other words, DevTools can help you spot repaints and compositor layers, but it won't reveal the neat grid of 256&times;256 px tiles used internally.
 >
-> <br />
-> Other useful toggles: _Paint flashing_ (repainted regions flash green) and
-> _Frame Rendering Stats_ (FPS and GPU memory).
+> If you don't see the Rendering panel in DevTools:  
+> Cmd+Shift+P / Ctrl+Shift+P &rarr; type "Show Rendering" &rarr; select it to enable.
 
 <br />
 
 ### Why Paint can be expensive
 
-Paint cost scales with how many pixels you touch and how complex each pixel is to compute.  
-Not all properties are equal.
-
-For example:
+Paint cost scales with how many pixels you touch and how complex each pixel is to compute.
 
 - **Cheap:** `background-color`, `border`, simple fills.
 - **Moderate:** `color`, font, basic images.
 - **Expensive:** large box-shadows, gradients, complex SVGs, heavy text effects.
-- **Filters:** simple per-pixel ones (`brightness()`, `contrast()`, `invert()`) are relatively cheap,
-  but effects like `blur()` or `drop-shadow()` require sampling neighboring pixels and quickly add up.
-- **Backdrop filters:** most costly, since the browser must first capture the pixels behind the element, a.k.a. screen texture, and then reprocess them.
+- **Filters:** per-pixel ones like `brightness()`, `contrast()`, or `invert()` are light,
+  but effects like `blur()` or `drop-shadow()` sample neighbors and quickly add up.
+- **Backdrop filters:** heaviest of all, the browser must first capture what's behind the element (a screen texture) and then reprocess it
 
-Large area repaints like animating `background-color` on `<body>`, are especially expensive, because they invalidate most or all tiles.
+Large area repaints like animating `background-color` on `<body>`, are especially costly, because they invalidate most or all tiles.
 
 <br />
 
-Animating Paint-heavy properties means new tiles must be rasterized every frame, which can quickly cause jank.
+### Frame deadlines
+
+All these stages (style &rarr; layout &rarr; paint) run on the main thread.  
+If JavaScript blocks the main thread for more than the frame budget (~16ms at 60 Hz),
+the renderer misses the deadline. That frame is dropped, showing up as stutter instead of smooth motion.
+
+**Ways to mitigate:**
+
+- Compute heavy JS into smaller chunks via `requestAnimationFrame()` so rendering can slot in between.
+- Offload expensive work to Web Workers when possible.
 
 <br />
 
 ### Output of this stage
 
-A set of rasterized tiles (pixel buffers/bitmaps). If rasterized on the CPU, these bitmaps are uploaded as GPU textures. If rasterized on the GPU, they're already textures.
-The compositor then samples and blends them to assemble the frame.
+A set of rasterized tiles (pixel buffers/bitmaps). If rasterized on the CPU, these bitmaps are uploaded as GPU textures.
+If rasterized on the GPU, they're already textures.  
+These are handed to the compositor, which samples and blends them into the final frame.

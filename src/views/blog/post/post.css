@@ -130,12 +130,20 @@ ul:has(+ p) {
   margin-bottom: var(--space-s);
 }
 
-li:has(ul) > p {
-  margin: 0;
+ul,
+ol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
 }
 
-li ul {
-  margin-bottom: var(--space-s);
+li > ul,
+li > ol {
+  margin-bottom: 0.25em;
+}
+
+li p {
+  margin: 0;
 }
 
 a {

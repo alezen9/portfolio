@@ -1,24 +1,9 @@
 import Layout from "@components/blog/Layout.astro";
 import performanceTab from "../images/performance-tab.webp?url";
 
-## 2. Style Recalculation (or Computed Styles)
+## 2. Style Recalculation
 
-Once the browser has both the DOM and the CSSOM, it can finally resolve what each element should look like.<br />
-This stage is sometimes referred to as just _Style Calculation_.<br />
-
-<blockquote>
-  **Note:** In Chrome DevTools > Performance panel, the stage appears as **Recalculate Style** under the _Main_ expandable.  
-  While in DevTools > Elements panel, you can see the results under the **Computed** tab.
-
-<br />
-
-<Layout class="lg-small">
-  <figure>
-    <img src={performanceTab} alt="---" />
-    <figcaption>DevTools > Performance panel > Main expandable (other stages are visible as well)</figcaption>
-  </figure>
-</Layout>
-</blockquote>
+This stage is sometimes referred to as _Style Calculation_. It's where cascade, inheritance, and variables are resolved into ==computed styles==.
 
 <br />
 
@@ -61,7 +46,25 @@ margin: 0px
 ```
 
 Notice how relative values (`1rem, var(--main-color)`) are turned into absolute values (`16px, rgb(255,0,0)`).<br />
-Browsers also fill in defaults (`display: block, margin: 0`), even if you didn't set them explicitly.
+Browsers also apply built-in user-agent stylesheet alongside yours.
+That's why `<h1>` looks bigger than `<h2>` by default, or why elements like `<div>` come with `display: block;`
+and `margin: 0;` even if you never set them yourself.
+
+<br />
+
+<blockquote>
+  **Tip:** In Chrome DevTools > Performance panel, the stage appears as **Recalculate Style** under the _Main_ thread.  
+  While in DevTools > Elements panel, you can see the results under the **Computed** tab describing the computed styles.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img src={performanceTab} alt="Performance panel in Chrome DevTools" />
+    <figcaption>DevTools > Performance panel > Main thread (other stages appear as well)</figcaption>
+  </figure>
+</Layout>
+</blockquote>
 
 <br />
 
@@ -101,8 +104,8 @@ element.style.setProperty("--main-color", "blue");
 
 - If the variable controls a non-inherited property (e.g. `border-color`), only the element using it needs recalculation.
 - If it controls an inherited property (e.g. `color`, `font-size`), children may also need recalculation.
-- If it controls geometry/layout (e.g. `width`, `height`, `transform: scale(var(--x))`), the element's layout changes,
-  which invalidates its entire subtree: children that don't use the variable directly still need recalculation.
+- If it controls geometry/layout (e.g. `width`, `height`, `transform: scale(var(--x))`), the element's box geometry changes.  
+  That invalidates its subtree, so even children that don't use the variable directly may still need recalculation.
 
 <br />
 
@@ -121,5 +124,9 @@ Engines coalesce multiple invalidation reasons so ==each node is recalculated at
 The output of this stage is a computed style map where each DOM element has a
 resolved set of styles, think of it as a big object with key-value pairs.
 
-This map becomes the input for the next stage: ==Layout==, where geometry,
-positions and sizes, is calculated.
+But knowing what each element “looks like” isn't enough to render it.
+We still don't know where each box sits on the page, or how they overlap.
+That's what the next two stages answer:
+
+- Layout &rarr; geometry (position and size)
+- Paint &rarr; visual details (draw order and raster)

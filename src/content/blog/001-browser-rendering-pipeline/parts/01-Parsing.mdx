@@ -29,16 +29,16 @@ Parsing is the act of taking raw text, HTML or CSS, and turning it into structur
 
 - HTML is parsed into the DOM (Document Object Model).
 - CSS is parsed into the CSSOM (CSS Object Model).
-- Synchronous `<script>` can pause parsing until it's executed.
+- Synchronous `<script>` tags can pause parsing until they're executed.
 
 <br />
 
 ### HTML → DOM
 
 The HTML parser, called _HTMLTreeBuilder_ in both Blink and WebKit, _HTML5 Tree Builder_ in Gecko,
-reads the markup and outputs the DOM (==Document Object Model==).
+reads the markup and produces the DOM (==Document Object Model==).
 
-The DOM isn't stored as `JSON` or `XML` on disk, it lives entirely in memory as a tree of objects, each representing an element, attribute, or text node.
+The DOM isn't stored as `JSON` or `XML` on disk, it lives as an in-memory tree of objects, each representing an element, attribute, or text node.
 
 Example:
 
@@ -74,18 +74,17 @@ Which JavaScript can interact with using APIs like:
 
 <br />
 
-> **Note:** An element's attributes are technically stored in a `NamedNodeMap` (a map-like structure where each attribute name is unique),
-> while its children are stored in a `NodeList` (an ordered list of nodes, which can be elements, text nodes, or comments).  
-> In practice: attributes behave like a map, children like a list.
+> **Note:** Attributes live in a `NamedNodeMap` (map-like structure, unique keys), while children live in a `NodeList` (ordered list of nodes).  
+> In practice: attributes behave like a map, children like an array.
 
 <br />
 
 ### CSS → CSSOM
 
 The CSS parser, literally named _CSSParser_ in Blink and WebKit while Gecko uses a _Rust-based Servo parser_, reads stylesheets
-and outputs the CSSOM (==CSS Object Model==).
+and produces the CSSOM (==CSS Object Model==).
 
-Like the DOM, it's an in-memory object graph that describes rules, selectors, and declarations.
+This is another in-memory object graph: rules, selectors, and declarations.
 
 Example:
 
@@ -121,30 +120,30 @@ Exposed to JavaScript as:
 
 <br />
 
-> **Note:** If we had two selectors such as `.box.highlight` and `.highlight.box`, they both match the same elements,
-> but in the CSSOM the `selectorText` string is preserved exactly as written.  
-> Since they appear as different strings, they will appear as two distinct rules, even though they're equivalent in matching.
+> **Note:** The `selectorText` is preserved exactly as written.
+> Both `.box.highlight` and `.highlight.box` match the same elements but appear as two distinct rules in the CSSOM.
 
 <br />
 
-<br />
+### JavaScript interlude
 
-### JavaScript road bumps
+Parsing HTML isn't always a straight shot.
 
-While parsing HTML, if the browser encounters a synchronous `<script>` tag, the parser will **pause**.  
-The main thread executes the JavaScript first, then resumes parsing afterward,
-because the script could modify the DOM, even insert new elements with `document.write()`.
+When the parser encounters a synchronous `<script>` tag, it pauses.  
+Why? Because scripts can mutate the DOM, for example by inserting elements via `document.write()`,
+so the parser has to wait for JS to finish before continuing.
 
 This is why long-running synchronous scripts can delay page load.
 
-> **Tip:** If your script doesn't need to modify the DOM during parsing, you can add:
->
-> - `defer` &rarr; download in parallel, run after parsing finishes.
-> - `async` &rarr; download in parallel, run as soon as it's ready (not guaranteed order).
->
-> Both let the parser continue without blocking.
+**Avoiding parser blocks:**
+
+- `defer` &rarr; script downloads in parallel, but executes after parsing finishes.
+- `async` &rarr; script downloads in parallel and executes immediately when ready (order not guaranteed).
+
+Both allow parsing to continue without blocking, but serve different needs. Use `defer` when script order matters,
+and `async` for independent scripts (e.g. analytics).
 
 ### Output of this stage
 
-Once both ==DOM== and ==CSSOM== are ready, they form the input to the next stage.  
-The browser now has the raw ingredients it needs, the next step is figuring out what each element actually looks like.
+With ==DOM== and ==CSSOM== built, the browser now knows what content exists and what rules apply.  
+The next step is to resolve them together into concrete styles.

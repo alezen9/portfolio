@@ -1,6 +1,6 @@
 ## 3. Layout (or Reflow)
 
-Once every element has its computed styles, the browser's next job is to figure out where everything actually goes.  
+Once every element has its computed styles, the browser's next job is to figure out where things actually go on the page.  
 This stage is called Layout, or Reflow when it runs again after changes.
 
 <br />
@@ -9,12 +9,12 @@ This stage is called Layout, or Reflow when it runs again after changes.
 
 1. The browser builds a **Layout Tree** (also called a **Frame Tree** in Gecko).  
    An in-memory structure derived from the DOM + computed styles, but filtered down to **only visible, renderable elements**.
-
+   - Nodes with `display: none;` are excluded entirely.
+   - Nodes with `visibility: hidden;` are included (they occupy space, but are not painted).
+   - Pseudo-elements (`::before`, `::after)` also appear here, even though they don't exist in the DOM.
 2. Each node in the tree gets precise geometry from the box model: its position, width, height, padding, borders, margins, line breaks, etc.
-
 3. Inline text is measured and split into line boxes.
-
-4. Relative values (`%`, `em`, `vh`, ...) are resolved against parents and viewport sizes.
+4. Relative values (`%`, `em`, `vh`, ...) are resolved against parent geometry or viewport.
 
 <br />
 
@@ -35,7 +35,7 @@ Example:
 }
 ```
 
-Assuming parent has a content width of 400 px, the Layout Tree entry, conceptually, will look something like:
+Assuming parent has a content width of 400 px, the Layout Tree entry, conceptually, looks like:
 
 ```
 DIV.box
@@ -54,40 +54,42 @@ The browser now knows exactly where that box and its content should sit on the p
 
 Because this isn't a one-time step.  
 Any change that affects geometry: resizing the window, adding/removing elements,
-or updating certain styles, can force the browser to run it again.
+or updating certain styles, can force the browser to run layout again.
 
 <br />
 
 ### Why this stage can be expensive
 
-Layout depends on relationships between elements (flexbox, grid, percentages).  
-A change in one place can ripple through siblings, children, or even the whole document.
+Layout depends heavily on relationships between elements.
+A small change in one place (like flexbox alignment or table sizing) can ripple outward,
+requiring recalculations for siblings, children, or even the entire document.
 
-When you call DOM APIs like `getBoundingClientRect()` or `offsetWidth`,
-the browser must give you the latest, correct numbers. To do that, it may pause JS execution, run layout immediately, then return the result.  
-This is known as a **forced synchronous layout** (or “layout thrash”) and can
-cause jank if it happens repeatedly inside animations or loops.
-
-<br />
+DOM APIs like `getBoundingClientRect()` or `offsetWidth` can also force synchronous layout:
+the browser pauses JavaScript, updates the layout tree, and only then returns the result.  
+This is sometimes called layout thrashing when it happens repeatedly in animations or loops.
 
 > **Note on `offsetWidth`:**  
 > This property returns an element's rendered width (content + padding + borders, no margins).  
-> But reading it forces the browser to run layout synchronously so the number is correct, pausing JS execution until the layout tree is fresh.  
+> But reading it forces layout to run synchronously, pausing JS execution until the tree is up to date.
 > Developers sometimes exploit this:
 >
-> ```js
+> ```javascript
 > el.classList.remove("animate");
 > void el.offsetWidth; // force layout flush
-> el.classList.add("animate"); // animation restarts
+> el.classList.add("animate"); // restart animation
 > ```
 >
-> Here `offsetWidth` is used as a hack to restart a CSS animation. Handy trick, but it comes with a performance cost if overused.
-> Used sparingly it's usually fine, but in loops or animation frames it can cause repeated reflows and jank.
+> It's a handy trick, but overusing it (e.g. in loops or animation frames) can trigger repeated reflows and visible jank.
+
+Layout has to juggle many interdependent rules: block and inline formatting, flexbox and grid calculations
+(sometimes in multiple passes), intrinsic sizing, and special cases like replaced elements
+(`<img>`, `<video>`, `<iframe>`), whose boxes are sized based on their intrinsic dimensions rather than normal CSS flow.  
+With so many moving parts, a seemingly small change can ripple far beyond a single node.
 
 <br />
 
 ### Output of this stage
 
-The Layout Tree, an in-memory structure with precise box positions and dimensions.
-
-This becomes the input for the Paint stage, where the browser actually starts drawing things.
+The Layout Tree, an in-memory structure with precise box positions and dimensions.  
+Next comes Paint, which records vector-like draw commands (the display list).
+Rasterization then turns those commands into pixels.
