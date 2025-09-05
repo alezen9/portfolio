@@ -1,7 +1,7 @@
 import Layout from "@components/blog/Layout.astro";
 import gifInterpreterCovenant from "../videos/gif-security-guard.mp4";
 
-## 1. Parsing: DOM and CSSOM
+## 1. Parsing
 
 When the browser loads a page, the first thing it does is parse the source files.<br />
 Parsing is the act of taking raw text, HTML or CSS, and turning it into structured data that the engine can work with.
@@ -22,6 +22,14 @@ Parsing is the act of taking raw text, HTML or CSS, and turning it into structur
     <figcaption>The engine's parser validating your code</figcaption>
   </figure>
 </Layout>
+
+<br />
+
+### What happens here
+
+- HTML is parsed into the DOM (Document Object Model).
+- CSS is parsed into the CSSOM (CSS Object Model).
+- Synchronous `<script>` can pause parsing until it's executed.
 
 <br />
 
@@ -119,8 +127,24 @@ Exposed to JavaScript as:
 
 <br />
 
+<br />
+
+### JavaScript road bumps
+
+While parsing HTML, if the browser encounters a synchronous `<script>` tag, the parser will **pause**.  
+The main thread executes the JavaScript first, then resumes parsing afterward,
+because the script could modify the DOM, even insert new elements with `document.write()`.
+
+This is why long-running synchronous scripts can delay page load.
+
+> **Tip:** If your script doesn't need to modify the DOM during parsing, you can add:
+>
+> - `defer` &rarr; download in parallel, run after parsing finishes.
+> - `async` &rarr; download in parallel, run as soon as it's ready (not guaranteed order).
+>
+> Both let the parser continue without blocking.
+
 ### Output of this stage
 
-Together, ==DOM== and ==CSSOM== form the input to the next stage: ==Style Recalculation==,
-where the browser decides what each element actually looks like
-after applying cascade, inheritance, and variables.
+Once both ==DOM== and ==CSSOM== are ready, they form the input to the next stage.  
+The browser now has the raw ingredients it needs, the next step is figuring out what each element actually looks like.

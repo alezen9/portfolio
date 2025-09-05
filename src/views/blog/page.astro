@@ -18,7 +18,6 @@ const posts = (await getCollection("blog"))
   }
 
   li {
-    transition: transform 0.2s ease-in-out;
     cursor: pointer;
     width: fit-content;
   }
@@ -27,12 +26,8 @@ const posts = (await getCollection("blog"))
     all: unset;
   }
 
-  li:hover {
-    transform: scale(1.005);
-  }
-
   .title {
-    font-size: 1.25em;
+    font-size: 1.15em;
     font-weight: bolder;
     letter-spacing: 5;
     color: color-mix(in oklab, var(--text-accent) 65%, var(--text-color));

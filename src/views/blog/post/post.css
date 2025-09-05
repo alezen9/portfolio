@@ -57,6 +57,10 @@ li {
   max-width: 100%;
 }
 
+p:has(+ ul) {
+  margin-bottom: var(--space-xs);
+}
+
 blockquote {
   position: relative;
   border-radius: var(--border-radius);
@@ -71,6 +75,12 @@ blockquote {
 
 blockquote::before {
   display: none;
+}
+
+blockquote[data-type="frame"] {
+  background: none;
+  border: 1px solid;
+  border-color: rgba(var(--text-raw), 0.25);
 }
 
 blockquote p:last-of-type {
@@ -114,6 +124,10 @@ pre::after {
 
 pre code {
   background: transparent;
+}
+
+ul:has(+ p) {
+  margin-bottom: var(--space-s);
 }
 
 li:has(ul) > p {

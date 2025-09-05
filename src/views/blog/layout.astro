@@ -16,15 +16,10 @@ import Bamboo from "./Bamboo.astro";
         max-width: min(80ch, 90dvw);
         min-height: 100dvh;
         margin: 0 auto;
-        padding: 5.5em 1em 1em 1em;
+        padding: 4em 1em 1em 1em;
         display: flex;
         flex-direction: column;
         gap: 1em;
-      }
-
-      .tagline {
-        font-size: clamp(3rem, 7.5vw, 15vw);
-        font-family: "Okashi-Regular";
       }
 
       .bamboo {
@@ -40,13 +35,38 @@ import Bamboo from "./Bamboo.astro";
       :root[data-theme="dark"] .bamboo {
         opacity: 0.075;
       }
+
+      svg {
+        width: 75%;
+      }
+
+      @media screen and (max-width: 480px) {
+        svg {
+          width: 100%;
+        }
+      }
     </style>
   </head>
   <body>
     <Menu />
     <Bamboo class:list={["bamboo"]} />
     <main class="wrapper">
-      <h1 class="tagline">Chie no Mori</h1>
+      <h1 class="sr-only">Chie no Mori</h1>
+      <svg
+        viewBox="0 0 105 30"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <text
+          x="0"
+          y="20"
+          textLength="105"
+          lengthAdjust="spacing"
+          fill="currentColor"
+          font-family="Okashi-Regular"
+          font-weight="bold">Chie no Mori</text
+        >
+      </svg>
       <slot />
     </main>
   </body>
