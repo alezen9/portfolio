@@ -88,8 +88,8 @@ Each extra layer means:
 Too few layers and you risk repainting huge areas for small changes. Too many and you waste memory and bandwidth juggling textures.  
 That's why browsers try to balance it using heuristics.
 
-Layers are rasterized in tiles (chunks of pixels, e.g. 256&times;256), so the compositor can update
-just the visible or invalidated pieces instead of re-uploading the whole layer.
+Layers are rasterized in tiles, so the compositor can update just the visible or
+invalidated pieces instead of re-uploading the whole layer.
 
 <br />
 
