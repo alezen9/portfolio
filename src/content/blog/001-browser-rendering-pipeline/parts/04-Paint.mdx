@@ -102,7 +102,7 @@ Large area repaints like animating `background-color` on `<body>`, are especiall
 ### Frame deadlines
 
 All these stages (style &rarr; layout &rarr; paint) run on the main thread.  
-If JavaScript blocks the main thread for more than the frame budget (~16ms at 60 Hz),
+If JavaScript blocks the main thread for more than the frame budget (~16 ms at 60 Hz),
 the renderer misses the deadline. That frame is dropped, showing up as stutter instead of smooth motion.
 
 **Ways to mitigate:**

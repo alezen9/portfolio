@@ -1,14 +1,16 @@
 import ExternalLink from "@components/blog/ExternalLink.astro";
+import Layout from "@components/blog/Layout.astro";
 
 ### Explore more
 
 <br />
 
+<Layout gap={0.75}>
 <ExternalLink
-  icon="youtube"
-  href="https://www.youtube.com/watch?v=CVRLeOX-TGI&t=1s"
+  icon="article"
+  href="https://developer.chrome.com/blog/inside-browser-part3"
 >
-  Short introduction to Blink (Chrome's rendering engine)
+  Inside look at modern browsers: The Rendering Pipeline (Chrome Dev Blog)
 </ExternalLink>
 
 <ExternalLink
@@ -25,24 +27,24 @@ import ExternalLink from "@components/blog/ExternalLink.astro";
   Rendering Overview (Firefox internals)
 </ExternalLink>
 
-<ExternalLink
-  icon="article"
-  href="https://hacks.mozilla.org/2017/08/inside-a-super-fast-css-engine-quantum-css-aka-stylo/"
->
-  Inside Stylo: Firefox's Quantum CSS Engine
-</ExternalLink>
+<div>
+  <ExternalLink
+    icon="article"
+    href="https://hacks.mozilla.org/2017/10/the-whole-web-at-maximum-fps-how-webrender-gets-rid-of-jank"
+  >
+    WebRender: How Firefox Eliminates Jank
+  </ExternalLink>
+  <small>(2017&nbsp;-&nbsp;a&nbsp;bit&nbsp;dated, but still a great conceptual explainer)</small>
+</div>
 
-<ExternalLink
-  icon="article"
-  href="https://hacks.mozilla.org/2017/10/the-whole-web-at-maximum-fps-how-webrender-gets-rid-of-jank"
->
-  WebRender: How Firefox Eliminates Jank
-</ExternalLink>
+<div>
+  <ExternalLink
+    icon="youtube"
+    href="https://www.youtube.com/watch?v=xEcMvIAu9-E"
+  >
+    Understanding CPU &harr; GPU Bottlenecks
+  </ExternalLink>
+  <small>(gaming-focused, but applies equally to browsers)</small>
+</div>
 
-<ExternalLink icon="youtube" href="https://www.youtube.com/watch?v=BFYC9usSTsI">
-  Rasterization vs. Ray Tracing vs. Path Tracing (Beginner-friendly)
-</ExternalLink>
-
-<ExternalLink icon="youtube" href="https://www.youtube.com/watch?v=xEcMvIAu9-E">
-  Understanding CPU ↔ GPU Bottlenecks
-</ExternalLink>
+</Layout>
