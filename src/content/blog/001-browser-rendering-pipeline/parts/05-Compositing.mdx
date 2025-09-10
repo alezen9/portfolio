@@ -10,12 +10,12 @@ That's enough to render a page... but how we render it makes all the difference 
 ### Why compositing exists
 
 **The naïve approach** would be to render the entire page into a single big image, and just move that when you scroll.  
-Works, but terrible for animations. Odne small change means re-rasterizing everything.
+Works great when things are static, terrible if you have animations. One small change means re-rasterizing everything.
 
 **A step better** is to render only the viewport, redraw as you scroll.  
 Saves some work, but still costly for animations, since you may repaint large areas each frame.
 
-**Modern browsers instead use compositing**, they split the page into multiple layers,
+**Modern browsers use compositing** instead, they split the page into multiple layers,
 rasterize those layers separately, and then combine them in the compositor.  
 This way, animations often only require moving an existing layer's texture, not repainting the whole page.
 
@@ -36,7 +36,8 @@ Think of Photoshop: instead of flattening everything onto one canvas, some layer
 
 - `transform` (especially 3D transforms like `translateZ(0)`)
 - `opacity`
-- Explicit hints like `will-change` (most engines will treat certain properties like `transform` or `opacity` as strong signals, but not all properties are supported, e.g. `will-change: mask-image;` does nothing in Safari)
+- Explicit hints like `will-change` (most engines will treat certain properties like `transform` or `opacity`
+  as strong signals, but not all properties are supported, e.g. `will-change: mask-image;` does nothing in Safari)
 
 These usually bypass heuristics and go straight to their own GPU-backed layer,
 since the compositor can animate them with just matrix multiplications.
@@ -56,7 +57,7 @@ if repainting is cheaper, it won't promote.
 
 > **In my case**, Safari didn't promote the moving circular mask by default.
 > Its heuristics didn't treat `mask`/`mask-image` as worth a separate layer so every frame forced a repaint.  
-> Adding `transform: translateZ(0);` fixed it, because a 3D transform are a strong promotion trigger.
+> Adding `transform: translateZ(0);` fixed it, because a 3D transform is a strong promotion trigger.
 >
 > Once promoted, Safari could simply move the layer's texture instead of repainting the mask &rarr; smooth animation.
 
@@ -76,32 +77,39 @@ a "force-promotion” trick like a 3D transform.
 
 <br />
 
-### Layers, memory, and tiling
+### Trade-offs, layers and tiling
 
-Layers are effectively offscreen bitmaps (in system RAM or GPU VRAM).  
-Each extra layer means:
+Layers are essentially offscreen bitmaps. Each additional layer brings some trade-offs:
 
-- More VRAM consumed.
-- At least one upload from CPU &rarr; GPU.
-- Extra blending work if it overlaps others.
+- **More VRAM usage** to store textures.
+- **CPU &rarr; GPU upload cost** if the layer was rasterized on the CPU, GPUs are fast once data is there, but getting it across the bus is expensive.
+- **More overdraw** when layers overlap.
+- **Possible blurrier text** because promoted layers can disable subpixel antialiasing.
+- **Tiling overhead** where big layers get split into smaller tiles for efficiency,
+  but the more layers you have, the more tiles the system must manage.
 
-Too few layers and you risk repainting huge areas for small changes. Too many and you waste memory and bandwidth juggling textures.  
-That's why browsers try to balance it using heuristics.
+> Overdraw means the same pixel gets painted multiple times in a frame, but only the topmost value survives,
+> the rest of the work is wasted.  
+> Unlike 3D graphics, this pipeline doesn't use depth buffers to skip hidden pixels.
+> Some engines add lighter tricks (e.g. Skia can skip fully covered layers), but overlapping content
+> still increases GPU load.
 
-Layers are rasterized in tiles, so the compositor can update just the visible or
-invalidated pieces instead of re-uploading the whole layer.
+That's why browsers rely on heuristics: too few layers and you repaint huge areas unnecessarily;
+too many and you waste GPU resources.  
+So compositing is powerful, but it's a surgical tool, not something to sprinkle everywhere.
 
 <br />
 
 ### Main thread vs Compositor thread
 
-- **Main thread**: Style &rarr; Layout &rarr; Paint.
+- **Main thread**: Parsing &rarr;&nbsp;Style &rarr;&nbsp;Layout &rarr;&nbsp;Paint.
 - **Compositor thread:** runs separately, takes rasterized layers, and assembles frames.
 
 If only compositor-friendly properties change (`transform`, `opacity`),
-the compositor thread can run at the display's refresh rate without waiting on style/layout/paint.
+it can animate them independently at the display's refresh rate, without waiting on the main thread.
 
-If a change affects Layout or Paint (`width`, `top`, `color`), the compositor must wait on the main thread again, slowing things down.
+If a change affects Layout or Paint (`width`, `top`, `color`), the compositor has to wait for
+the main thread to finish those stages first, which slows things down.
 
 <br />
 
@@ -113,26 +121,12 @@ Under the hood, shaders apply matrix multiplications to the layer's texture in s
 **Cheap, smooth, hardware-accelerated.**
 
 This is why `transform: translateX(...)` is animation-friendly, while `left: ...`
-forces: Layout &rarr; Paint &rarr; Composite.
-
-<br />
-
-### Why compositing isn't always free
-
-- **More layers = more GPU memory (VRAM)**
-
-- **CPU &rarr GPU upload cost:** Transferring new or updated layers over the CPU&rarr;GPU bus (PCIe on desktop, shared bus on mobile) is much slower than GPU's internal bandwidth.
-  - GPUs can be insanely fast once data is in VRAM, getting it there is a universal bottleneck in graphics pipelines, not just browsers.
-  - In game dev this is also referred to as the PCIe tax.
-  - In Chrome DevTools, Performance panel, you can see upload cost show up as **Commit** events, where the browser flushes updated tiles/textures to the GPU.
-- **Blending cost:** Multiple overlapping translucent layers mean more GPU work per pixel.
-- **Text quirks:** Promoted layers may disable subpixel antialiasing &rarr; text can look blurrier.
-
-So compositing is powerful, but it's a surgical tool, not something to sprinkle everywhere.
+forces: Layout &rarr;&nbsp;Paint &rarr;&nbsp;Composite.
 
 <br />
 
 ### Output of this stage
 
-The compositor thread now has a stack of rasterized layers plus instructions for how to move and blend them.  
-These are handed off to the GPU, which does the final compositing into a single frame.
+A single composited frame: the compositor thread takes the rasterized tiles and layers,
+orders them according to the stacking contexts, and blends them together into a final image.  
+That finished frame is then handed to the display system, which will show it on the next VSync.

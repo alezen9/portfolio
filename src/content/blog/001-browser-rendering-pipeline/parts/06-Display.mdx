@@ -1,8 +1,10 @@
 ## 6. Display (Buffers & Vsync)
 
-t this point, the compositor has blended all layers into a final framebuffer in GPU memory.  
-But before those pixels hit the screen, the browser and GPU need a strategy to avoid artifacts like tearing
-and to keep motion looking smooth. That's where ==buffering== and ==VSync== come in.
+This is the last link in the chain.  
+The compositor has blended all layers into a final framebuffer in GPU memory,
+but before those pixels reach the monitor, the browser and GPU need a strategy to avoid visual
+artifacts like tearing and to keep motion smooth.  
+That's where buffering and VSync (Vertical Synchronization) come in.
 
 <br />
 
@@ -15,10 +17,13 @@ The GPU maintains two buffers:
 
 <br />
 
-Once the back buffer is ready, the pointers are swapped, the back becomes the new front,
+Once the back buffer is ready, the buffers are swapped: the back becomes the new front,
 and the old front is reused as the new back.  
-This happens in sync with the monitor's refresh (VSync) so the screen never displays part
-of an old frame mixed with part of a new one (tearing)
+This swap happens in sync with the monitor's refresh rate (VSync),
+so the screen never shows parts of two different frames at once, avoiding tearing.
+
+> The “vertical” in VSync comes from old CRT displays, which refreshed top-to-bottom.  
+> Buffer swaps were synced with the **vertical retrace** (when the beam returned to the top) to avoid tearing.
 
 <br />
 
@@ -55,14 +60,14 @@ Monitors refresh at fixed intervals (60 Hz, 120 Hz, 144 Hz, etc.).
 
 When people say "it feels smooth,” they're usually describing three things at once:
 
-- **FPS:** Did we make enough frames per second?
-- **Frame pacing:** Were those frames delivered evenly on time?
-- **Latency:** How long did it take from input (a click, a keypress) to the screen reacting?
+- **FPS:** did we make enough frames per second?
+- **Frame pacing:** were those frames delivered evenly on time?
+- **Latency:** how long did it take from input (a click, a keypress) to the screen reacting?
 
 <br />
 
 All three matter.  
-High FPS without pacing feels jittery. Even pacing without responsiveness feels sluggish.
+High FPS without pacing feels jittery, while pacing without responsiveness feels sluggish.
 
 <br />
 
@@ -84,4 +89,6 @@ From raw HTML + CSS text, we went through:
 5. **Compositing** &rarr; layers assembled by compositor thread
 6. **Display** &rarr; buffers swapped on VSync
 
-That's how your code turns into pixels on the screen.
+<br />
+
+That's how your code turns into pixels on the screen :)

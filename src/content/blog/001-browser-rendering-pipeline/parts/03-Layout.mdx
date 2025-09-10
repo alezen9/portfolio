@@ -39,10 +39,10 @@ Assuming parent has a content width of 400 px, the Layout Tree entry, conceptual
 
 ```
 DIV.box
-  x: 100
-  y: 0
-  width: 200
-  height: 20
+  x: 100px
+  y: 0px
+  width: 200px
+  height: 20px
   padding: 16px
 ```
 
@@ -66,10 +66,10 @@ requiring recalculations for siblings, children, or even the entire document.
 
 DOM APIs like `getBoundingClientRect()` or `offsetWidth` can also force synchronous layout:
 the browser pauses JavaScript, updates the layout tree, and only then returns the result.  
-This is sometimes called layout thrashing when it happens repeatedly in animations or loops.
+This is sometimes called **layout thrashing** when it happens repeatedly in animations or loops.
 
 > `offsetWidth` returns an element's rendered width (content + padding + borders, no margins).  
-> But reading it forces layout to run synchronously, pausing JS execution until the tree is up to date.
+> But reading it forces layout to run synchronously, pausing JS execution until the tree is up to date.  
 > Developers sometimes exploit this:
 >
 > ```javascript
@@ -81,14 +81,15 @@ This is sometimes called layout thrashing when it happens repeatedly in animatio
 > It's a handy trick, but overusing it (e.g. in loops or animation frames) can trigger repeated reflows and visible jank.
 
 Layout has to juggle many interdependent rules: block and inline formatting, flexbox and grid calculations
-(sometimes in multiple passes), intrinsic sizing, and special cases like replaced elements
-(`<img>`, `<video>`, `<iframe>`), whose boxes are sized based on their intrinsic dimensions rather than normal CSS flow.  
-With so many moving parts, a seemingly small change can ripple far beyond a single node.
+(sometimes requiring multiple passes), intrinsic sizing, and special cases like replaced elements
+(`<img>`, `<video>`, `<iframe>`), which behave like normal boxes but whose contents come from outside the DOM
+(decoded pixels, video frames, or entire nested documents).  
+With so many moving parts, even a small change can ripple far beyond a single node.
 
 <br />
 
 ### Output of this stage
 
 The Layout Tree, an in-memory structure with precise box positions and dimensions.  
-Next comes Paint, which records vector-like draw commands (the display list).
-Rasterization then turns those commands into pixels.
+Next comes Paint, which records vector-like draw commands (the display list),
+and Rasterization, which turns those commands into bitmaps.

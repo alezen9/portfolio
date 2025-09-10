@@ -1,6 +1,7 @@
 import Layout from "@components/blog/Layout.astro";
 import laggy from "../videos/laggy.mp4";
 import smooth from "../videos/smooth.mp4";
+import poster from "../images/poster.webp?url";
 import gifBigLebowski from "../videos/gif-big-lebowski.mp4";
 
 Recently, while working on my portfolio website, I hit a performance issue that completely threw me off.
@@ -18,6 +19,7 @@ Before we go any deeper, here's Safari v18.6 before and after the fix:
   <figure>
     <video
       src={laggy}
+      poster={poster}
       type="video/mp4"
       autoplay
       loop
@@ -30,6 +32,7 @@ Before we go any deeper, here's Safari v18.6 before and after the fix:
   <figure>
     <video
       src={smooth}
+      poster={poster}
       type="video/mp4"
       autoplay
       loop
@@ -48,7 +51,7 @@ As you can see, it was not completely unusable, but it was definitely frustratin
 I postponed this issue for a few days to focus on other features, but I was determined
 to eventually provide a smooth animation experience across all major browsers.
 
-When it was time to tackle it, I dug in.
+When it was time to tackle it, I dug in.  
 At first I thought it'd be an easy fix: scope the variables, shrink the mask, simplify the logic...
 to my surprise, nothing made a difference.
 

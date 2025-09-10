@@ -35,7 +35,7 @@ Parsing is the act of taking raw text, HTML or CSS, and turning it into structur
 
 ### HTML → DOM
 
-The HTML parser, called _HTMLTreeBuilder_ in both Blink and WebKit, _HTML5 Tree Builder_ in Gecko,
+The HTML parser, called "HTMLTreeBuilder" in both Blink and WebKit, "HTML5 Tree Builder" in Gecko,
 reads the markup and produces the DOM (==Document Object Model==).
 
 The DOM isn't stored as `JSON` or `XML` on disk, it lives as an in-memory tree of objects, each representing an element, attribute, or text node.
@@ -72,6 +72,9 @@ Which JavaScript can interact with using APIs like:
 - `node.textContent`
 - etc...
 
+See how the **class** attribute is stored as a string and is retrievable via `element.className`,
+but JavaScript also exposes `element.classList` as a `DOMTokenList` for easier manipulation.
+
 <br />
 
 > Attributes live in a `NamedNodeMap` (map-like structure, unique keys), while children live in a `NodeList` (ordered list of nodes).  
@@ -81,7 +84,7 @@ Which JavaScript can interact with using APIs like:
 
 ### CSS → CSSOM
 
-The CSS parser, literally named _CSSParser_ in Blink and WebKit while Gecko uses a _Rust-based Servo parser_, reads stylesheets
+The CSS parser, literally named "CSSParser" in Blink and WebKit while Gecko uses Servo's CSS parser called "Stylo", reads stylesheets
 and produces the CSSOM (==CSS Object Model==).
 
 This is another in-memory object graph: rules, selectors, and declarations.

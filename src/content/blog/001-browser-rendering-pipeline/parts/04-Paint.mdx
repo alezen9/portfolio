@@ -4,7 +4,7 @@ import gifBobRoss from "../videos/gif-bob-ross.mp4";
 ## 4. Paint & Rasterization
 
 At this point, the browser knows what every element looks like (computed styles) and where everything goes (layout tree).  
-The next step is to actually draw pixels.
+The next step is to transform them into bitmaps tiles.
 
 <br />
 
@@ -38,19 +38,20 @@ DrawText("Hello", font=Arial, size=16, x=108, y=70)
 
 These commands are ordered according to the CSS painting order, which takes stacking contexts (e.g. z-index)
 and element types into account. Later commands in the list paint on top of earlier ones.  
-They're still instructions, not pixels yet. Rasterization samples them onto the pixel grid, producing bitmaps.
+They're still instructions, not images yet.Rasterization turns them into bitmap tiles stored in memory, ready for compositing.
 
-> _Rasterization_ is just one way to turn geometry into images.  
-> Game engines sometimes use ray/path tracing, but browsers rasterize HTML/CSS because it's fast and parallelizable.
-> Ray or path tracing in browsers is totally achiveable via `WebGL`/`WebGPU`
-> typically inside a `<canvas>` element, not part of the built-in pipeline.
+> **Rasterization** is just one way to turn geometry into images.  
+> Game engines often use ray tracing or path tracing for more realistic lighting, but browsers stick
+> to rasterization because it's fast and parallelizable.  
+> You can experiment with ray/path tracing in browsers through `WebGL` or `WebGPU`, typically inside a `<canvas>`
+> element, but that's outside the built-in rendering pipeline.
 
 <br />
 
 ### Where it runs (CPU vs GPU)
 
 The CPU typically constructs the display list.  
-Rasterization can run on either one depending on engine, driver, and platform.
+Rasterization can run on either CPU or GPU depending on engine, driver, and platform.
 
 <br />
 
@@ -93,17 +94,21 @@ Paint cost scales with how many pixels you touch and how complex each pixel is t
 - **Expensive:** large box-shadows, gradients, complex SVGs, heavy text effects.
 - **Filters:** per-pixel ones like `brightness()`, `contrast()`, or `invert()` are light,
   but effects like `blur()` or `drop-shadow()` sample neighbors and quickly add up.
-- **Backdrop filters:** heaviest of all, the browser must first capture what's behind the element (a screen texture) and then reprocess it
+- **Backdrop filters:** heaviest of all, since the browser must first capture the pixels behind
+  the element into a texture, then apply the filter to that snapshot.
 
-Large area repaints like animating `background-color` on `<body>`, are especially costly, because they invalidate most or all tiles.
+Even cheap operations add up when they cover a large area.  
+For example, animating `background-color` on `<body>` invalidates most or all tiles,
+forcing massive repaints every frame.
 
 <br />
 
 ### Frame deadlines
 
-All these stages (style &rarr; layout &rarr; paint) run on the main thread.  
+All these stages (Style &rarr; Layout &rarr; Paint) run on the main thread.  
 If JavaScript blocks the main thread for more than the frame budget (~16 ms at 60 Hz),
-the renderer misses the deadline. That frame is dropped, showing up as stutter instead of smooth motion.
+the renderer misses the deadline and simply shows the previous frame again,
+which appears as stutter rather than smooth motion.
 
 **Ways to mitigate:**
 
@@ -114,6 +119,7 @@ the renderer misses the deadline. That frame is dropped, showing up as stutter i
 
 ### Output of this stage
 
-A set of rasterized tiles (pixel buffers/bitmaps). If rasterized on the CPU, these bitmaps are uploaded as GPU textures.
-If rasterized on the GPU, they're already textures.  
-These are handed to the compositor, which samples and blends them into the final frame.
+A set of rasterized tiles/bitmap chunks of the page.  
+If rasterization happens on the GPU, these tiles are already in GPU memory as textures.
+If it happens on the CPU, the bitmaps must be uploaded to the GPU as textures afterward.  
+Either way, in the next step the compositor will sample and blend these textures into the final frame.
