@@ -2,10 +2,20 @@
 import { getCollection } from "astro:content";
 import Layout from "./layout.astro";
 import FormattedDate from "@components/ui/FormattedDate.astro";
+import type { BlogPost } from "src/content.config";
+import type { CollectionEntry } from "astro:content";
+
+type RawPost = CollectionEntry<"blog">;
+
+const isProd = import.meta.env.PROD;
+
+const filterProd = (post: RawPost) => post.data.state === "Release";
+const filterDev = (post: RawPost) =>
+  ["Release", "Draft", "Example"].includes(post.data.state);
 
 const posts = (await getCollection("blog"))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-  .filter((post) => post.data.state === "Revision");
+  .filter(isProd ? filterProd : filterDev);
 ---
 
 <style>

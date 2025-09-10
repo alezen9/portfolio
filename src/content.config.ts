@@ -13,7 +13,7 @@ const zBlogPost = z.object({
   description: z.string(),
   pubDate: z.coerce.date(),
   updatedDate: z.coerce.date().optional(),
-  state: z.string().optional(),
+  state: z.string(),
   ogImageSrc: z.string().optional(),
 });
 

@@ -12,11 +12,12 @@
   let mq: MediaQueryList;
   const map = new SvelteMap<string, ToCElement>();
   let observer: IntersectionObserver;
-  let headings: NodeListOf<HTMLHeadingElement>;
+  let headings: HTMLHeadingElement[];
 
   const init = () => {
-    headings = document.querySelectorAll<HTMLHeadingElement>("h1, h2");
-    const ids = Array.from(headings).map((h) => h.id);
+    headings = [...document.querySelectorAll<HTMLHeadingElement>("h1, h2")];
+    headings = headings.filter((h) => !h.className.includes("sr-only"));
+    const ids = headings.map((h) => h.id);
 
     let fillerId: string | undefined;
     const visibleIds = new Set<string>();
