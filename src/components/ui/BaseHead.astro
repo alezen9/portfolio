@@ -15,8 +15,9 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const { title, description, imageSrc } = Astro.props;
 
 let absImageSrc = imageSrc;
-if (absImageSrc && !absImageSrc.startsWith(Astro.url.origin))
+if (absImageSrc && !absImageSrc.startsWith(Astro.url.origin)) {
   absImageSrc = Astro.url.origin + absImageSrc;
+}
 ---
 
 <!-- Cloudflare Web Analytics -->{
@@ -92,7 +93,7 @@ if (absImageSrc && !absImageSrc.startsWith(Astro.url.origin))
 <meta property="og:url" content={Astro.url} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
-{imageSrc && <meta property="og:image" content={imageSrc} />}
+{absImageSrc && <meta property="og:image" content={absImageSrc} />}
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image" />
@@ -101,4 +102,4 @@ if (absImageSrc && !absImageSrc.startsWith(Astro.url.origin))
 <meta name="twitter:url" content={Astro.url} />
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
-{imageSrc && <meta name="twitter:image" content={imageSrc} />}
+{absImageSrc && <meta name="twitter:image" content={absImageSrc} />}
