@@ -27,7 +27,7 @@ const blogLinkHref = isBlog ? null : "/blog";
     --svg-size: 1.25em;
     --pad: 0.25em;
     --tray-gap: 0.25em;
-    --n-elements: 2; /** in tray, no menu button */
+    --n-elements: 3; /** in tray, no menu button */
     --tray-size: calc(
       var(--btn-size) * var(--n-elements) + var(--tray-gap) *
         (var(--n-elements) - 1)
@@ -230,11 +230,11 @@ const blogLinkHref = isBlog ? null : "/blog";
           <IconHome />
         </a>
       </li>
-      <!-- <li data-page={isBlog}>
+      <li data-page={isBlog}>
         <a id="blog-link" title={blogLinkTitle} href={blogLinkHref}>
           <IconBook />
         </a>
-      </li> -->
+      </li>
       <li>
         <label for="theme-toggle" title="Toggle appearance">
           <input id="theme-toggle" type="checkbox" name="theme" />

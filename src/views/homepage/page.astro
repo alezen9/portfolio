@@ -5,8 +5,6 @@ import IconX from "@components/icons/IconX.astro";
 import CopyrightsDisclaimer from "@components/ui/CopyrightsDisclaimer.astro";
 import WordSwap from "./WordSwap.astro";
 import Layout from "./layout.astro";
-
-const isProd = import.meta.env.PROD;
 ---
 
 <style>
@@ -224,11 +222,8 @@ const isProd = import.meta.env.PROD;
       <div class="nav-links">
         <a
           class="arrow-link"
-          href={isProd ? "/coming-soon" : "/blog"}
-          aria-disabled={isProd}
-          title="Articles & notes (coming soon)"
-          tabindex="-1"
-          >Blog <small style="letter-spacing: 0;">(coming soon)</small></a
+          href="/blog"
+          title="Wander through learnings and discoveries">Blog</a
         >
         <a
           class="arrow-link"
