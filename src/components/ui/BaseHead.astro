@@ -13,6 +13,10 @@ const isProd = import.meta.env.PROD;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
 const { title, description, imageSrc } = Astro.props;
+
+let absImageSrc = imageSrc;
+if (absImageSrc && !absImageSrc.startsWith(Astro.url.origin))
+  absImageSrc = Astro.url.origin + absImageSrc;
 ---
 
 <!-- Cloudflare Web Analytics -->{
