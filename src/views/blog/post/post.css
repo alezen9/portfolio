@@ -14,8 +14,12 @@ figure > video {
   width: 100%;
   border-radius: var(--border-radius);
   overflow: hidden;
-  filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5));
   pointer-events: none;
+}
+
+:root[data-theme="light"] figure > img,
+:root[data-theme="light"] figure > video {
+  filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5));
 }
 
 figcaption {

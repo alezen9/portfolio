@@ -2,24 +2,36 @@
 type Props = {
   columns?: number;
   rows?: number;
+  colMaxWidth?: string;
   gap?: number;
 };
 
-const { columns = 1, rows = 1, gap = 0, ...rest } = Astro.props;
+const {
+  columns = 1,
+  rows = 1,
+  gap = 0,
+  colMaxWidth = "1fr",
+  ...rest
+} = Astro.props;
 ---
 
 <style
   define:vars={{
     columns,
     rows,
+    colMaxWidth,
     gap,
   }}
 >
   div {
     display: grid;
-    grid-template-columns: repeat(var(--columns), 1fr);
+    justify-content: center;
+    grid-template-columns: repeat(
+      var(--columns),
+      minmax(0, var(--colMaxWidth))
+    );
     grid-template-rows: repeat(var(--rows), 1fr);
-    gap: calc(1em * var(--gap));
+    gap: calc(1cqb * var(--gap));
   }
 </style>
 

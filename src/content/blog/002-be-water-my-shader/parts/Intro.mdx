@@ -1,0 +1,67 @@
+import Layout from "@components/blog/Layout.astro";
+import v1Video from "../assets/v1-480p.mp4";
+import v3Video from "../assets/v3-480p.mp4";
+
+Faking things is at the heart of game development.
+
+The goal isn't to perfectly simulate reality, but to make something that looks right, feels right,
+and fits the world it belongs to. Water is no exception.
+
+There are countless great resources out there on water surfaces: from stylized ponds to hyper-realistic oceans,
+each with their own clever techniques.
+
+This isn't meant to compete with them. It's simply my take, my two cents, my story of how I gathered bits of
+knowledge from different places and adapted them to my own context.  
+In the end, what mattered most was that the water looked and felt good inside my 3D world.
+
+In this article, I'll walk through how my shader evolved step by step: starting with conceptually simple
+vertex displacement, moving on to normal textures for more detail, and then pushing things further
+with refraction, sun glints, reflections, and a few extra tricks that gave the surface its final character,
+all while trying my best to keep the GPU cooler than the surface of the sun. :)
+
+<br />
+<br />
+
+It's easier to show than tell, here's the first attempt and the current version, looping side by side:
+
+<Layout columns={2} gap={1}>
+  <figure>
+    <video
+      src={v1Video}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    />
+    <figcaption>How it started</figcaption>
+  </figure>
+  <figure>
+    <video
+      src={v3Video}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    />
+    <figcaption>How it's going</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+As you can see, the difference is pretty striking, but it didn't happen overnight.  
+Each version was a small step forward, built on experiments, mistakes, and whatever bits of
+knowledge I managed to piece together.
+
+The water lives inside Revo Realms, my experimental 3D world built with Three.js
+([you can explore it here](https://revo-realms.aleksandargjoreski.dev)).  
+It's a playground where I test ideas, learn graphics programming, and slowly stitch together an
+environment that feels alive.
+
+I really wanted to have water in this world, either a lake or a river, but a lake felt right because it
+reminded me of the small one in Masere Park in Pelugo, a small municipality in Northern Italy
+where I grew up ([see on Google Maps](https://maps.app.goo.gl/yQj11xUyxqRMamBt6)).

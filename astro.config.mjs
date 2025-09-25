@@ -6,6 +6,7 @@ import svelte from "@astrojs/svelte";
 // import preact from "@astrojs/preact";
 import { remarkHighlightPlugin } from "./src/utils/remarkHighlightPlugin";
 import { rehypeScopedH3Ids } from "./src/utils/rehypeScopeH3Ids";
+import { rehypeTargetBlank } from "./src/utils/rehypeTargetBlank";
 
 export default defineConfig({
   site: "https://aleksandargjoreski.dev",
@@ -16,7 +17,7 @@ export default defineConfig({
     // preact(),
     svelte(),
     mdx({
-      rehypePlugins: [rehypeScopedH3Ids],
+      rehypePlugins: [rehypeScopedH3Ids, rehypeTargetBlank],
       remarkPlugins: [remarkHighlightPlugin],
     }),
   ],

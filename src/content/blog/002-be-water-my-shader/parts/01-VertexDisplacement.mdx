@@ -1,0 +1,164 @@
+import v1Wireframe from "../assets/v1-wireframe.webp?url";
+import separatedNormals from "../assets/separated-normals.svg?url";
+import sharedNormals from "../assets/shared-normals.svg?url";
+import fragment from "../assets/fragment.svg?url";
+import Layout from "@components/blog/Layout.astro";
+
+## 1. Vertex displacement approach
+
+In my first attempt, I took the most straightforward path: ==vertex displacement==.
+It's as simple as it sounds: move vertices up and down by some amount derived from sine waves, noise,
+or a mix of both, add time as part of the input, and the surface starts to ripple.
+
+This alone isn't enough to sell the effect, though. Even if vertices are moving, the surface can still look flat.
+
+<br />
+
+### Normal and fragment
+
+To make the next step clear, let's first familiarize ourselves with two concepts: ==normal== and ==fragment==.
+
+<br />
+
+**What is a normal?**
+
+Normals are 3D unit vectors that help the renderer determine which way a surface is facing, crucial for
+lighting and reflections.  
+They're stored **per vertex** and then interpolated across the surface of each triangle so every fragment
+gets an approximate orientation.
+
+When a shape has a hard edge, normals are discontinuous, which means the vertex at that corner must
+be duplicated so each copy can carry its own normal.
+
+A cube is the classic example: although it has 8 corners, in practice we use 24 vertices (4 per face)
+so that each face keeps its own normal. Otherwise, with only 8 shared vertices, the normals would be averaged
+and the cube would look oddly rounded.
+
+<Layout columns={2} gap={5} colMaxWidth="250px">
+  <figure>
+    <img src={separatedNormals} alt="Separated normals - 24 vertices" />
+    <figcaption>Separated normals - 24 vertices</figcaption>
+  </figure>
+  <figure>
+    <img src={sharedNormals} alt="Shared normals - 8 vertices" />
+    <figcaption>Shared normals - 8 vertices</figcaption>
+  </figure>
+</Layout>
+
+<br />
+<br />
+
+**What is a fragment?**
+
+Internally, all meshes are broken down into tiny triangles (primitives).  
+When one of those triangles overlaps a pixel on screen, the rasterizer produces a **fragment**:
+a candidate contribution to that pixel's final color.
+
+If several primitives overlap the same pixel, multiple fragments are generated in the same frame.
+Each runs through the ==fragment shader== (called a _pixel shader_ in DirectX), then passes a set of per-fragment tests (depth, stencil, alpha).  
+Eventually, some are kept and blended, others are discarded.
+
+That means a single pixel can be touched by multiple fragments, like in the example below:
+
+<Layout class="lg-small" colMaxWidth="50%">
+  <figure>
+    <img src={fragment} alt="Multiple fragments" />
+    <figcaption>Several fragments target the same pixel</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+Here, the same pixel is covered by the sky, then the ground, then the box, and finally the sphere.  
+Each overlap generates a fragment, but only the front-most opaque one wins.  
+If blending is involved (e.g. additive blending), several fragments may combine instead of being discarded.
+
+This is why OpenGL calls it a _fragment shader_: it doesn't shade "pixels" directly, but every fragment
+that might affect them.
+
+> Shading fragments that never contribute to the final image is called **overdraw**. GPUs try to minimize
+> it with early depth testing, front-to-back rendering order, or a depth pre-pass
+> (rendering depth first, then shading only visible surfaces).  
+> However, these optimizations often don't apply when transparency or blending is involved, since
+> even covered fragments may still affect the pixel color.
+
+<br />
+
+### Shading waves
+
+Back to our waves!  
+At this point each vertex is moving up and down in a wave-like pattern but the surface still looks
+flat, next step is shading it.
+
+On a plain surface, all vertex normals usually point upward. We need a way to vary them so light bounces
+differently at each fragment. A common trick for displaced geometry is the ==neighbor technique==:
+
+1. Compute elevation for two nearby theoretical points, slightly offset from the current vertex on X and Z by a tiny `ε`.
+2. Compute elevation for current vertex.
+3. Build two direction vectors from the current elevated position to the two neighbors.
+4. Take the cross product and normalize to approximate the normal.
+
+<br />
+
+```glsl
+float getElevation(vec3 position) {
+  // ... sample noise / texture / function
+  return elevation;
+}
+
+const EPSILON = 0.01; // tune to your scale (world units)
+
+void main() {
+  // ...
+  vec3 xNeighborPosition = currentVertexPosition.xyz + vec3(EPSILON, 0.0, 0.0);
+  xNeighborPosition.y += getElevation(xNeighborPosition);
+
+  vec3 zNeighborPosition = currentVertexPosition.xyz + vec3(0.0, 0.0, EPSILON);
+  zNeighborPosition.y += getElevation(zNeighborPosition);
+
+  currentVertexPosition.y += getElevation(currentVertexPosition.xyz);
+
+  // order matters (right-hand rule), pick one and stay consistent
+  vec3 toXNeighbor = normalize(xNeighborPosition - currentVertexPosition.xyz);
+  vec3 toZNeighbor = normalize(zNeighborPosition - currentVertexPosition.xyz);
+  vec3 computedNormal = normalize(cross(toXNeighbor, toZNeighbor));
+}
+```
+
+> Beware that `ε` is a balancing act. Too large and you'll smear away fine detail, too small and
+> floating-point noise/aliasing creeps in. Each neighbor adds a texture fetch, so the cost scales with vertex count.
+
+<br />
+
+During my research, at the time, I stumbled on a great [YouTube demo by Dan Greenheck](https://www.youtube.com/watch?v=jK4uXGY07vA),
+where he builds a water shader in `WebGL` using this technique.
+
+His version looks fantastic, but it's also quite heavy. My take was a trimmed-down version:
+I cut some steps, didn't accumulate noise octaves, and sampled from a precomputed noise texture instead
+of calculating noise procedurally.
+
+That noise texture actually packed three different tiled noises (Perlin, Voronoi, Turbulence) into its RGB channels.
+I mixed between them instead of accumulating octaves. This cut computation, but at the cost of depth and richness,
+Dan's multi-octave approach had much more variety.
+
+Most likely the biggest bottleneck in my version was texture sampling.  
+Every vertex had to do three fetches just to get displacement data: one for its own elevation and two more for its neighbors.
+On a dense mesh, that scales up quickly. Combined with my shortcuts, the result had motion, but the surface
+looked flatter and more repetitive than I hoped.
+
+To make the most of this approach in my case, I also built a custom lake mesh in Blender. Displacement only moves
+existing vertices, so I gave the surface plenty of subdivisions while cutting out everything hidden under the terrain.  
+The result was an irregular, lake-shaped mesh with triangles only where they mattered.
+
+<Layout class="lg-small">
+  <figure>
+    <img src={v1Wireframe} alt="Custom Blender mesh for the lake" />
+    <figcaption>Custom mesh I built in Blender</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+If you're curious, you can check out the full shader [here](https://github.com/alezen9/revo-realms/blob/5966b11b4d442aa0c08025f03a34e589a510ffcf/src/entities/Water.ts).  
+It was my simplified take on Dan's implementation. Far from perfect, I am aware, but it gave me waves in Revo,
+I did my best with the knowledge I had at the time and was happy with it.
