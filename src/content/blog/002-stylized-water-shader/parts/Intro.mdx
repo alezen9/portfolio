@@ -4,25 +4,22 @@ import v3Video from "../assets/v3-480p.mp4";
 
 Faking things is at the heart of game development.
 
-The goal isn't to perfectly simulate reality, but to make something that looks right, feels right,
-and fits the world it belongs to. Water is no exception.
+The goal isn't to perfectly simulate reality, but to make something that looks right, feels right, and fits
+the world it belongs to. Water is no exception.
 
-There are countless great resources out there on water surfaces: from stylized ponds to hyper-realistic oceans,
-each with their own clever techniques.
+There are countless great guides on water—stylized ponds, film-ready oceans—each with its own clever tricks.
+This isn't meant to compete with them. It's simply my path: piecing together what I knew, adapting ideas to
+my world, and seeing what felt true on screen.
 
-This isn't meant to compete with them. It's simply my take, my two cents, my story of how I gathered bits of
-knowledge from different places and adapted them to my own context.  
-In the end, what mattered most was that the water looked and felt good inside my 3D world.
-
-In this article, I'll walk through how my shader evolved step by step: starting with conceptually simple
-vertex displacement, moving on to normal textures for more detail, and then pushing things further
-with refraction, sun glints, reflections, and a few extra tricks that gave the surface its final character,
-all while trying my best to keep the GPU cooler than the surface of the sun. :)
+In this article I walk through how my shader evolved. It began with simple vertex displacement, picked up detail
+with normal maps, and eventually learned refraction, reflections, and a few small cheats. Each version taught
+me something new and moved me closer to water that felt alive inside
+[Revo Realms](https://revo-realms.aleksandargjoreski.dev), my Three.js playground where I test ideas,
+learn graphics programming, and slowly stitch together an environment that feels alive.
 
 <br />
-<br />
 
-It's easier to show than tell, here's the first attempt and the current version, looping side by side:
+Before diving into the details, here's the contrast in motion: my first attempt beside the version I have now:
 
 <Layout columns={2} gap={1}>
   <figure>
@@ -53,15 +50,22 @@ It's easier to show than tell, here's the first attempt and the current version,
 
 <br />
 
-As you can see, the difference is pretty striking, but it didn't happen overnight.  
+As you can see, the difference is pretty striking, but it didn't happen overnight.
+
 Each version was a small step forward, built on experiments, mistakes, and whatever bits of
 knowledge I managed to piece together.
 
-The water lives inside Revo Realms, my experimental 3D world built with Three.js
-([you can explore it here](https://revo-realms.aleksandargjoreski.dev)).  
-It's a playground where I test ideas, learn graphics programming, and slowly stitch together an
-environment that feels alive.
+I've always been fascinated by water, in life and in games. It's an extraordinary substance: essential for survival,
+an unstoppable force of nature, yet also deeply calming, whether it falls from the sky in drops or rests quietly
+in the hands of the earth.
 
-I really wanted to have water in this world, either a lake or a river, but a lake felt right because it
-reminded me of the small one in Masere Park in Pelugo, a small municipality in Northern Italy
-where I grew up ([see on Google Maps](https://maps.app.goo.gl/yQj11xUyxqRMamBt6)).
+Re-creating that feeling in 3D is a challenge. With limited resources, water can easily look flat or artificial,
+but when it works, it often becomes one of the most striking parts of a scene.
+
+Rivers, streams, ponds, oceans, lakes... I had many options when deciding what kind of water Revo should have.
+At first I wavered between a flowing stream and a lake, but in the end, the lake felt right.
+
+Almost unconsciously, I shaped it to resemble the small one in Masere Park ([see on Google Maps](https://maps.app.goo.gl/yQj11xUyxqRMamBt6)),
+in Pelugo, the village in Northern Italy where I grew up.
+
+Like any story, this one too begins with a simple step.

@@ -1,0 +1,193 @@
+import Layout from "@components/blog/Layout.astro";
+import waterNormalMap from "../assets/waterNormal.webp?url";
+import v2Video from "../assets/v2-720p.mp4";
+
+## Chapter II: Normal textures
+
+With displacement I had motion, but not the richness I wanted. To push further, I turned to one of the most common
+tricks in real-time rendering: ==normal maps==.
+
+By now, the word _normal_ should feel familiar, but what about map? In this context, it comes from "texture map"
+or "bitmap", and simply means a texture applied to geometry.
+
+Textures are one of the GPU's core data structures. Internally, they're more than just arrays: they also carry
+metadata about format, dimensions, mipmaps, and filtering. Sometimes that data forms a picture (diffuse/albedo),
+and sometimes it encodes information like surface direction (normals), height (displacement), or occlusion. At the
+shader level, what we really see is the array of texels, which we can interpret as colors, directions, heights,
+or anything else.
+
+This second approach reversed the logic of my first attempt. Instead of making the geometry do all the work, I
+let the fragments fake the ripples directly.
+
+I used a flat plane, just as before, but layered scrolling normal maps on top. The plane itself barely moved, just
+a few subtle displacements at the edges where water met the ground, to avoid looking cut out, but the normal maps
+carried all the detail of the waves.
+
+The result was visually convincing. Light danced across the surface as if waves were flowing, even though the geometry
+itself stayed almost still.
+
+If you're curious, I got my water normals from [cadhatch.com](https://www.cadhatch.com/seamless-water-textures), which
+has free-to-use seamless water textures. I only picked the normal maps, but diffuse versions are there too.
+
+<br />
+
+### A short detour: Textures, color spaces, and normal maps
+
+Before diving deeper, it's worth pausing to talk about how textures are stored and interpreted.
+This matters a lot when working with data textures like normals: get it wrong, and the math quietly breaks down.
+
+<br />
+
+<Layout class="lg-small" colMaxWidth="75%">
+  <figure>
+    <img src={waterNormalMap} alt="Water normal map" />
+    <figcaption>Water normal map</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+This is what the normal map I used looks like. To make sense of it, let's peel back a few layers.
+
+<br />
+
+**Pixels as vectors**
+
+At its core, a pixel is just a `vec4(r, g, b, a)`. In a regular photo those values mean red, green, blue, and alpha.
+In a normal map, the same slots are repurposed to store a direction vector `vec3(x, y, z)`. In 3D contexts, we only
+need three channels for X, Y, Z, so alpha is often unused or repurposed.
+
+Most normals point upward (Z &#8776; 1), so the blue channel is maxed out, while
+the red and green channels wiggle slightly for X and Y variations. Once you realize that, the “color” is really
+just coordinates in disguise. That's why they usually appear purplish to us.
+
+<br />
+
+**Color spaces**
+
+The majority of everyday textures (photos, albedo maps) are stored in ==sRGB==, a color space with a gamma curve baked in so
+they look "right" on screen.
+
+Gamma bends values to suit perception, fine for images, disastrous for vectors.
+
+Normal maps, and other data textures like roughness or displacement, must stay ==linear==. If you sample them as sRGB,
+the gamma silently distorts the vectors. The shader will still run, but highlights and reflections feel subtly wrong,
+one of the hardest bugs to trace. A giveaway is when highlights look muddy, or reflections drift away from the light
+source.
+
+<br />
+
+**Tangent space**
+
+There's also the matter of which space the normals live in. Most normal maps are baked in tangent space, where:
+
+- Red &rarr; left-right along the surface (tangent)
+- Green &rarr; up-down along the surface (bitangent)
+- Blue &rarr; outward (surface normal)
+
+But lighting happens in world or view space, so we need to transform.
+
+In my shader this happens in two steps:
+
+1. `tangentToObject()` converts tangent-space vectors into the object's local space.
+2. `objectToWorld()` transforms them again into world space.
+
+Without this, normals wouldn't follow the object's rotation, and lighting would slide around as if the surface were
+made of jelly.
+
+```typescript
+class WaterMaterial extends MeshBasicNodeMaterial {
+  // ...
+  private sampleTangentNormal = Fn(([uvCoords = vec2(0)]) => {
+    const tex = texture(assetManager.waterNormal, uvCoords); // [0..1]
+    const tangentN = tex.rgb.mul(2).sub(1); // unpack [0..1] to [-1..1]
+    return tangentN;
+  });
+
+  private tangentToObject = Fn(([tangentN = vec3(0)]) => {
+    // hard-coded TBN basis for a flat plane (U → +X, V → −Z, N → +Y)
+    const T = vec3(1, 0, 0); // Tangent
+    const B = vec3(0, 0, -1); // Bitangent
+    const N = vec3(0, 1, 0); // Normal
+    const objectN = tangentN.x
+      .mul(T)
+      .add(tangentN.y.mul(B))
+      .add(tangentN.z.mul(N));
+    return objectN;
+  });
+
+  private objectToWorld = Fn(([objectN = vec3(0)]) => {
+    return normalize(modelNormalMatrix.mul(objectN));
+  });
+  // ...
+}
+```
+
+> Hard-coded TBN axes are perfect for a single flat plane with consistent UVs. For arbitrary meshes, TBN should be
+> taken from geometry tangents/bitangents (or derivatives) so the tangent-space normal rotates correctly with the mesh.
+>
+> Some normal maps follow the DirectX convention with a flipped green channel. If your highlights look inverted,
+> flip the green channel (Y), or equivalently negate the bitangent.
+
+<br />
+
+### Layering the motion
+
+Once the basics were in place, the next step was layering the motion. A single scrolling normal map looks repetitive
+quickly, but stacking a few at different scales and speeds adds richness.
+
+In practice, I sampled the same water normal three times. One layer carried broad, slow undulations, another
+added medium-frequency detail, and the last sprinkled fast ripples on top. I scrolled each layer in a slightly
+different direction, at odd ratios (2.7, 3.1, not clean integers), so the layers drifted against each other instead
+of tiling in sync.
+
+After blending the layers, I normalized the result. Without that, the vectors drift in length, biasing the lighting
+and flattening the contrast. Normalization restores them to unit length, which lighting math assumes by default.
+Then finally, I transformed the result into world space for lighting.
+
+Conceptually it was simple: just three scrolling textures. But the effect was surprisingly convincing, giving the
+surface motion at every scale, not just one repeating wave.
+
+<br />
+
+### Outcome
+
+This second version wasn't about squeezing performance, it was about results.
+
+Instead of pushing thousands of vertices like in my first attempt, I kept the geometry calm and let normal maps
+fake the detail. That alone made the surface feel alive in a way displacement never quite managed.
+
+Instead of scaling with vertex count like before, this approach shifted the cost to fragments. Sampling a few
+normal maps per pixel isn't free, but GPUs are heavily optimized for texture fetches, especially when sampling from the
+same image. At this scale, resolution and overdraw mattered far more.
+
+This version also forced me to understand normals at a deeper level: how they're stored, sampled, and transformed.
+Those lessons carried into every shader experiment since.
+
+It wasn't yet the lush, stylized water I admired in other projects, but it was the first time the water in Revo
+truly felt like water.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      src={v2Video}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    />
+    <figcaption>The second iteration, live with layered normals</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+The layered normals gave me water I could finally be proud of. It wasn't perfect, players walking into it still broke
+the illusion—but it was convincing enough to let me focus elsewhere. For a while, Revo flowed on without new waves.
+
+And then, months later, a post on X caught me off guard. Its water shader looked mesmerizing, alive in a way I
+hadn't even dared to imagine for Revo.
