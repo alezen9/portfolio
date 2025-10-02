@@ -179,7 +179,7 @@ Everything broke. I'd ignored the clip-space range difference, and Firefox (WebG
 Branching (`if / else`) would solve it, but branching inside shaders is something I try to avoid.
 GPUs are happiest when every thread follows the same path; even a tiny conditional can hurt performance.
 
-Three.js doesn't expose a reliable flag for "WebGPU vs WebGL, even though it adapts internally, so I hooked up my own.
+Three.js doesn't expose a reliable flag for WebGPU vs WebGL, even though it adapts internally, so I hooked up my own.
 By checking `navigator.gpu?.requestAdapter()`, I set a uniform `uIsWebGPU`, and used that to drive whether I treat
 depth as `[0..1]` or `[-1..1]`.
 
@@ -190,12 +190,22 @@ const zNdcDX = depth.mul(uniforms.uIsWebGPU);
 const zNdc = zNdcGL.add(zNdcDX);
 ```
 
-That little uniform turned out to be my "compatibility toggle".
+That little uniform turned out to be my compatibility toggle.
 
 If you want to dive deeper into how projection matrices shape this math, two resources helped me a lot:
 
 - [WebGPU fundamentals — perspective projection](https://webgpufundamentals.org/webgpu/lessons/webgpu-perspective-projection.html)
 - [Song Ho's OpenGL projection matrix breakdown](https://www.songho.ca/opengl/gl_projectionmatrix.html)
+
+Finally, I could compute the depth of the water as follows:
+
+```typescript
+// ...
+const fragLinear = positionView.z.negate();
+const isUnderWater = step(fragLinear, sceneLinear);
+const fragmentDepth = sceneLinear.sub(fragLinear);
+const waterDepth = fragmentDepth.div(uniforms.uDepthDistance).clamp();
+```
 
 Depth was one of those invisible victories. At this point, I wasn't even using it for anything fancy yet, but I knew
 it was going to be a cornerstone for multiple effects. You can't do believable refraction, opacity falloff,
@@ -205,45 +215,385 @@ or absorption without it.
 
 ### Refraction
 
-- what is it
-- how its done
-- why it can be taxing in terms of performance
-- how i did it, distortion in tangent space
-- getting depth using refacted uv, why it is important
+So far, we've prepared two important ingredients: surface normals (ripples) and depth values. But at this point,
+they're just sitting there. Normals aren't affecting shading, and depth is just a number in the buffer. Nothing
+changes visually.
+
+The first place where they really come alive is refraction.
+
+When you look at real water, what's underneath doesn't appear perfectly aligned. The world bends and warps with
+the ripples. That's refraction: light changing direction as it passes through water. Shallow spots look almost
+undistorted, but the deeper the water, the stronger the bend.
+
+That's where depth comes in, it drives how much distortion to apply. Shallow water keeps the image sharp, while
+deeper water exaggerates the wobble.
+
+To pull this off, we need another piece of the puzzle: the ==screen texture== (in TSL called viewportTexture). Think
+of it like a screenshot of the scene, stored as a texture you can sample with UVs. Instead of fetching from an image
+on disk, you're sampling the already-rendered scene.
+
+Shift those screen UVs by the ripple normals, and suddenly the surface is no longer cosmetic. What's behind the water
+bends and dances with the waves, just like in the real world.
+
+```typescript
+const distortionStrength = mix(
+  uniforms.uRefractionStrength,
+  uniforms.uRefractionStrength.mul(1.5),
+  waterDepth,
+);
+
+const distortion = tsn.xy.mul(distortionStrength); // tangent space: xy is sideways tilt
+const refractedScreenUv = screenUV.add(distortion.mul(isUnderWater));
+```
+
+A couple of details worth unpacking:
+
+**Why tangent space XY?**
+
+The normal map gives me ripples in tangent space. The X and Y components are sideways "tilts" that tell me how much
+the surface is sloping horizontally. That's exactly the direction I want for UV distortion. Using Z wouldn't make
+sense, that's the "up" axis.
+
+<br />
+
+**Depth-based scaling**
+
+Notice how I don't use a constant distortion. The deeper the fragment, the stronger the bending. That's why I
+interpolate between `uRefractionStrength` and `1.5 x uRefractionStrength`. Without that, shallow areas would wobble
+just as much as deep areas, which feels wrong. The min and max refraction strength here are arbitrary.
+
+<br />
+
+**Why not just stop there?**
+If I only distorted the screen color, refraction would already look okay. But there's a catch: what happens if the
+distortion pushes my UV into an area that's supposed to be behind geometry? Suddenly, I'm sampling the wrong pixel.
+
+That's why I re-sample depth at the distorted UV:
+
+```typescript
+const depthRefr = viewportDepthTexture(refractedScreenUv).r;
+const sceneLinearRefr = p3z.div(depthRefr.add(p2z));
+const isSafe = step(fragLinear, sceneLinearRefr);
+const safeScreenUv = mix(screenUV, refractedScreenUv, isSafe);
+const screenColor = viewportTexture(safeScreenUv).rgb;
+```
+
+That `isSafe` mask prevents me from pulling colors from places that don't actually exist in front of the camera. Without
+it, you get ugly artifacts, stretched pixels or seeing "through" geometry you shouldn't.
+
+<br />
+
+**Performance note**
+Refraction is deceptively expensive: each distorted UV means another screen and depth sample. For a big body of water
+that covers a lot of pixels, this adds up fast. That's why I keep the distortion subtle and only sample once.
+
+<br />
+
+This sets up Beer-Lambert absorption nicely, because now you've established both the base distortion and the need to
+measure depth again at refracted UVs.
 
 <br />
 
 ### Reflections, Fresnel & Viewing Angle
 
-- cubemap sample to provide some environmental lighting
-- not completely a win, normals behave correctly with high uvs but not with low uvs
-- happy with the result and moved on after spending more than i wish to admit
-- still nice look
-- fresnel for gazing angle weighted reflections complete with formula and explanation
+With distortion in place, the water finally felt alive, but it was still missing one of the most recognizable cues:
+reflections.
+
+When you look at a lake, sometimes it's perfectly clear, and sometimes all you see is the sky or the world mirrored
+back at you. That shift isn't random, it depends on the viewing angle. Look straight down and you see through;
+look toward the horizon and the surface starts to act like a mirror.
+
+To capture this, I made use of two things: a cubemap for reflections, and Fresnel for weighting them.
+
+<br />
+
+**Reflections from the environment**
+
+The cubemap is a simple trick: sample the environment texture with a reflection vector. The reflection vector is
+just the view direction reflected across the surface normal.
+
+```typescript
+const viewDir = normalize(cameraPosition.sub(positionWorld));
+const reflectVector = reflect(viewDir.negate(), normal);
+const reflectedColor = cubeTexture(assetManager.envMapTexture, reflectVector);
+```
+
+This gives us the basic reflection color, but if applied everywhere equally, it looks wrong. Water would always
+behave like a mirror, even when you're looking straight down.
+
+<br />
+
+**Fresnel to the rescue**
+
+That's where Fresnel comes in. The Fresnel effect describes how reflectivity increases as the viewing angle becomes
+more glancing (close to parallel to the surface).
+
+The classic approximation is Schlick's formula:
+
+```math
+F(\theta) = F_0 + (1 - F_0) (1 - \cos\theta)^5
+```
+
+- `F0` is the reflectivity at head-on (usually very low for water, ~2%)
+- `cosθ` is the dot between the surface normal and the view direction
+- the exponent `5` isn't arbitrary, it comes from a common approximation (Schlick's), which uses `^5` as a balance
+  between accuracy and efficiency. In reality, Fresnel is derived from more complex equations involving polarization
+  and material IOR, but Schlick's `^5` form gets close enough while being dirt cheap for real-time graphics.
+
+In code:
+
+```typescript
+const cosTheta = dot(normal, viewDir).clamp();
+const F0 = float(0.02);
+const grazingAngle = float(1.0).sub(cosTheta);
+const grazingAnglePow5 = grazingAngle
+  .mul(grazingAngle)
+  .mul(grazingAngle)
+  .mul(grazingAngle)
+  .mul(grazingAngle);
+
+const fresnelSchlick = F0.add(float(1.0).sub(F0).mul(grazingAnglePow5));
+const fresnelWeight = fresnelSchlick.mul(uniforms.uFresnelScale).clamp();
+```
+
+The result is that reflections fade in naturally at grazing angles while letting through-water effects dominate when
+you're looking straight down.
+
+<br />
+
+**Why this matters**
+Fresnel is one of those subtle effects that the brain notices immediately when it's missing. Without it, water either
+looks like a sheet of glass or a perfect mirror. With it, the balance shifts naturally depending on your angle, and
+suddenly the reflections feel right.
+
+It is not just for blending reflections, though. Later, I also use it to boost highlights and glints on the surface,
+giving them that extra sparkle when the sun hits at just the right angle.
 
 <br />
 
 ### Highlights & Glints
 
-- using previously computed normals and sun direction to show sprinkles on th water
+If reflections give water its mirror-like character, highlights are the little sparks that make it feel alive.
+Think about a lake under the sun: you don't just see a vague bright patch, you see thousands of tiny glints dancing across the surface.
+
+In shaders, this comes from specular highlights. The idea is simple: when the direction of incoming light (the sun) reflects off the surface and happens to align with your view direction, you get a sharp spike of brightness.
+
+In code, it looks like this:
+
+```typescript
+const reflectedLight = reflect(uniforms.uSunDir, normal);
+const align = max(dot(reflectedLight, viewDir), 0.0);
+const spec = pow(align, uniforms.uShininess);
+
+const fresnelSpecBoost = mix(
+  float(1),
+  fresnelSchlick,
+  uniforms.uHighlightFresnelInfluence,
+);
+
+const sunGlint = uniforms.uSunColor.mul(
+  spec.mul(uniforms.uHighlightsGlow).mul(fresnelSpecBoost),
+);
+```
+
+A few key pieces are at play here:
+
+<br />
+
+**Shininess**
+
+The `pow()` call controls how "tight" the highlight is. A low shininess spreads the highlight into a wide, soft glow.
+A high shininess value makes it razor-sharp, like a sparkle on a calm surface. For my water I keep it high (hundreds),
+because I wanted those crisp glints rather than a smeared gloss.
+
+<br />
+
+**Glow factor**
+
+Water rarely looks right if the highlight is just a tiny pixel spike. I multiply it by a `uHighlightsGlow` uniform to
+give the glint some visual weight. This makes the bright spots more visible without flooding the surface.
+
+<br />
+
+**Fresnel boost**
+
+Highlights also depend on the viewing angle. By blending in some of the Fresnel weight, I make the glints more
+pronounced at grazing angles, where reflections dominate. The difference is subtle, but it prevents highlights from
+feeling flat or pasted on.
+
+<br />
+
+**Why bother if reflections already exist?**
+
+Because reflections alone tend to look static and dull. Specular glints are what trick the eye into believing the
+surface is alive and interacting with light. Without them, the water feels painted on. With them, it suddenly shimmers.
 
 <br />
 
 ### Beer-Lambert: Depth-Based Absorption
 
-- tinting water based on depth
-- formula and explanation
+So far, the water surface bends the world with ripples, shifts what you see with refraction, and sprinkles light with
+highlights. But something is still missing: color.
+
+If you've ever looked into a lake, you know the water isn't truly transparent. Shallow parts look almost clear, but as
+depth increases, the world below fades into blue or green. That fading isn't just an artistic choice, it's physics.
+
+This is where the Beer-Lambert law comes in.
+
+In simple terms, Beer-Lambert describes how light is absorbed as it travels through a medium. The deeper it goes,
+the more it loses certain wavelengths. Water absorbs red light more aggressively than blue, which is why oceans look
+blue-green instead of gray.
+
+The formula looks like this:
+
+```math
+T(\lambda) = e^{-\sigma(\lambda) \cdot d}
+```
+
+Where:
+
+- `T(λ)` is the transmittance &rarr; how much light survives) at wavelength `λ`
+- `σ(λ)` is the absorption coefficient &rarr; how much the medium eats each color channel
+- `d` is the thickness of the medium &rarr; the distance light has to travel through water
+
+In code:
+
+```typescript
+const sigma = uniforms.uAbsorptionRGB.mul(uniforms.uAbsorptionScale);
+const transmittance = exp(sigma.negate().mul(waterThickness));
+
+const absorbedColor = screenColor.mul(transmittance);
+const fillColor = uniforms.uInscatterTint
+  .mul(float(1.0).sub(transmittance))
+  .mul(uniforms.uInscatterStrength);
+
+const throughWater = absorbedColor.add(fillColor);
+```
+
+A breakdown:
+
+- Absorbed color: I take the screen color (what's behind the water) and darken it according to transmittance. This mimics how reds fade
+  faster, greens slower, and blues slowest.
+- Fill color: if you only darken, everything just looks murky. Real water glows a little because of scattered light.
+  That's where the tint (`uInscatterTint`) comes in: it adds back some color as a compensation. Think of it as water's
+  haze.
+- Through water: combine both, and you get a balance: background objects darken with depth, while the water itself
+  contributes its own subtle tint.
+
+  <br />
+
+**Why absorption matters**
+
+Without this step, deep water would look like perfectly clear glass. Refraction alone bends the image, but the colors
+beneath stay too clean. Beer-Lambert gives water its weight, the sense that light is struggling the further it travels.
+
+<br />
+
+**Art direction knobs**
+The absorption coefficients are purely artistic in my shader. For example, I used something like:
+
+```typescript
+uAbsorptionRGB = vec3(0.35, 0.1, 0.08);
+```
+
+That means red gets eaten fastest, while blue lingers the most — exactly the bias you'd expect from natural water.
+Scaling those numbers up or down lets me choose between crystal-clear lakes or murky green swamps.
+
+<br />
+
+**Why it matters**
+
+Without absorption, water never feels deep. Refraction bends images, but Beer-Lambert gives water its weight. It
+explains why a shallow puddle shows every pebble beneath, while a lake swallows them whole.
 
 <br />
 
 ### Opacity by distance
 
-- a small tweak that makes the water feel nicer when close to it
+Even with absorption in place, close-up water can look too present—like a tinted sheet. I wanted two things: 1. see clearly when I'm right at the shoreline (or when I fall in), and 2. let the surface “close up” with distance so the far lake reads as a coherent body.
+
+I solved it with a simple screen-space fade driven by horizontal distance (XZ) from the camera:
+
+```typescript
+// Distance in the horizontal plane (avoid sqrt by using squared distance)
+const distanceXZSquared = dot(
+  positionWorld.xz.sub(cameraPosition.xz),
+  positionWorld.xz.sub(cameraPosition.xz),
+);
+
+// Pre-square the thresholds so smoothstep compares squared quantities
+const min2 = uniforms.uMinDist.mul(uniforms.uMinDist);
+const max2 = uniforms.uMaxDist.mul(uniforms.uMaxDist);
+
+// Soft ramp from near to far, plus a floor so water never fully disappears
+const opacity = smoothstep(min2, max2, distanceXZSquared)
+  .add(uniforms.uMinOpacity)
+  .clamp();
+
+// Bring it all together
+const shadedWater = mix(throughWater, reflectedColor, fresnelWeight);
+const color = mix(screenColor, shadedWater, opacity);
+this.colorNode = color.add(sunGlint);
+```
+
+Why XZ only?
+
+I only fade with planar distance so the effect is stable as camera height changes (standing on a bank vs. flying a bit higher). It reads like “the farther the lake surface, the less you see through it,” which matches how we perceive real water at a glance.
+
+What each knob does
+
+- `uMinDist / uMaxDist` &rarr; where the fade starts and fully kicks in (in world units). These are squared internally
+  for the comparison, which avoids a costly `sqrt`.
+- `uMinOpacity` &rarr; a floor so nearby water doesn't disappear completely. Handy when you don't yet have
+  buoyancy/underwater rendering; you still get a hint of surface even right next to the camera.
+
+How it layers with the rest
+
+- The base is `screenColor` (undistorted scene.)
+- `throughWater` (Beer-Lambert + inscatter) tints and attenuates what's behind the surface.
+- `reflectedColor` (cubemap) comes in via Fresnel, stronger at glancing angles.
+- This `opacity` then decides how much we lean away from the raw scene into the shaded water look as distance grows.
+
+It's a cheap trick, but a useful one. By fading opacity with distance, the water feels clearer up close while still
+reading as a solid body farther away. And when the player ends up underwater, they don't get lost in murky Beer-Lambert
+tinting, you can actually see them moving beneath the surface.
 
 <br />
 
 ### Outcome
 
-- show how previously computed colors are combined
-- demo video
-- closing
+Piece by piece, the shader started to take shape.
+
+- The normals gave the surface ripples.
+- Depth gave it body.
+- Refraction bent the world behind it.
+- Reflections and Fresnel added realism at the viewing angle.
+- Highlights and glints brought sparkle to the surface.
+- Beer-Lambert absorption gave the water its characteristic tint.
+- And finally, opacity by distance balanced clarity near the player with solidity farther away.
+
+Each step on its own is simple enough, but together they stack into something that feels alive.
+
+At this stage, the shader is far from "finished", there's always another layer to add, another refinement to try.
+But for me, this is the first time it really started to look like the water I had imagined from the beginning.
+
+Here's how it all comes together:
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      src={v3Video}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    />
+    <figcaption>The second iteration, live with layered normals</figcaption>
+  </figure>
+</Layout>
+
+<br />
