@@ -1,0 +1,249 @@
+import Layout from "@components/blog/Layout.astro";
+import v3Video from "../assets/v3-720p.mp4";
+
+## Chapter III: Beyond Ripples
+
+My story with shaders is still at the beginning. I've tinkered with different ideas, but I know there's an
+entire universe I haven't touched yet.
+
+Still, it feels like things are moving in the right direction: I'm having fun and I'm learning a lot along the way.
+
+This third version of my water shader came about not too long ago. It was sparked by [this post](https://x.com/psergiomr/status/1899840041288917427)
+on X, which completely stunned me when I first saw it. At the time my head was elsewhere, so I just bookmarked it
+for later.
+
+Around that time, I grew curious about game engines and tried out Godot. After getting used to the
+basics, one of the first custom shaders I tried was stylized water. I wanted to capture the look and mood of that post,
+but with some of my own taste mixed in.
+
+What followed was a mix of trial, error, and small wins: depth-based effects, refraction, reflection, Fresnel,
+surface highlights, Beer-Lambert, and more.
+
+All of it layered together into something that finally started to feel like the water I imagined for my own little world.
+
+Now that the pieces are in place, let's break them down and see how each one shapes the final look.
+
+<br />
+
+### Surface Normals & Waves
+
+The first step is always the surface. No matter how much depth, absorption, or reflection you add later, if the
+surface itself doesn't move and react, it won't feel like water.
+
+```typescript
+class WaterMaterial extends MeshBasicNodeMaterial {
+  // ...
+  private sampleNormal = Fn(([uv = vec2(0)]) => {
+    const tex = texture(assetManager.waterNormal, uv);
+    return tex.mul(2).sub(1).rgb.normalize();
+  });
+
+  private createMaterial() {
+    const speed = time.mul(uniforms.uSpeed);
+    const frequency = uniforms.uNoiseScrollDir.mul(speed);
+    const nUV1 = uv().add(frequency).mul(uniforms.uUvScale.mul(1.37)).fract();
+    const tsn1 = this.sampleNormal(nUV1);
+    const nUV2 = uv().sub(frequency).mul(uniforms.uUvScale.mul(0.73)).fract();
+    const tsn2 = this.sampleNormal(nUV2);
+    const blendedTsn = tslUtils.blendRNM(tsn1, tsn2);
+    const tsn = vec3(
+      blendedTsn.xy.mul(uniforms.uNormalScale),
+      blendedTsn.z,
+    ).normalize();
+    const normal = tsn.x
+      .mul(uniforms.uTworld)
+      .add(tsn.y.mul(uniforms.uBworld))
+      .add(tsn.z.mul(uniforms.uNworld))
+      .normalize();
+    // ...
+  }
+}
+```
+
+In this version I reused the base idea from Chapter II: scrolling normal maps to fake ripples. Two copies of the same
+normal map are sampled with slightly different scales and offsets, then blended together. This avoids obvious
+tiling and creates a richer sense of motion.
+
+<br />
+
+**Scrolling UVs**
+
+Notice the `1.37` and `0.73` multipliers in the UVs. These are simply scale factors, by making them irrational-ish
+(not simple ratios like `1.0` or `2.0`), the patterns drift over time without ever fully syncing back up. This trick
+is super cheap but goes a long way toward breaking repetition.
+
+<br />
+
+**Normal Scale**
+
+I also introduced a `uNormalScale` uniform. This multiplies only the X and Y components of the tangent-space normal.
+
+Why? Because those represent the sideways "tilt" (tangent and bitangent axes). The Z component represents the "up"
+direction, scaling it would flatten the surface, which isn't what I want. This lets me tune how "strong" the waves
+appear without breaking the shading.
+
+<br />
+
+**Blending Normals**
+
+How you blend normals makes a huge difference. A naive `mix(n1, n2, 0.5)` just linearly interpolates the vectors.
+It looks okay at first glance, but detail is lost and surfaces start to feel muddy.
+
+The two main techniques worth knowing are:
+
+- _RNM_ (Reoriented Normal Mapping): the standard in many engines (Unreal, Unity HDRP). It reprojects one normal into the
+  tangent space of the other before combining. That way, directionality and detail are preserved even when waves overlap.
+  It's a little heavier math-wise, but the results are robust.
+
+- _UDN_ (the "Unreal Developer Network" method): first shared in Unreal's docs. It works in derivative space and is
+  extremely cheap—basically just a couple of adds and a multiply. In practice, it avoids some RNM pitfalls, but it can
+  introduce subtle seams depending on UVs and map content.
+
+In my tests, UDN did show faint seams, while RNM kept the surface clean and continuous. That's why I stuck with RNM here.
+
+If you want to go deeper, the SelfShadow [article](https://blog.selfshadow.com/publications/blending-in-detail/) is a fantastic resource that breaks down RNM, UDN, and more advanced variants.
+
+<br />
+
+**Tangent Space &rarr; World Space**
+
+Normal maps live in tangent space. To use them in lighting calculations, you need them in world space. Since my water
+mesh is static, I precompute the TBN basis (tangent, bitangent, normal) once on the CPU and upload them as uniforms
+(`uTworld`, `uBworld`, `uNworld`).
+
+That way the GPU just does a simple linear combination per fragment. If the mesh were deforming, I'd compute the TBN
+in the shader each frame instead.
+
+<br />
+
+### Depth
+
+If surface normals bring the water to life, depth gives it body. Without it, the water is just a flat overlay,
+no sense of how shallow or deep it actually is.
+
+The key to that sense of depth is the ==depth buffer==.
+
+I was already familiar with the basics: it stores how far each pixel is from the camera, but using it properly
+inside a shader was new territory. As it turns out, the numbers in the buffer aren't in world units, they're in
+**clip space**, the coordinate system (NDC - Normalized Device Coordinates) right after projection but before the
+perspective divide.
+
+In clip space, x, y, and z are squeezed into a cube where everything is normalized. The only difference across
+APIs is the range of z:`[0..1]` for WebGPU/DirectX/Metal and `[-1..1]` for WebGL/OpenGL.
+
+That range difference is subtle but critical.
+
+<br />
+
+**Reconstructing linear depth**
+
+Normally, you'd multiply the depth by the inverse projection matrix to reconstruct view-space depth. That works,
+but it's more math than I needed. Thanks to this video, I learned a neat shortcut: you only need two elements of
+the projection matrix (p3z, p2z).
+
+The formula looks like this:
+
+```math
+z_{view} = \frac{P_{3z}}{z_{ndc} + P_{2z}}
+```
+
+Where:
+
+- `z_ndc` is the depth buffer value remapped to clip space
+- `p3z` is the element at row 3, col 2 of the projection matrix
+- `p2z` is the element at row 2, col 2 of the projection matrix
+
+In code, it was simply:
+
+```typescript
+const sceneDepth = viewportDepthTexture(uv).r;
+const p3z = cameraProjectionMatrix.element(3).element(2);
+const p2z = cameraProjectionMatrix.element(2).element(2);
+
+const sceneLinear = p3z.div(sceneDepth.add(p2z));
+```
+
+One division, and suddenly the numbers made sense: true linear depth per fragment, essentially, how far the
+nearest object below the water is from the surface.
+
+> Three.js stores matrices in column-major order (like GLSL), but some documentation and graphics APIs show them in
+> row-major form. If you're cross-referencing projection matrix layouts, keep this difference in mind.
+
+<br />
+
+**The catch: API differences**
+
+I happily tested in Chrome and Safari (WebGPU) and moved on... until much later when I tried Firefox.
+Everything broke. I'd ignored the clip-space range difference, and Firefox (WebGL2) quickly reminded me.
+
+Branching (`if / else`) would solve it, but branching inside shaders is something I try to avoid.
+GPUs are happiest when every thread follows the same path; even a tiny conditional can hurt performance.
+
+Three.js doesn't expose a reliable flag for "WebGPU vs WebGL, even though it adapts internally, so I hooked up my own.
+By checking `navigator.gpu?.requestAdapter()`, I set a uniform `uIsWebGPU`, and used that to drive whether I treat
+depth as `[0..1]` or `[-1..1]`.
+
+```typescript
+const isWebGL = float(1).sub(uniforms.uIsWebGPU);
+const zNdcGL = depth.mul(2.0).sub(1.0).mul(isWebGL);
+const zNdcDX = depth.mul(uniforms.uIsWebGPU);
+const zNdc = zNdcGL.add(zNdcDX);
+```
+
+That little uniform turned out to be my "compatibility toggle".
+
+If you want to dive deeper into how projection matrices shape this math, two resources helped me a lot:
+
+- [WebGPU fundamentals — perspective projection](https://webgpufundamentals.org/webgpu/lessons/webgpu-perspective-projection.html)
+- [Song Ho's OpenGL projection matrix breakdown](https://www.songho.ca/opengl/gl_projectionmatrix.html)
+
+Depth was one of those invisible victories. At this point, I wasn't even using it for anything fancy yet, but I knew
+it was going to be a cornerstone for multiple effects. You can't do believable refraction, opacity falloff,
+or absorption without it.
+
+<br />
+
+### Refraction
+
+- what is it
+- how its done
+- why it can be taxing in terms of performance
+- how i did it, distortion in tangent space
+- getting depth using refacted uv, why it is important
+
+<br />
+
+### Reflections, Fresnel & Viewing Angle
+
+- cubemap sample to provide some environmental lighting
+- not completely a win, normals behave correctly with high uvs but not with low uvs
+- happy with the result and moved on after spending more than i wish to admit
+- still nice look
+- fresnel for gazing angle weighted reflections complete with formula and explanation
+
+<br />
+
+### Highlights & Glints
+
+- using previously computed normals and sun direction to show sprinkles on th water
+
+<br />
+
+### Beer-Lambert: Depth-Based Absorption
+
+- tinting water based on depth
+- formula and explanation
+
+<br />
+
+### Opacity by distance
+
+- a small tweak that makes the water feel nicer when close to it
+
+<br />
+
+### Outcome
+
+- show how previously computed colors are combined
+- demo video
+- closing

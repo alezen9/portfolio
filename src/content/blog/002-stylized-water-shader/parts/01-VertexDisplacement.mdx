@@ -124,7 +124,7 @@ The way to achieve that was to recompute normals dynamically. A common trick is 
 ```typescript
 class WaterMaterial extends MeshBasicNodeMaterial {
   // ...
-  private computeElevation = Fn(([posXZ = vec2(0, 0)]) => {
+  private computeElevation = Fn(([posXZ = vec2(0)]) => {
     /* ... */
   });
 

@@ -5,6 +5,7 @@ import { type CollectionEntry } from "astro:content";
 import BlogHead from "../BlogHead.astro";
 import TableOfContents from "./TableOfContents.svelte";
 import "./post.css";
+import "katex/dist/katex.min.css";
 
 type Props = CollectionEntry<"blog">["data"];
 

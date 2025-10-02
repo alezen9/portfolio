@@ -16,7 +16,10 @@
     "@astrojs/svelte": "^7.1.1",
     "astro": "^5.13.6",
     "gsap": "^3.13.0",
+    "katex": "^0.16.22",
     "preact": "^10.27.1",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
     "sharp": "^0.34.2",
     "svelte": "^5.38.7",
     "unist-util-visit": "^5.0.0"
