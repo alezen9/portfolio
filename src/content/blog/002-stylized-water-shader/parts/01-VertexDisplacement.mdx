@@ -9,40 +9,28 @@ import v1Video from "../assets/v1-720p.mp4";
 
 My first attempt began with the most straightforward idea: if you want waves, move the surface up and down.
 
-That's the essence of _vertex displacement_. Each vertex is fed into a function of sine waves, noise, or both,
-time is added to the input, and the mesh begins to ripple.
+That's the essence of vertex displacement. Each vertex runs through a function of sine waves or noise, time is
+added in, and the mesh begins to ripple. Intuitively, the more vertices you have, the smoother the motion looks, less
+guessing between points.
 
-Intuitively, more vertices in the geometry mean more detail: there's less guesswork between points,
-and the motion appears smoother.
+It worked, but it still wasn't enough. Even with vertices shifting around, the surface looked strangely flat.
 
-This technique works, but it isn't enough to sell the effect. Even with vertices shifting around, the surface
-can still look flat.
-
-That's because I started from a flat plane. The pipeline had no idea I was moving vertices around, so by default it treated
-every face as if nothing had changed
-
-To fix that, I had to give the renderer a hint about how each displaced face was really tilted. That's where
-==normals== come in.
+The reason? ==Normals==.
 
 <br />
 
 ### What is a normal?
 
-A normal is a 3D unit vector that tells the renderer which way a surface is facing.
+I had to remind myself what they are and how they work, normals are just 3D unit vectors that tells the renderer which
+way a surface is facing. Without them, light has no idea how to bounce, and everything looks dull and flat.
 
-They're essential for lighting and reflections because they define the angle at which light hits a ==fragment==.  
-Without them, the renderer would have no basis for shading, every surface would look flat, unaffected by light.
+They're stored per vertex and interpolated across triangles (primitives), so each ==fragment== gets an orientation.
+That works fine for static meshes, but when you start moving vertices around, the normals need to move too, otherwise
+the lighting no longer matches the shape.
 
-Normals are stored **per vertex** and then interpolated across each triangle, so every fragment gets
-an approximate orientation.
-
-When a shape has a sharp edge, normals can't be shared across it. The vertex at that corner has to be
-duplicated so each copy can carry its own normal.
-
-Take a cube: it has 8 corners, but in practice we use 24 vertices: 4 for each face.  
-If we only used 8, the normals would be averaged across the joins, and the cube would look oddly rounded.
-
-<br />
+<blockquote>
+Worth mentioning that a vertex can be associated with only one normal. This is problematic when we have sharp edges, 
+like in a cube for example. Duplicating vertices allows each copy can carry its own normal.
 
 <Layout columns={2} gap={5} colMaxWidth="250px">
   <figure>
@@ -55,29 +43,27 @@ If we only used 8, the normals would be averaged across the joins, and the cube 
   </figure>
 </Layout>
 
-<br />
+</blockquote>
 
-Normals define how light hits the surface, but they only make sense in context: which part of the screen are we shading?
-That's where ==fragments== enter the picture.
+Normals define how light hits a surface, but there was still a missing piece for me: what exactly are those normals
+shading? The answer lies in ==fragments==.
+
+I owe that clarity to Mike, an interviewer I once spoke with. I already had a rough idea of what a fragment was,
+but he explained it in such a clear and patient way that it finally stuck.
 
 <br />
 
 ### What is a fragment?
 
-Fragments and normals go hand in hand.
+Internally, all meshes are broken down into tiny triangles (primitives). When one of those triangles overlaps a pixel
+on screen, the rasterizer produces a fragment: a candidate contribution to that pixel's final color.
 
-Internally, all meshes are broken down into tiny triangles (primitives).  
-When one of those triangles overlaps a pixel on screen, the rasterizer produces a **fragment**:
-a candidate contribution to that pixel's final color.
+Each fragment runs through the _fragment shader_ (called a _pixel shader_ in DirectX), gets a color, and then competes
+in depth and blending tests. Some survive, some are discarded, meaning work was done only to be thrown away.
 
-If several triangles overlap the same pixel, multiple fragments are generated in the same frame.
-Each fragment runs through the **fragment shader** (called a _pixel shader_ in DirectX), which decides its color.
-It then passes through a series of per-fragment tests (depth, stencil, alpha). Some are kept and blended, others
-discarded.
-
-Here's a visual example:
-
-<br />
+<blockquote>
+Shading fragments that never affect the final image is called **overdraw**. GPUs reduce it with early depth tests or
+front-to-back rendering, but with transparency or other blending modes, even hidden fragments may still contribute.
 
 <Layout class="lg-small" colMaxWidth="50%">
   <figure>
@@ -88,36 +74,23 @@ Here's a visual example:
 
 <br />
 
-In this case, the same pixel is covered first by the sky, then the ground, then a box, and finally a sphere.  
-Each overlap generates a fragment, but only the front-most opaque one wins. If blending is enabled (transparency, additive, etc.),
-several may be combined instead of being thrown away.
+In this case, the same pixel is covered first by the sky, then the ground, then a box, and finally a sphere. Each
+overlap generates a fragment, but only the front-most opaque one wins.
 
-> Shading fragments that never affect the final image is called **overdraw**. GPUs reduce it with early depth tests or
-> front-to-back rendering, but with transparency or other blending modes, even hidden fragments may still contribute.
+</blockquote>
 
 <br />
 
 ### Shading waves
 
-With normals and fragments understood, I could finally shade the displaced surface in a way that light reacted properly.
+On my first water mesh, all normals pointed straight upward. Light bounced uniformly, and the ripples looked lifeless.
 
-Back to my water: at this point the mesh was rippling up and down, but it still looked flat.
+To fix that, I had to recompute normals dynamically. A common trick is the ==neighbor technique==:
 
-On a plain mesh all vertex normals point upward, so the light bounces in a uniform, lifeless way. I wanted the
-normals to follow the displaced surface, so that each fragment would react differently to the light.
-
-The way to achieve that was to recompute normals dynamically. A common trick is the ==neighbor technique==:
-
-1. Compute the elevation for two nearby points, slightly offset on X and Z by a small `ε`.
-2. Compute the elevation for the current vertex.
+1. Pick two nearby points, slightly offset on X and Z by a small `ε`.
+2. Raise them using the same displacement function.
 3. Build two direction vectors from the current position to those neighbors.
-4. Take their cross product and normalize, that gives a new normal pointing outward from the displaced surface.
-
-<br />
-
-> The **cross product** is the key step: it takes two surface-aligned vectors and produces a third that sticks out
-> perpendicular to both. Since the neighbors lie on the displaced surface, the result naturally points the right
-> way for shading.
+4. Cross them, normalize, and you get a new normal pointing outward from the displaced surface.
 
 <br />
 
@@ -129,93 +102,67 @@ class WaterMaterial extends MeshBasicNodeMaterial {
   });
 
   private computeNormal = Fn(() => {
-    const epsilon = float(0.01); // tune to your scale (world units)
+    const epsilon = float(0.01); // tune to your world scale
 
-    // X neighbor
-    const xNeighborPosition = positionLocal.add(vec3(epsilon, 0, 0));
-    const xNeighborElevation = this.computeElevation(xNeighborPosition.xz);
-    const xNeighborPositionElevated = xNeighborPosition.add(
-      vec3(0, xNeighborElevation, 0),
-    );
+    const xNeighbor = positionLocal.add(vec3(epsilon, 0, 0));
+    const zNeighbor = positionLocal.add(vec3(0, 0, epsilon));
 
-    // Z neighbor
-    const zNeighborPosition = positionLocal.add(vec3(0, 0, epsilon));
-    const zNeighborElevation = this.computeElevation(zNeighborPosition.xz);
-    const zNeighborPositionElevated = zNeighborPosition.add(
-      vec3(0, zNeighborElevation, 0),
-    );
+    const elevX = this.computeElevation(xNeighbor.xz);
+    const elevZ = this.computeElevation(zNeighbor.xz);
+    const elev = this.computeElevation(positionLocal.xz);
 
-    // current vertex
-    const elevation = this.computeElevation(positionLocal.xz);
-    const currentPositionElevated = positionLocal.add(vec3(0, elevation, 0));
+    const posX = xNeighbor.add(vec3(0, elevX, 0));
+    const posZ = zNeighbor.add(vec3(0, elevZ, 0));
+    const pos = positionLocal.add(vec3(0, elev, 0));
 
-    // order matters (right-hand rule), pick one and stay consistent
-    const toXNeighbor = normalize(
-      xNeighborPositionElevated.sub(currentPositionElevated),
-    );
-    const toZNeighbor = normalize(
-      zNeighborPositionElevated.sub(currentPositionElevated),
-    );
-    const computedNormal = normalize(cross(toXNeighbor, toZNeighbor));
+    const toX = normalize(posX.sub(pos));
+    const toZ = normalize(posZ.sub(pos));
 
-    return computedNormal;
+    return normalize(cross(toX, toZ));
   });
   // ...
 }
 ```
 
-> Picking the right value for `ε` was a balancing act. Too large and I'd smear away fine detail, too small
-> and floating-point noise would creep in. And since each neighbor adds another texture fetch, the cost scaled
-> quickly with vertex count.
+The catch was picking the offset `ε`. Too small and I'd get floating-point noise, too large and I'd smear away detail.
+And since each neighbor adds another texture fetch, the cost went up fast with vertex count.
 
-<br />
+When I got it right, the ripples finally caught light. They weren't perfect, but they had life.
 
-With dynamic normals in place, the ripples finally caught light. They weren't perfect, but they gave life to what
-had been just a wobbly mesh.
+> In my own version, I used a slight variation: instead of elevating three points, I approximated slopes, built
+> tangent and bitangent vectors, and crossed those. Mathematically it's equivalent. At the time it felt cleaner since
+> I only dealt with elevations, but looking back, the three-points method is easier to picture. If I were starting fresh
+> today, I'd probably choose that.
 
 <br />
 
 ### Outcome
 
-While experimenting, I came across a great [YouTube demo by Dan Greenheck](https://www.youtube.com/watch?v=jK4uXGY07vA).
-He built a `WebGL` version with this same neighbor trick, and his result looked fantastic.
+While experimenting, I stumbled across a great [demo by Dan Greenheck](https://www.youtube.com/watch?v=jK4uXGY07vA).
+His WebGL version of the neighbor trick looked fantastic.
 
-My take was lighter. I skipped some steps, leaned on a precomputed noise texture instead of generating noise
-procedurally, and simplified the math. That texture itself was a neat shortcut: I packed three tiled patterns
-(Perlin, Voronoi, Turbulence) into its RGB channels and blended between them. It gave motion, though with less
-richness than Dan's multi-octave approach.
+My take was simpler: I leaned on a precomputed noise texture (Perlin, Voronoi, Turbulence packed into RGB) instead of
+multi-octave procedural noise. It was cheaper, good enough, and kept things moving.
 
-Each vertex sampled the texture a few times: once for itself and twice for its neighbors. With only a few thousand
-vertices and the same texture reused, it wasn't a deal-breaker. Still, it reminded me that cost scales differently
-depending on where the work happens: vertex fetches scale with vertex count, fragment fetches with resolution and
-screen coverage.
-
-The bigger limitation, though, wasn't sampling. It was geometry. Displacement can only move vertices that exist,
-so if the mesh is coarse, ripples will always look blocky. To get better detail without pushing absurd vertex counts,
-I built a custom lake mesh in Blender: extra subdivisions where the water was visible, none under the terrain where
-they'd be wasted.
+The real limit wasn't sampling, though, it was geometry. Displacement can only move vertices that exist. A coarse
+mesh means blocky ripples, no matter how good the math. To solve that, I built a custom lake mesh in Blender:
+enough subdivisions where water was visible, none wasted under terrain.
 
 <br />
 
 <Layout class="lg-small">
   <figure>
     <img src={v1Wireframe} alt="Custom Blender mesh for the lake" />
-    <figcaption>Custom mesh I built in Blender</figcaption>
+    <figcaption>
+      Custom lake mesh with extra subdivisions where they mattered
+    </figcaption>
   </figure>
 </Layout>
 
 <br />
 
-If you're curious, the full shader is [here](https://github.com/alezen9/revo-realms/blob/5966b11b4d442aa0c08025f03a34e589a510ffcf/src/entities/Water.ts),
-written in TSL (Three Shading Language).
-
-In my implementation, I used a slight variation: instead of elevating three points and crossing them, I approximated
-slopes, built tangent and bitangent vectors, and crossed those. Mathematically it's equivalent, and at the time it
-felt cleaner since I only had to deal with elevations. Looking back, though, the three-points method is easier to
-picture, and if I were starting fresh today, I'd probably choose that.
-
-To finish, I added a hint of environment reflection and a Fresnel effect. Nothing dramatic, but enough to push
-the surface a bit closer to water instead of just "bumpy mesh".
+At the very end, I added a touch of environment reflection and Fresnel. Nothing dramatic, but it started to resemble
+water.
 
 <br />
 
@@ -231,13 +178,13 @@ the surface a bit closer to water instead of just "bumpy mesh".
       style={{ aspectRatio: "1154 / 720" }}
     />
     <figcaption>
-      The first attempt, subtle vertex displacement at work
+      The first attempt: subtle displacement and dynamic normals
     </figcaption>
   </figure>
 </Layout>
 
 <br />
 
-The result had motion but lacked depth, and the surface looked more repetitive than I wanted. Still, it was my first
-real water in Revo. It was good enough to live with, so I left it as it was and turned to other parts of the world,
-until the time came to return and push the water further.
+It had motion, but still lacked depth. The surface felt repetitive, and the "water-ness" wasn't quite there. Still,
+it was my first real lake in Revo, and it felt like a milestone. Good enough to leave behind, until the time came
+to return and push it further.
