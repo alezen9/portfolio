@@ -318,144 +318,150 @@ and starts behaving like a real surface.
 This Fresnel-weighted reflection became one of the two main colors I blend at the end (the other is the "through-water"
 color from absorption).
 
-Before that final mix, though, I wanted the sparkles. Every lake deserves them.
-
-<br />
-
-### Highlights & Glints
-
-If reflections give water its mirror-like character, highlights are the little sparks that make it feel alive.
-Think about a lake under the sun: you don't just see a vague bright patch, you see thousands of tiny glints dancing across the surface.
-
-In shaders, this comes from specular highlights. The idea is simple: when the direction of incoming light (the sun) reflects off the surface and happens to align with your view direction, you get a sharp spike of brightness.
-
-In code, it looks like this:
-
-```typescript
-const reflectedLight = reflect(uniforms.uSunDir, normal);
-const align = max(dot(reflectedLight, viewDir), 0.0);
-const spec = pow(align, uniforms.uShininess);
-
-const fresnelSpecBoost = mix(
-  float(1),
-  fresnelSchlick,
-  uniforms.uHighlightFresnelInfluence,
-);
-
-const sunGlint = uniforms.uSunColor.mul(
-  spec.mul(uniforms.uHighlightsGlow).mul(fresnelSpecBoost),
-);
-```
-
-A few key pieces are at play here:
-
-<br />
-
-**Shininess**
-
-The `pow()` call controls how "tight" the highlight is. A low shininess spreads the highlight into a wide, soft glow.
-A high shininess value makes it razor-sharp, like a sparkle on a calm surface. For my water I keep it high (hundreds),
-because I wanted those crisp glints rather than a smeared gloss.
-
-<br />
-
-**Glow factor**
-
-Water rarely looks right if the highlight is just a tiny pixel spike. I multiply it by a `uHighlightsGlow` uniform to
-give the glint some visual weight. This makes the bright spots more visible without flooding the surface.
-
-<br />
-
-**Fresnel boost**
-
-Highlights also depend on the viewing angle. By blending in some of the Fresnel weight, I make the glints more
-pronounced at grazing angles, where reflections dominate. The difference is subtle, but it prevents highlights from
-feeling flat or pasted on.
-
-<br />
-
-**Why bother if reflections already exist?**
-
-Because reflections alone tend to look static and dull. Specular glints are what trick the eye into believing the
-surface is alive and interacting with light. Without them, the water feels painted on. With them, it suddenly shimmers.
+But water isn't just a mirror, it eats light. Before I added the shiny bits, I needed the color to sink with thickness.
+There goes Beer-Lambert.
 
 <br />
 
 ### Beer-Lambert: Depth-Based Absorption
 
-So far, the water surface bends the world with ripples, shifts what you see with refraction, and sprinkles light with
-highlights. But something is still missing: color.
+Refraction bends the background; absorption decides how much of it survives the trip through water.
 
 If you've ever looked into a lake, you know the water isn't truly transparent. Shallow parts look almost clear, but as
-depth increases, the world below fades into blue or green. That fading isn't just an artistic choice, it's physics.
+depth increases, everything fades into blue or green. That fading isn't just an artistic choice, it's physics.
 
-This is where the Beer-Lambert law comes in.
+That's exactly what Beer-Lambert describes.
 
-In simple terms, Beer-Lambert describes how light is absorbed as it travels through a medium. The deeper it goes,
-the more it loses certain wavelengths. Water absorbs red light more aggressively than blue, which is why oceans look
-blue-green instead of gray.
+In simple terms, it tells you how light gets absorbed as it travels through a medium.
 
-The formula looks like this:
+The deeper it goes, the more it loses certain wavelengths. Water absorbs red light much faster than blue, which is why
+oceans look blue-green instead of gray.
+
+The equation looks like this:
 
 ```math
-T(\lambda) = e^{-\sigma(\lambda) \cdot d}
+T(\lambda) = e^{-\sigma(\lambda)\, d}
 ```
 
-Where:
+<br />
 
-- `T(λ)` is the transmittance &rarr; how much light survives) at wavelength `λ`
-- `σ(λ)` is the absorption coefficient &rarr; how much the medium eats each color channel
-- `d` is the thickness of the medium &rarr; the distance light has to travel through water
+- $$\lambda$$ &rarr; wavelength, the color of light (in my case `screenColor`); the equation works per wavelength,
+  but in code that simply means per RGB channel.
+- $$T(\lambda)$$ &rarr; transmittance, how much light makes it through
+- $$\sigma(\lambda)$$ &rarr; absorption coefficient, how strongly the medium "eats" each color channel
+- $$d$$ &rarr; thickness, how far the light travels through water
 
-In code:
+In the shader, I keep it channel-wise and a slightly stylized:
 
 ```typescript
-const sigma = uniforms.uAbsorptionRGB.mul(uniforms.uAbsorptionScale);
+const sigma = uAbsorptionRGB.mul(uAbsorptionScale); // per-channel, art-directed
+const waterThickness = mix(waterDepth, waterDepthRefr, isSafe);
 const transmittance = exp(sigma.negate().mul(waterThickness));
-
-const absorbedColor = screenColor.mul(transmittance);
-const fillColor = uniforms.uInscatterTint
-  .mul(float(1.0).sub(transmittance))
-  .mul(uniforms.uInscatterStrength);
-
-const throughWater = absorbedColor.add(fillColor);
+const tintColor = uInscatterTint.mul(uInscatterStrength);
+const throughWater = mix(tintColor, screenColor, transmittance);
 ```
-
-A breakdown:
-
-- Absorbed color: I take the screen color (what's behind the water) and darken it according to transmittance. This mimics how reds fade
-  faster, greens slower, and blues slowest.
-- Fill color: if you only darken, everything just looks murky. Real water glows a little because of scattered light.
-  That's where the tint (`uInscatterTint`) comes in: it adds back some color as a compensation. Think of it as water's
-  haze.
-- Through water: combine both, and you get a balance: background objects darken with depth, while the water itself
-  contributes its own subtle tint.
-
-  <br />
-
-**Why absorption matters**
-
-Without this step, deep water would look like perfectly clear glass. Refraction alone bends the image, but the colors
-beneath stay too clean. Beer-Lambert gives water its weight, the sense that light is struggling the further it travels.
 
 <br />
 
-**Art direction knobs**
-The absorption coefficients are purely artistic in my shader. For example, I used something like:
+Absorption here is art-directed. I pick my own coefficient per channel, something like `vec3(0.35, 0.10, 0.08)`, so red
+fades first, then green, and blue survives the longest. Scaling it with `uAbsorptionScale` lets me slide between a
+clear alpine lake and a murky basin without touching the math.
+
+For $$d$$ (thickness), I mix `waterDepth` and `waterDepthRefr` based on the `isSafe` flag. When refraction gives me
+a valid distorted UV, I use the refracted thickness; otherwise I fall back to the straight-through one. That keeps the
+fade consistent with what's actually visible.
+
+Then I plug these into the Beer-Lambert formula to get transmittance, and blend between a teal-green tint of my choice
+(`uInscatterTint`) and my $$\lambda$$ (the screen color) based on that value. The deeper the water, the more light is
+absorbed, shifting the mix from background color toward the tint.
+
+<br />
+
+This was the point where everything started to connect: refraction bent the background, and Beer-Lambert gave it
+weight and color as it sank into depth.
+
+With that foundation in place, I could finally move on to the bright part: highlights and sun glints, and have
+them sit in a scene that finally behaved like water.
+
+<br />
+
+### Sun Glints
+
+With absorption in place, the lake finally had body and depth, but it still missed that last bit of magic: the bright
+sparkles that catch your eye.
+
+Those flashes aren't random; they're sunlight reflecting off micro-ripples at just the right angle.
+In shader terms, that's just specular reflection, shaped by how tightly aligned the light, surface, and viewer are.
+
+I already had my tangent-space normal, so I used it to craft a new world-space one specifically for highlights, letting
+me tweak how tight or spread the sparkles should be.
 
 ```typescript
-uAbsorptionRGB = vec3(0.35, 0.1, 0.08);
+const tsnHighlights = vec3(
+  blendedTsn.xy.mul(uHighlightsSpread),
+  blendedTsn.z,
+).normalize();
+
+const normalHighlights = tsnHighlights.x
+  .mul(uTworld)
+  .add(tsnHighlights.y.mul(uBworld))
+  .add(tsnHighlights.z.mul(uNworld))
+  .normalize();
 ```
 
-That means red gets eaten fastest, while blue lingers the most — exactly the bias you'd expect from natural water.
-Scaling those numbers up or down lets me choose between crystal-clear lakes or murky green swamps.
+Using the same normal for everything makes it physically more accurate but in all honesty it didn't feel right visually.
+A smaller scale made the reflections nice and visible and the surface calmer, like a lake should be, but highlights
+became dull and condensed more and more into a white circle. A higher scale on the other hand had the opposite effect:
+reflections became unrecognizable, but the sun glints looked beautiful.
+
+> Fun fact: this idea to use two separate normal scales for sun glints and the rest came to me during a late night gaming
+> session, suddenly, while enjoying the marvellous environment of Ghost of Tsushima. You should check it out, art
+> direction is absolutely mind blowing :)
 
 <br />
 
-**Why it matters**
+Then, I reflected the sunlight direction around that adjusted normal, and checked how well it aligned with the camera:
 
-Without absorption, water never feels deep. Refraction bends images, but Beer-Lambert gives water its weight. It
-explains why a shallow puddle shows every pebble beneath, while a lake swallows them whole.
+```typescript
+const reflectedLight = reflect(uSunDir, normalHighlights);
+const align = max(dot(reflectedLight, viewDir), 0);
+const spec = pow(align, uShininess);
+```
+
+That's the base sparkle, but I didn't want it uniform. The bright spots should lean more toward the horizon, so, once
+again, Fresnel enters the chat:
+
+```typescript
+const fresnelSpecBoost = mix(1, fresnelSchlick, uHighlightFresnelInfluence);
+```
+
+And because deeper areas shouldn't glow the same as shallow ones, I faded it by depth:
+
+```typescript
+const highlightsDepthOpacity = smoothstep(
+  0,
+  uHighlightsDepthOpacityScale,
+  waterThickness,
+);
+```
+
+Finally, the actual sun glint color:
+
+```typescript
+const sunGlint = uSunColor
+  .mul(spec.mul(uHighlightsGlow).mul(fresnelSpecBoost))
+  .mul(highlightsDepthOpacity);
+```
+
+<br />
+
+The result? The surface finally came alive: small, sharp bursts of light dancing with every ripple, fading naturally
+with depth and angle.
+
+It's one of those touches that doesn't need to be scientifically perfect; it just needs to feel right.
+
+And now, with reflection, refraction, absorption, and glints all in place, the water finally looked believable,
+not perfect, but grounded, like it belonged in the world instead of floating on top of it.
 
 <br />
 
