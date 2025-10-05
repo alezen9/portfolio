@@ -465,76 +465,51 @@ not perfect, but grounded, like it belonged in the world instead of floating on 
 
 <br />
 
-### Opacity by distance
+### Opacity
 
-Even with absorption in place, close-up water can look too present—like a tinted sheet. I wanted two things: 1. see clearly when I'm right at the shoreline (or when I fall in), and 2. let the surface “close up” with distance so the far lake reads as a coherent body.
+The last piece was making the water fade naturally at the edges.
 
-I solved it with a simple screen-space fade driven by horizontal distance (XZ) from the camera:
+Even with absorption and refraction, shallow areas still looked too abrupt, like a hard line where water met land.
+
+That's where depth-based opacity came in.
+
+Using the same `waterThickness` I'd computed earlier, I faded the surface smoothly from clear at the shore to opaque
+as depth increased:
 
 ```typescript
-// Distance in the horizontal plane (avoid sqrt by using squared distance)
-const distanceXZSquared = dot(
-  positionWorld.xz.sub(cameraPosition.xz),
-  positionWorld.xz.sub(cameraPosition.xz),
-);
-
-// Pre-square the thresholds so smoothstep compares squared quantities
-const min2 = uniforms.uMinDist.mul(uniforms.uMinDist);
-const max2 = uniforms.uMaxDist.mul(uniforms.uMaxDist);
-
-// Soft ramp from near to far, plus a floor so water never fully disappears
-const opacity = smoothstep(min2, max2, distanceXZSquared)
-  .add(uniforms.uMinOpacity)
-  .clamp();
-
-// Bring it all together
-const shadedWater = mix(throughWater, reflectedColor, fresnelWeight);
-const color = mix(screenColor, shadedWater, opacity);
-this.colorNode = color.add(sunGlint);
+const depthOpacity = smoothstep(0, uDepthOpacityScale, waterThickness);
 ```
 
-Why XZ only?
+It's a tiny touch, but it makes a huge difference. The shoreline blends softly, and the transition from shallow to deep
+water finally feels natural.
 
-I only fade with planar distance so the effect is stable as camera height changes (standing on a bank vs. flying a bit higher). It reads like “the farther the lake surface, the less you see through it,” which matches how we perceive real water at a glance.
+I also experimented with another fade — one based on distance from the camera rather than depth. It wasn't physically
+accurate, but it worked as an artistic control: useful for tweaking underwater visibility when the player is submerged.
+I ended up keeping it optional, just a creative knob to turn when I wanted more mood or clarity underwater.
 
-What each knob does
-
-- `uMinDist / uMaxDist` &rarr; where the fade starts and fully kicks in (in world units). These are squared internally
-  for the comparison, which avoids a costly `sqrt`.
-- `uMinOpacity` &rarr; a floor so nearby water doesn't disappear completely. Handy when you don't yet have
-  buoyancy/underwater rendering; you still get a hint of surface even right next to the camera.
-
-How it layers with the rest
-
-- The base is `screenColor` (undistorted scene.)
-- `throughWater` (Beer-Lambert + inscatter) tints and attenuates what's behind the surface.
-- `reflectedColor` (cubemap) comes in via Fresnel, stronger at glancing angles.
-- This `opacity` then decides how much we lean away from the raw scene into the shaded water look as distance grows.
-
-It's a cheap trick, but a useful one. By fading opacity with distance, the water feels clearer up close while still
-reading as a solid body farther away. And when the player ends up underwater, they don't get lost in murky Beer-Lambert
-tinting, you can actually see them moving beneath the surface.
+In the final version, though, depth alone was enough. It handled the fade beautifully and kept the water looking
+believable without extra tricks.
 
 <br />
 
 ### Outcome
 
-Piece by piece, the shader started to take shape.
+Piece by piece, the shader came together.
 
-- The normals gave the surface ripples.
-- Depth gave it body.
-- Refraction bent the world behind it.
-- Reflections and Fresnel added realism at the viewing angle.
-- Highlights and glints brought sparkle to the surface.
-- Beer-Lambert absorption gave the water its characteristic tint.
-- And finally, opacity by distance balanced clarity near the player with solidity farther away.
+- The normals shaped the ripples.
+- Depth gave the water body.
+- Refraction bent the world beneath it.
+- Reflections and Fresnel tied it to the sky.
+- Highlights and glints added the sparkle.
+- Beer-Lambert absorption gave it color and weight.
+- And finally, depth-based opacity softened the shoreline, grounding the water in the scene.
 
-Each step on its own is simple enough, but together they stack into something that feels alive.
+Each part was "simple" on its own, but together they built something cohesive, something that finally matched what I had
+in mind from the start.
 
-At this stage, the shader is far from "finished", there's always another layer to add, another refinement to try.
-But for me, this is the first time it really started to look like the water I had imagined from the beginning.
+This is the moment the lake stopped being an effect and became part of the world.
 
-Here's how it all comes together:
+Here's how it all came together:
 
 <br />
 
@@ -548,8 +523,9 @@ Here's how it all comes together:
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
     />
-    <figcaption>The second iteration, live with layered normals</figcaption>
+    <figcaption>
+      The third iteration, refraction, reflections, absorption, and glints all
+      working together
+    </figcaption>
   </figure>
 </Layout>
-
-<br />
