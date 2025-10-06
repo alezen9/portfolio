@@ -4,33 +4,42 @@ import sharedNormals from "../assets/shared-normals.svg?url";
 import fragment from "../assets/fragment.svg?url";
 import Layout from "@components/blog/Layout.astro";
 import v1Video from "../assets/v1-720p.mp4";
+import absoluteWin from "../assets/absolute-win.webp?url";
 
 ## Chapter I: Vertex displacement
 
 My first attempt began with the most straightforward idea: if you want waves, move the surface up and down.
 
-That's the essence of vertex displacement. Each vertex runs through a function of sine waves or noise, time is
-added in, and the mesh begins to ripple. Intuitively, the more vertices you have, the smoother the motion looks, less
-guessing between points.
+That's the essence of vertex displacement. Conceptually easy to grasp, practically...easy with reservations.
 
-It worked, but it still wasn't enough. Even with vertices shifting around, the surface looked strangely flat.
+Starting with a flat mesh, each vertex runs through a function of sine waves or noise, make `time`
+part of the input and the mesh begins to ripple. Intuitively, the more vertices you have, the smoother the motion
+looks, less guessing between points.
 
-The reason? ==Normals==.
+This is the easy part. It works, but it is not enough. Even with vertices shifting around, the surface looked strangely
+flat.
+
+The culprit? ==Normals==.
 
 <br />
 
 ### What is a normal?
 
-I had to remind myself what they are and how they work, normals are just 3D unit vectors that tells the renderer which
-way a surface is facing. Without them, light has no idea how to bounce, and everything looks dull and flat.
+I had to remind myself what they are and how they work: essentially, normals are just 3D unit vectors that tell the
+renderer which way a surface is facing. Without them, light has no idea how to bounce, and everything looks dull and
+flat.
 
-They're stored per vertex and interpolated across triangles (primitives), so each ==fragment== gets an orientation.
-That works fine for static meshes, but when you start moving vertices around, the normals need to move too, otherwise
-the lighting no longer matches the shape.
+They're stored per vertex and interpolated across triangles (primitive), so each ==fragment== gets an orientation.
+
+Geometries usually bring plenty of precomputed data, normals are one of them. That works fine for static meshes, but
+when I started moving vertices around, the normals didn't magically auto-update, hence the flat look.
+
+This is the "with reservations" part: I had to compute and update the normals according to my displacement, for the lighting to
+match the new shape.
 
 <blockquote>
-Worth mentioning that a vertex can be associated with only one normal. This is problematic when we have sharp edges, 
-like in a cube for example. Duplicating vertices allows each copy can carry its own normal.
+Not my case, but worth mentioning for the curious: a vertex can be associated with **only one** normal. This is problematic when we have sharp edges, 
+like in a cube for example. Duplicating vertices allows each copy to carry its own normal.
 
 <Layout columns={2} gap={5} colMaxWidth="250px">
   <figure>
@@ -45,25 +54,25 @@ like in a cube for example. Duplicating vertices allows each copy can carry its 
 
 </blockquote>
 
-Normals define how light hits a surface, but there was still a missing piece for me: what exactly are those normals
-shading? The answer lies in ==fragments==.
+So, normals define how light hits a surface, but what exactly are they shading? The answer is ==fragments==.
 
-I owe that clarity to Mike, an interviewer I once spoke with. I already had a rough idea of what a fragment was,
-but he explained it in such a clear and patient way that it finally stuck.
+I already had a rough idea of what a fragment was, but I owe the clarity I have now to Mike, an interviewer I once
+spoke with. He explained it in such a clear and patient way that it stuck.
+
+Allow me to echo his explanation here.
 
 <br />
 
 ### What is a fragment?
 
-Internally, all meshes are broken down into tiny triangles (primitives). When one of those triangles overlaps a pixel
-on screen, the rasterizer produces a fragment: a candidate contribution to that pixel's final color.
+Combine a geometry (the skeleton) with one or more materials (the skin), and you get what's called a mesh.
 
-Each fragment runs through the _fragment shader_ (called a _pixel shader_ in DirectX), gets a color, and then competes
-in depth and blending tests. Some survive, some are discarded, meaning work was done only to be thrown away.
+Internally, all geometries are broken down into tiny triangles. When one of those triangles overlaps a pixel on screen,
+the rasterizer produces a fragment: a **candidate** contribution to that pixel's final color.
 
-<blockquote>
-Shading fragments that never affect the final image is called **overdraw**. GPUs reduce it with early depth tests or
-front-to-back rendering, but with transparency or other blending modes, even hidden fragments may still contribute.
+As you can imagine, multiple elements in the scene may overlap:
+
+<br />
 
 <Layout class="lg-small" colMaxWidth="50%">
   <figure>
@@ -74,18 +83,27 @@ front-to-back rendering, but with transparency or other blending modes, even hid
 
 <br />
 
-In this case, the same pixel is covered first by the sky, then the ground, then a box, and finally a sphere. Each
+Here, the same pixel is covered first by the sky, then the ground, then a box, and finally a sphere. Each
 overlap generates a fragment, but only the front-most opaque one wins.
 
-</blockquote>
+In a usual 3D pipeline: each mesh runs through a series of steps, executing a program (shader) each with a specific
+responsibility. Two of the most known are the _vertex_ and the _fragment_ shaders (called a _pixel shader_ in DirectX).
+
+So, each fragment runs through the fragment shader, gets shaded, and then competes in depth and blending tests with
+other fragments that target the same pixel. Some survive, some are discarded, meaning work was done only to be thrown
+away.
+
+> Shading fragments that never affect the final image is called **overdraw**. GPUs mitigate it with early depth tests
+> or front-to-back rendering, but with transparency or other blending modes, even hidden fragments may still contribute.
 
 <br />
 
 ### Shading waves
 
-On my first water mesh, all normals pointed straight upward. Light bounced uniformly, and the ripples looked lifeless.
+Since I started with a flat mesh, all precomputed normals pointed straight upward. Light bounced uniformly, and the
+ripples looked lifeless.
 
-To fix that, I had to recompute normals dynamically. A common trick is the ==neighbor technique==:
+To fix it, I had to recompute normals dynamically. A common trick is the ==neighbor technique==:
 
 1. Pick two nearby points, slightly offset on X and Z by a small `ε`.
 2. Raise them using the same displacement function.
@@ -102,7 +120,7 @@ class WaterMaterial extends MeshBasicNodeMaterial {
   });
 
   private computeNormal = Fn(() => {
-    const epsilon = float(0.01); // tune to your world scale
+    const epsilon = float(0.01); // tune to your world's scale
 
     const xNeighbor = positionLocal.add(vec3(epsilon, 0, 0));
     const zNeighbor = positionLocal.add(vec3(0, 0, epsilon));
@@ -124,10 +142,21 @@ class WaterMaterial extends MeshBasicNodeMaterial {
 }
 ```
 
-The catch was picking the offset `ε`. Too small and I'd get floating-point noise, too large and I'd smear away detail.
-And since each neighbor adds another texture fetch, the cost went up fast with vertex count.
+Be mindful when picking the offset `ε`: too small and you might get floating-point noise, too large and detail can smear
+away. Also, since each neighbor adds another texture fetch, the cost goes up fast with vertex count.
 
-When I got it right, the ripples finally caught light. They weren't perfect, but they had life.
+When I got it right, the ripples finally caught light. They weren't perfect, but the surface wasn't flat anymore.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img src={absoluteWin} alt="Hulk absolute win" />
+    <figcaption>I agree with Prof. Banner</figcaption>
+  </figure>
+</Layout>
+
+<br />
 
 > In my own version, I used a slight variation: instead of elevating three points, I approximated slopes, built
 > tangent and bitangent vectors, and crossed those. Mathematically it's equivalent. At the time it felt cleaner since
@@ -138,15 +167,15 @@ When I got it right, the ripples finally caught light. They weren't perfect, but
 
 ### Outcome
 
-While experimenting, I stumbled across a great [demo by Dan Greenheck](https://www.youtube.com/watch?v=jK4uXGY07vA).
+While researching, I stumbled across this great [demo by Dan Greenheck](https://www.youtube.com/watch?v=jK4uXGY07vA).
 His WebGL version of the neighbor trick looked fantastic.
 
 My take was simpler: I leaned on a precomputed noise texture (Perlin, Voronoi, Turbulence packed into RGB) instead of
-multi-octave procedural noise. It was cheaper, good enough, and kept things moving.
+multi-octave procedural noise. It was cheaper at the cost of richness, but good enough.
 
 The real limit wasn't sampling, though, it was geometry. Displacement can only move vertices that exist. A coarse
-mesh means blocky ripples, no matter how good the math. To solve that, I built a custom lake mesh in Blender:
-enough subdivisions where water was visible, none wasted under terrain.
+mesh means blocky ripples, no matter how good the math. To mitigate that, I built a custom lake mesh in Blender:
+enough subdivisions where water was visible, almost none wasted under terrain.
 
 <br />
 
@@ -162,7 +191,7 @@ enough subdivisions where water was visible, none wasted under terrain.
 <br />
 
 At the very end, I added a touch of environment reflection and Fresnel. Nothing dramatic, but it started to resemble
-water.
+a nice, cozy lake.
 
 <br />
 
@@ -185,5 +214,4 @@ water.
 <br />
 
 It had motion, but still lacked depth. The surface felt repetitive, and the "water-ness" wasn't quite there. Still,
-it was my first real lake in Revo, and it felt like a milestone. Good enough to leave behind, until the time came
-to return and push it further.
+it was my first real lake in Revo, and it felt like a milestone. Good enough, but I knew I could do better.

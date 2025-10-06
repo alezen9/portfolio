@@ -7,16 +7,19 @@ Faking things is at the heart of game development.
 The goal isn't to perfectly simulate reality, but to make something that looks right, feels right, and fits the world
 it belongs to. Water is no exception.
 
-There are countless guides on water, stylized ponds, film-ready oceans, each with its own clever tricks. This isn't meant
-to compete with them. It's simply my path: piecing together what I knew, adapting ideas to my world, and learning what
-felt true on screen.
+There are countless guides on it, stylized ponds, film-ready oceans, each with its own clever tricks. This isn't meant
+to compete with them. It's simply my path: how I pieced together knowledge I already had, gathered new insights from
+fragmented resources, and adapted ideas to my world, leaning towards what felt true on screen.
 
-The shader I'll walk through here started with the simplest of steps: pushing vertices up and down to fake ripples.
-From there it picked up detail with normal maps, then learned how to bend light with refraction, reflect its
-surroundings, and even fake a little absorption. Each version added something new, and each one taught me something.
+The shader I'll walk through here started with the simplest of steps: pushing vertices of a mesh up and down to fake
+ripples. From there it picked up detail with normal maps, then I went (almost) all in by bending light with refraction,
+reflections of the surroundings, and even fake a little absorption.
 
-All of this lives inside [Revo Realms](https://revo-realms.aleksandargjoreski.dev), my Three.js playground where I test
-ideas, learn graphics programming, and slowly stitch together an environment that feels alive.
+Each version added something new, and each one taught me something.
+
+All of this lives inside [Revo Realms](https://revo-realms.aleksandargjoreski.dev), my Three.js playground. It started
+as a 3D portfolio to be but quickly turned into a space where I test ideas, learn graphics programming, and slowly
+stitch together an environment that feels alive.
 
 <br />
 
@@ -49,14 +52,16 @@ Before diving into the details, here's the contrast in motion: my first attempt 
 
 <br />
 
+The difference is pretty striking.
+
 I've always been fascinated by water, in life and in games. It's an extraordinary substance: essential for survival,
 an unstoppable force of nature, yet also deeply calming, whether it falls from the sky in drops or rests quietly in
 the hands of the earth.
 
 Rivers, streams, ponds, oceans, lakes... I had many options when deciding what kind of water Revo should have. At first
-I wavered between a flowing stream and a lake, but in the end the lake felt right.
+I wavered (pun not intended) between a flowing stream and a lake, but in the end I went with the lake.
 
 Almost unconsciously, I shaped it to resemble the small one in Masere Park ([see on Google Maps](https://maps.app.goo.gl/yQj11xUyxqRMamBt6)),
-in Pelugo, the village in Northern Italy where I grew up.
+located in Pelugo, a small municipality in Northern Italy where I grew up.
 
 And so this story begins, just like my shader did, with a simple first step :)
