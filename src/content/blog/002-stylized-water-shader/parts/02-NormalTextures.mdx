@@ -1,30 +1,57 @@
 import Layout from "@components/blog/Layout.astro";
 import waterNormalMap from "../assets/waterNormal.webp?url";
 import v2Video from "../assets/v2-720p.mp4";
+import bigBrainTime from "../assets/big-brain.webp?url";
 
 ## Chapter II: Normal textures
 
-With displacement I had motion, but not the richness I wanted. The waves moved, but they didn't feel detailed or varied.  
-To push further, I turned to one of the most common tricks in real-time rendering: ==normal maps==.
+A month or so went by, I was determined to improve my initial version, so I dove back in.
 
-By now the word _normal_ should feel familiar. The _map_ part simply means a texture — one of the GPU's most
-fundamental data structures. A texture isn't just an image, it's an array of values (plus metadata like format,
-dimensions, mipmaps, filtering) that the GPU can interpret however we decide. Sometimes that means colors
+What my first attempt lacked was fine detail. I couldn't just bump up the vertex count and call it a day...that wouldn't
+have been a smart move.
+
+The details of the waves didn't come from how displaced vertices were, silly me, normals dictated how light bounced,
+and despite living per vertex they influenced how fragments are shaded.
+
+If I could have precomputed normals for vertices, why not have it for fragments too, and skip the automatic
+interpolation altogether? One of those ideas that randomly pops up in the head in the most unusual places.
+
+So I did some research and found that not only that was possible, but it turns out it's a very common trick in
+real-time rendering.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img src={bigBrainTime} alt="Big brain time" />
+    <figcaption>The biggest of brains...</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+In the previous chapter, I described how I simplified my approach by using a precomputed noise texture to calculate
+the elevation for each vertex, that served to calculate the normal which ended up driving the shading.
+
+The idea here is similar, bypass the displacement part and directly get normals from a precomputed texture. In jargon
+this specific kind of texture would be a ==normal map==.
+
+By now the word _normal_ should feel familiar. The _map_ part simply means a texture, one of the GPU's most
+fundamental data structures. A texture isn't just an image, it's an array of values, along with metadata like format,
+dimensions, mipmaps, and filtering, that the GPU interprets however we decide. Sometimes that means colors
 (diffuse/albedo), other times directions (normals), heights (displacement), or occlusion. At shader level, all you
 really see is a grid of texels waiting to be read.
 
-This second attempt flipped the logic of my first. Instead of forcing the geometry to ripple, I let the fragments
-fake the ripples directly. I kept the same flat plane, nudged slightly at the shoreline so it wouldn't look cut out,
-and layered scrolling normal maps on top. The geometry hardly moved, but the surface finally had texture and motion.
+I kept the same flat mesh and let the fragment shader drive the ripples directly by layering three scrolling normal maps.
 
-The difference was immediate. Light scattered and shifted with the ripples. For the first time, the lake had a surface
-I could believe in.
+The difference was immediate as light scattered and shifted with the ripples without any vertex movement whatsoever.
 
 <br />
 
 ### A short detour: Textures, color spaces, and normal maps
 
-Before going deeper, it's worth pausing on how normal maps are stored and interpreted. A lot can silently go wrong here.
+Before going deeper, it's worth pausing to inspect how normal maps are stored and interpreted. A lot can silently
+go wrong here (source: personal experience).
 
 <br />
 
@@ -37,27 +64,28 @@ Before going deeper, it's worth pausing on how normal maps are stored and interp
 
 <br />
 
-This is what the normal map I used looks like. To make sense of it, let's peel back a few layers.
+This is what the normal map I used looks like, but to make sense of it, let's peel back a few layers.
 
 <br />
 
 **Pixels as vectors**
 
-At its core, a pixel is just a `vec4(r, g, b, a)`. In a photo those values mean colors. In a normal map they represent
-a direction: `vec3(x, y, z)`. Alpha is often unused.
+At its core, a pixel is just a `vec4(r, g, b, a)`. In a photo those values mean red, green, blue and alpha aka color.
+In a normal map they represent a direction: `vec3(x, y, z)`. Alpha is often unused.
 
-Since most normals point "up" (Z &#8776; 1), the blue channel is bright, while red and green (X and Y) wiggle slightly
-for sideways slopes. That's why normal maps usually look purple, you're really looking at coordinates disguised as color.
+Since most normals point upward, the blue channel (Z) is bright, while red and green (X and Y) wiggle slightly for
+sideways slopes. That's why normal maps usually look purple, we're really looking at coordinates disguised as color.
 
 <br />
 
 **Color spaces**
 
 Most everyday textures are in ==sRGB==, which has a gamma curve baked in so they look right to our eyes. That's fine
-for photos, but terrible for data.
+for photos, but terrible for raw data.
 
-Normal maps must stay ==linear==. If you accidentally sample them as sRGB, the gamma curve distorts the vectors.
-The math still runs, but highlights look muddy and reflections drift. It's one of those subtle bugs that can waste hours.
+Normal maps must stay in ==linear== color space. If you accidentally sample them as sRGB, the gamma curve will distort
+the vectors. The math will still run, but highlights will most likely look muddy and reflections incorrect. It's one of
+those subtle bugs that can waste plenty of time (yep, source is still personal experience...as is the whole article).
 
 <br />
 
@@ -72,10 +100,10 @@ Most normal maps are baked in _tangent space_:
 Lighting, however, happens in _world_ or _view space_. So the tangent-space vector has to be transformed by the TBN
 (tangent, bitangent, normal) basis.
 
-On my static flat plane I could hard-code this basis. For an arbitrary mesh you'd want tangents/bitangents from geometry
-(or derivatives), so the normals rotate properly with the surface.
+On my static flat mesh I could hard-code this basis but for an arbitrary mesh you'd want tangents/bitangents from
+geometry (or derivatives), so the normals rotate properly with the surface.
 
-But lighting happens in world or view space, so we need to transform.
+In code:
 
 ```typescript
 class WaterMaterial extends MeshBasicNodeMaterial {
@@ -101,8 +129,8 @@ class WaterMaterial extends MeshBasicNodeMaterial {
 }
 ```
 
-> Some normal maps follow DirectX's convention with the green channel flipped. If your highlights look inverted,
-> try negating Y, or equivalently the bitangent.
+> Some normal maps follow DirectX's convention with the green channel being flipped. If your highlights look inverted,
+> try negating Y, or equivalently, the bitangent.
 
 <br />
 
@@ -112,9 +140,9 @@ One scrolling normal map looks fake quickly. The repetition jumps out. The trick
 
 I sampled the same texture three times, at different scales and speeds, each scrolling in a slightly different
 direction. By using odd ratios (2.7, 3.1, not neat integers), the patterns never lined up perfectly, so the motion
-kept drifting and never tiled in sync.
+kept going and never tiled in sync.
 
-Each layer contributed a different "frequency": broad slow undulations, mid-scale ripples, and fast surface noise.
+Each layer contributed at a different "frequency": broad slow undulations, mid-scale ripples, and fast surface noise.
 After blending I normalized the result back to unit length, **crucial**, otherwise the vectors drift in magnitude and
 the lighting breaks.
 
@@ -129,12 +157,14 @@ This version wasn't about performance, it was about results.
 
 Instead of pushing thousands of vertices like before, I let the GPU fake detail with normal maps. The cost shifted
 from vertex count to fragments, a few extra texture fetches per pixel. GPUs are very good at that, especially when
-sampling the same image, so it was a fair trade. Resolution and overdraw mattered far more than vertex density now.
+sampling the same texture, so it was a fair trade. Resolution and overdraw mattered far more than vertex density now.
 
-More importantly, this stage forced me to really understand normals: how they're stored, sampled, transformed,
-and how fragile they can be if you get color space wrong. Those lessons carried into every shader I wrote afterwards.
+More importantly, this stage forced me to really understand normals at a deeper level: how they're stored, sampled,
+transformed, and how fragile they can be if you get color space wrong. Those lessons carried into every shader I wrote
+afterwards.
 
-It wasn't lush or stylized yet, but it was the first time the water in Revo truly felt like water.
+It wasn't lush or my dream water yet, but I felt like I made a pretty important leap forward towards the lake I had
+imagined.
 
 <br />
 
@@ -155,5 +185,5 @@ It wasn't lush or stylized yet, but it was the first time the water in Revo trul
 <br />
 
 The illusion still broke up close, if you walked into the water, it gave itself away. But from the right distance,
-it was convincing enough to move on. Revo flowed on without new waves... until months later, when a post on X left me
-staring at the screen, realizing just how far I still had to go.
+it was believable enough to move on. Revo flowed on without new waves... until a post on X left me staring at the
+screen, making me realize just how far I still had to go.
