@@ -4,6 +4,8 @@ import Menu from "@components/ui/Menu.astro";
 import { type CollectionEntry } from "astro:content";
 import BlogHead from "../BlogHead.astro";
 import TableOfContents from "./TableOfContents.svelte";
+import ScrollToTop from "./ScrollToTop.svelte";
+
 import "./post.css";
 import "katex/dist/katex.min.css";
 
@@ -44,6 +46,8 @@ const { title, description, ogImageSrc } = Astro.props;
   <body>
     <Menu />
     <TableOfContents client:load="svelte" />
+    <ScrollToTop client:only="svelte" />
+
     <main class="wrapper">
       <div id="article">
         <slot />

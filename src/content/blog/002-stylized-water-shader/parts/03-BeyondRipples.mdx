@@ -1,29 +1,42 @@
 import Layout from "@components/blog/Layout.astro";
 import v3Video from "../assets/v3-720p.mp4";
-import edgeBleed from "../assets/bleed.webp?url";
-import noEdgeBleed from "../assets/no-bleed.webp?url";
+import edgeBleed from "../assets/edge-bleed.webp?url";
+import noEdgeBleed from "../assets/no-edge-bleed.webp?url";
+import tsn from "../assets/tsn.webp?url";
+import depth from "../assets/depth.webp?url";
+import refraction from "../assets/refraction.webp?url";
+import reflections from "../assets/reflections.webp?url";
+import fresnel from "../assets/fresnel.webp?url";
+import reflectionsAndFresnel from "../assets/reflections-fresnel.webp?url";
+import transmittance from "../assets/transmittance.webp?url";
+import throughWater from "../assets/throughWater.webp?url";
+import sunGlintNormal from "../assets/highlights-same-normal.webp?url";
+import sunGlintNormalHighlights from "../assets/highlights-dedicated-normal.webp?url";
 
 ## Chapter III: Beyond Ripples
 
-Months passed before I came back to the lake again.
+After completing the second iteration, there was a period of "calm before the storm" :)
 
-The spark this time wasn't my own, it came from a [post on X](https://x.com/psergiomr/status/1899840041288917427) which
-completely stunned me. It came from a post on X that completely stunned me. The water in it shimmered and breathed in
-a way I hadn't even imagined for Revo. I bookmarked it, walked away, and told myself: _one day_.
+I enjoyed time differently, travelled a bit, got more into game egnines and started tinkering with Godot. I learned the
+basics and jumped right into building a small world, starting with a moving character of course and a super simple test
+environment.
 
-When I did return, I'd just spent some time tinkering in Godot, playing with stylized water shaders and soaking up
-whatever knowledge I could find. But Revo was still my main playground, so I carried what I'd learned back into
-Three.js and kept building there.
+That done, I began digging more and more into shaders. Thinking I had access to much more power than with Three.js,
+which I did but not soleily because of Three.js, Browsers tend to provide limited resources when it come sto graphics
+API, I decided to write a water shader, drawing inspiration from [this post](https://x.com/psergiomr/status/1899840041288917427)
+I saw on X but also going all in with my creativity...still with an eye on performance.
 
-I wanted to capture the mood of that post, but make it my own.
+As long as my Macbook Pro M2 wasn't hot and my fans stayed silent I was happy.
+
+I did start in Godot but was eager to port it into Revo, so I rewrote the shader in TSL and kept improving on it.
 
 What followed wasn't one breakthrough, but a stack of small pieces, each filling in part of the picture: normals to
 shape the ripples, depth to give the water body, refraction to bend the world beneath, reflections and Fresnel to tie
 the surface to the sky, highlights and glints to make it sparkle, Beer-Lambert absorption for color and weight, and a
-simple opacity trick to balance clarity up close with solidity at a distance.
+simple opacity trick to give the final touch.
 
-Each one could be its own story. Together they layered into something that finally felt like the lake I'd pictured
-from the start.
+I could tell a whole story about each one, but I will do my best to trim things down for the sake of the article,
+hopefully still providing valuable experience.
 
 <br />
 
@@ -32,9 +45,13 @@ from the start.
 The surface is always the starting point. No matter what tricks come later: depth falloff, absorption, reflections, if
 the ripples don't feel alive, the illusion collapses.
 
-This version reused the normal maps from Chapter II, but with a twist. I sampled the same water normal twice, at
-different scales and scroll directions, then blended them using RNM, which preserves directionality and detail
-instead of giving the mushy look of naive interpolation.
+This version reused the normal maps from Chapter II, reduced the layering from three samples to two, but with a twist.
+Instead of linearly interpolaing between the two normal, like I did in my previous attempt via `mix(n1, n2, 0.5)`, I
+blended them using RNM (Reoriented Normal Mapping), which preserves directionality and fine detail by reorienting one
+normal into the other's space before combining.
+
+If you're curious, Self Shadow's [article](https://blog.selfshadow.com/publications/blending-in-detail/) is the gold
+standard breakdown of RNM, UDN, and other variants.
 
 <br />
 
@@ -64,29 +81,38 @@ class WaterMaterial extends MeshBasicNodeMaterial {
 }
 ```
 
-The odd multipliers (`1.37` and `0.73`) aren't random. If I'd picked clean ratios like `0.5` and `1.25`, the scrolls
-would eventually sync up and reveal a repeating pattern. Using awkward, almost-irrational numbers keeps the two layers
-drifting forever without tiling in lockstep, a dirt-cheap way to break repetition.
+The odd multipliers (`1.37` and `0.73`) aren't completely random. If I'd picked clean ratios like `0.5` and `1.25`,
+the scrolls would eventually sync up and reveal a repeating pattern. Using awkward, almost-irrational numbers keeps the
+two layers drifting forever without tiling in lockstep, a dirt-cheap way to break repetition.
 
 Another small but important detail: I only scale the X and Y components of the tangent-space normal (`tsn`).
 Those represent sideways tilt, the part that makes ripples catch the light. Scaling Z (the "up" axis) would just squash
 the surface flat and kill the contrast. It's a subtle distinction, but it makes a big difference in how natural the
 water feels.
 
-And finally, blending itself. In my earlier attempt I just averaged two normals with `mix(n1, n2, 0.5)`. It looked fine
-at a glance, but it washed out the detail and left the surface feeling flat. RNM (Reoriented Normal Mapping) avoids
-that by reorienting one normal into the other's space before combining, so the fine detail survives. If you're curious,
-Self Shadow's [article](https://blog.selfshadow.com/publications/blending-in-detail/) is the gold standard breakdown of
-RNM, UDN, and other variants.
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img src={tsn} alt="Tangent space normal" />
+    <figcaption>Tangent space normal as color</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+This is how the `tsn` should look like if used as a color.
+
+Of course, this is not what it's for so let's continue unravelling layers :)
 
 <br />
 
 ### Depth
 
-Normals gave the surface life, but the lake still felt hollow, like ripples painted on glass.
+Now that I had normals in place, I needed another "tool" before going all in with effects: ==depth==.
 
-What I needed was depth. Not in the everyday sense of how far something sinks under water, but in 3D graphics terms:
-**how far each fragment is from the camera**.
+Unfortunately, we cannot reason about depth as in the everyday sense of how far something sinks under
+water, but we can in 3D graphics terms: **how far each fragment is from the camera**. Which is still super valuable.
 
 In Three.js TSL, the entry point is `viewportDepthTexture(uv)`. That gives you the value from the depth buffer, but it
 isn't in world units, it's in clip space. After projection, X, Y, and Z all get squeezed into a normalized cube (NDC,
@@ -158,21 +184,30 @@ often show row-major, the indices appear shifted. For example, what looks like r
 If you want to dive deeper into how projection matrices shape this math, [WebGPU fundamentals — perspective projection](https://webgpufundamentals.org/webgpu/lessons/webgpu-perspective-projection.html)
 and [Song Ho's OpenGL projection matrix breakdown](https://www.songho.ca/opengl/gl_projectionmatrix.html) helped me a lot.
 
+Here is how the depth of the lake looks like, scaled based on my world's units (`uDepthDistance`):
+
+<Layout class="lg-small">
+  <figure>
+    <img src={depth} alt="Lake depth" />
+    <figcaption>Black means shallower, white means deeper </figcaption>
+  </figure>
+</Layout>
+
 <br />
 
 Depth was one of those invisible victories. At this point, I wasn't even using it for anything fancy yet, but I knew
 it was going to be a cornerstone for multiple effects. It drives how strong refraction bends the background, how quickly
-light is absorbed with distance, even how the surface should fade near the shoreline. Without depth, all of
-those are blind guesses.
+light is absorbed with distance, even how the surface should fade near the shoreline. Without depth, all of those are
+blind guesses.
 
 <br />
 
 ### Refraction
 
-With depth in place, I could finally put it to work.
-The first effect I tackled was refraction, the way water bends the world behind it.
+With depth in place, I could finally put it to work. The first effect I tackled was refraction, the way water bends
+the world behind it.
 
-Look into a shallow lake and the pebbles below look sharp. Step deeper and everything starts to wobble and drift, as
+Look into a shallow lake and the pebbles below look sharp, step deeper and everything starts to wobble and drift, as
 if the world itself bends. That's refraction: light changing direction when it crosses from air into water.
 
 In the shader, I faked it by offsetting the screen texture with ripple normals. The trick is simple: take the
@@ -180,7 +215,7 @@ tangent-space normal's X/Y tilt (not Z, that's "up", which doesn't bend UVs), sc
 distort the screen UVs.
 
 In TSL, `viewportTexture(uv)` is basically a live snapshot of the scene already rendered to the screen. Feed it
-`screenUV` (ranging 0-1 across the viewport) and it hands you back the color at that pixel. Refraction is just
+`screenUV` (ranging 0-1 across the viewport) and it hands you back the color at that pixel so far. Refraction is just
 re-sampling that snapshot at slightly shifted UVs, so the background bends with the ripples.
 
 ```typescript
@@ -197,10 +232,14 @@ const refractedScreenUv = screenUV.add(distortion.mul(isUnderWater));
 //...
 ```
 
-This gives the wobble, but it isn't enough. Distortion can push UVs behind occluding geometry—pulling colors from
-places that shouldn't be visible. Without a fix, you end up with stretched pixels or peeking through geometry.
+Now that we have our `refractedScreenUv` if we directly use it to sample from the `viewportTexture(uv)` we'd make a big
+mistake. I had the "pleasure" to get this wrong myself the first time but that's how I learned :)
 
-The fix is to re-sample depth at the distorted UV, and check if it's actually valid:
+Distortion can push UVs behind occluding geometry, pulling colors from places that shouldn't be visible. Without a
+fix, you end up with stretched pixels or peeking through geometry.
+
+The solution is to re-sample depth using the distorted UV, and then use undistorted / distorted uv based on a validity
+criterion, in my case depth (remember that depth does not refer to vertical depth of the lake but distance from view):
 
 ```typescript
 //...
@@ -221,16 +260,17 @@ The `isSafe` mask ensures I only pull colors from fragments that actually exist 
 UV points behind geometry, I fall back to the original `screenUV`. A tiny guardrail, but it saves the effect from falling
 apart.
 
-Here you can see how big of a difference that makes (I accentuated the refraction strength to make it obvious):
+Here you can see how big of a difference that makes (I slightl accentuated the refraction strength to make it more
+obvious):
 
 <Layout columns={2} gap={2}>
   <figure>
     <img src={edgeBleed} alt="Without isSafe mask" />
-    <figcaption>Without `isSafe` mask</figcaption>
+    <figcaption>Without `isSafe` mask (edge bleeding)</figcaption>
   </figure>
   <figure>
     <img src={noEdgeBleed} alt="With isSafe mask" />
-    <figcaption>With `isSafe` mask</figcaption>
+    <figcaption>With `isSafe` mask (edges ok)</figcaption>
   </figure>
 </Layout>
 
@@ -239,17 +279,29 @@ Here you can see how big of a difference that makes (I accentuated the refractio
 Refraction also scales with depth. In shallow spots, distortion stays subtle; deeper down, I let it grow stronger.
 Without that, shallow water would wobble just as much as deep water, which feels wrong.
 
-It was the first moment my lake stopped being a surface effect and started interacting with the world around it.
-The background bent and rippled through the water, subtle, imperfect, but finally grounded in the scene.
+So far my water really felt like a simple "painted" glass surface, this effect alone took it to a whole new level: now
+it started interacting with the world around it, it finally had a body!
 
-Of course, water doesn't just bend the world; sometimes it mirrors it. That's where reflections, and Fresnel, come in.
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img src={refraction} alt="Refraction" />
+    <figcaption>Refraction bending the scene beneath the lake</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+Of course, though, water doesn't just bend the world, sometimes it mirrors it. That's where reflections, and Fresnel,
+come in.
 
 <br />
 
 ### Reflections, Fresnel & Viewing Angle
 
-Refraction made the lake feel connected to the world beneath.
-The next step was tying the surface to the sky and its surroundings.
+Refraction made the lake feel connected to the world beneath. The next step was tying the surface to the sky and its
+surroundings.
 
 I kept it simple: an environment cubemap blended using a Fresnel weight.
 
@@ -257,8 +309,11 @@ I kept it simple: an environment cubemap blended using a Fresnel weight.
 
 **Reflections**
 
-I built a view direction from the camera to each fragment, reflected it around the surface normal, and sampled
-the cubemap:
+First of all we need to retrieve a reflection, which is simply a color for that specific fragment driven by the view
+direction.
+
+I built the view direction vector from the camera to each fragment, reflected it around the surface normal, and sampled
+my sky cubemap:
 
 ```typescript
 const viewDir = normalize(cameraPosition.sub(positionWorld));
@@ -268,6 +323,15 @@ const reflectedColor = cubeTexture(cubeMapTexture, reflectVector);
 
 This gave a convincing mirror-like color, but applied uniformly, it felt wrong. Water shouldn't be equally reflective
 when you look straight down and when you glance across the surface.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img src={reflections} alt="Cubemap reflections" />
+    <figcaption>Skybox cubemap reflections</figcaption>
+  </figure>
+</Layout>
 
 <br />
 
@@ -314,6 +378,23 @@ and starts behaving like a real surface.
 > One caveat: a cubemap has no parallax, so nearby objects don't slide correctly in reflection.
 > It's great for “a sense of sky” and distant scenery. Screen-space reflections (SSR) would be the next logical
 > step, but that's a story for another time.
+
+<br />
+
+<Layout columns={2} gap={2}>
+  <figure>
+    <img src={fresnel} alt="Fresnel" />
+    <figcaption>
+      Fresnel: darker means less weight, lighter means more weight
+    </figcaption>
+  </figure>
+  <figure>
+    <img src={reflectionsAndFresnel} alt="Fresnel weighted reflections" />
+    <figcaption>Fresnel weighted reflections</figcaption>
+  </figure>
+</Layout>
+
+<br />
 
 This Fresnel-weighted reflection became one of the two main colors I blend at the end (the other is the "through-water"
 color from absorption).
@@ -377,6 +458,19 @@ absorbed, shifting the mix from background color toward the tint.
 
 <br />
 
+<Layout columns={2} gap={2}>
+  <figure>
+    <img src={transmittance} alt="Transmittance" />
+    <figcaption>Transmittance</figcaption>
+  </figure>
+  <figure>
+    <img src={throughWater} alt="Weighting tint based on transmittance" />
+    <figcaption>Weighting teal tint based on transmittance</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
 This was the point where everything started to connect: refraction bent the background, and Beer-Lambert gave it
 weight and color as it sank into depth.
 
@@ -413,6 +507,24 @@ Using the same normal for everything makes it physically more accurate but in al
 A smaller scale made the reflections nice and visible and the surface calmer, like a lake should be, but highlights
 became dull and condensed more and more into a white circle. A higher scale on the other hand had the opposite effect:
 reflections became unrecognizable, but the sun glints looked beautiful.
+
+<br />
+
+<Layout columns={2} gap={2}>
+  <figure>
+    <img src={sunGlintNormal} alt="Sun glints using same normal" />
+    <figcaption>With the same normal as for everything</figcaption>
+  </figure>
+  <figure>
+    <img
+      src={sunGlintNormalHighlights}
+      alt="Sun glints using a dedicated normal"
+    />
+    <figcaption>Using a dedicated normal with a different scale </figcaption>
+  </figure>
+</Layout>
+
+<br />
 
 > Fun fact: this idea to use two separate normal scales for sun glints and the rest came to me during a late night gaming
 > session, suddenly, while enjoying the marvellous environment of Ghost of Tsushima. You should check it out, art

@@ -11,7 +11,7 @@ What my first attempt lacked was fine detail. I couldn't just bump up the vertex
 have been a smart move.
 
 The details of the waves didn't come from how displaced vertices were, silly me, normals dictated how light bounced,
-and despite living per vertex they influenced how fragments are shaded.
+and despite living per vertex they influenced how fragments were shaded.
 
 If I could have precomputed normals for vertices, why not have it for fragments too, and skip the automatic
 interpolation altogether? One of those ideas that randomly pops up in the head in the most unusual places.
@@ -70,7 +70,7 @@ This is what the normal map I used looks like, but to make sense of it, let's pe
 
 **Pixels as vectors**
 
-At its core, a pixel is just a `vec4(r, g, b, a)`. In a photo those values mean red, green, blue and alpha aka color.
+At its core, a pixel is just a `vec4(r, g, b, a)`. In a photo those values mean red, green, blue and alpha a.k.a. color.
 In a normal map they represent a direction: `vec3(x, y, z)`. Alpha is often unused.
 
 Since most normals point upward, the blue channel (Z) is bright, while red and green (X and Y) wiggle slightly for
@@ -80,7 +80,7 @@ sideways slopes. That's why normal maps usually look purple, we're really lookin
 
 **Color spaces**
 
-Most everyday textures are in ==sRGB==, which has a gamma curve baked in so they look right to our eyes. That's fine
+Most everyday textures are in ==sRGB==, which has a gamma curve baked in so they look "right to our eyes". That's fine
 for photos, but terrible for raw data.
 
 Normal maps must stay in ==linear== color space. If you accidentally sample them as sRGB, the gamma curve will distort
