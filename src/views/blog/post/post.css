@@ -98,8 +98,7 @@ blockquote p:last-of-type {
 pre {
   position: relative;
   border-radius: var(--border-radius);
-  padding: 1em;
-  overflow-x: auto;
+  padding: 1.5em 1em;
   margin-bottom: 1.5em;
 }
 
@@ -108,8 +107,9 @@ pre:is([data-language="plaintext"], [data-language="text"]) code {
 }
 
 pre code {
-  white-space: pre-wrap;
+  white-space: pre;
   padding: 0;
+  background: transparent;
 }
 
 pre::after {
@@ -124,10 +124,6 @@ pre::after {
   padding: 0.1em 0.5em;
   border-radius: 0.25em;
   opacity: 0.8;
-}
-
-pre code {
-  background: transparent;
 }
 
 ul:has(+ p) {

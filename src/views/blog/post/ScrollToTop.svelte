@@ -1,12 +1,13 @@
 <script lang="ts">
   import gsap from "gsap";
   import { ScrollTrigger } from "gsap/ScrollTrigger";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   gsap.registerPlugin(ScrollTrigger);
 
-  const THRESHOLD = 300; // px from top before showing
+  const THRESHOLD = 500; // px from top before showing
   let btn: HTMLButtonElement;
   let ring: SVGCircleElement;
+  let trigger: ScrollTrigger;
 
   const init = () => {
     const r = parseFloat(ring.getAttribute("r") || "0");
@@ -14,7 +15,7 @@
     ring.style.strokeDasharray = `${C}`;
     ring.style.strokeDashoffset = `${C}`;
 
-    ScrollTrigger.create({
+    trigger = ScrollTrigger.create({
       start: 0,
       end: () => document.documentElement.scrollHeight - window.innerHeight,
       onUpdate(self) {
@@ -42,6 +43,10 @@
 
   onMount(() => {
     init();
+  });
+
+  onDestroy(() => {
+    trigger.kill();
   });
 </script>
 
@@ -100,5 +105,11 @@
     position: absolute;
     inset: 0;
     color: var(--text-accent);
+  }
+
+  @media screen and (max-width: 480px) {
+    button {
+      display: none;
+    }
   }
 </style>

@@ -1,17 +1,19 @@
 ---
 import IconYoutube from "@components/icons/IconYouTube.astro";
 import IconArticle from "@components/icons/IconArticle.astro";
+import IconX from "@components/icons/IconX.astro";
 
 type Props = {
-  icon?: "article" | "youtube";
+  icon?: "article" | "youtube" | "x";
 };
 
 const { icon, ...rest } = Astro.props;
 ---
 
 <a {...rest} target="_blank" rel="noopener" class="external-link">
-  {icon === "youtube" && <IconYoutube class:list={["icon-youtube"]} />}
-  {icon === "article" && <IconArticle class:list={["icon-article"]} />}
+  {icon === "youtube" && <IconYoutube />}
+  {icon === "article" && <IconArticle />}
+  {icon === "x" && <IconX class="icon-x" />}
   <slot />
 </a>
 
@@ -34,5 +36,12 @@ const { icon, ...rest } = Astro.props;
   a.external-link p {
     margin: 0;
     padding-left: 1.75em;
+  }
+
+  a.external-link svg.icon-x {
+    width: 0.85em;
+    height: 0.85em;
+    top: 0.35em;
+    left: 0.25em;
   }
 </style>
