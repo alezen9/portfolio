@@ -5,16 +5,18 @@ import bigBrainTime from "../assets/big-brain.webp?url";
 
 ## Chapter II: Normal textures
 
-A month or so went by, I was determined to improve my initial version, so I dove back in.
+A month or so later, determined to improve my first version, I dove back in.
 
-What my first attempt lacked was fine detail. I couldn't just bump up the vertex count and call it a day...that wouldn't
-have been a smart move.
+What my first attempt lacked was fine detail. I couldn't just bump up the vertex count and call it a day, though...that
+wouldn't have been a smart move.
 
-The details of the waves didn't come from how displaced vertices were, silly me, normals dictated how light bounced,
+The look of the waves didn't come from how far vertices moved, silly me, normals dictated how light bounced,
 and despite living per vertex they influenced how fragments were shaded.
 
-If I could have precomputed normals for vertices, why not have it for fragments too, and skip the automatic
-interpolation altogether? One of those ideas that randomly pops up in the head in the most unusual places.
+Then the illumination: if I could have precomputed normals for vertices, why not precompute them for fragments too, and
+skip the automatic interpolation altogether?
+
+One of those ideas that randomly pops up in the head in the most unusual places.
 
 So I did some research and found that not only that was possible, but it turns out it's a very common trick in
 real-time rendering.
@@ -31,13 +33,13 @@ real-time rendering.
 <br />
 
 In the previous chapter, I described how I simplified my approach by using a precomputed noise texture to calculate
-the elevation for each vertex, that served to calculate the normal which ended up driving the shading.
+the elevation for each vertex, then used it to compute the normal which ended up driving the shading.
 
 The idea here is similar, bypass the displacement part and directly get normals from a precomputed texture. In jargon
 this specific kind of texture would be a ==normal map==.
 
 By now the word _normal_ should feel familiar. The _map_ part simply means a texture, one of the GPU's most
-fundamental data structures. A texture isn't just an image, it's an array of values, along with metadata like format,
+fundamental data structures. A texture isn't just an image, it packs an array of values, along with metadata like format,
 dimensions, mipmaps, and filtering, that the GPU interprets however we decide. Sometimes that means colors
 (diffuse/albedo), other times directions (normals), heights (displacement), or occlusion. At shader level, all you
 really see is a grid of texels waiting to be read.
@@ -132,6 +134,8 @@ class WaterMaterial extends MeshBasicNodeMaterial {
 > Some normal maps follow DirectX's convention with the green channel being flipped. If your highlights look inverted,
 > try negating Y, or equivalently, the bitangent.
 
+Once all of this clicked, I was ready to make the surface come alive.
+
 <br />
 
 ### Layering the motion
@@ -157,7 +161,8 @@ This version wasn't about performance, it was about results.
 
 Instead of pushing thousands of vertices like before, I let the GPU fake detail with normal maps. The cost shifted
 from vertex count to fragments, a few extra texture fetches per pixel. GPUs are very good at that, especially when
-sampling the same texture, so it was a fair trade. Resolution and overdraw mattered far more than vertex density now.
+sampling the same texture, so it was a fair trade. From here on, resolution and overdraw mattered far more than vertex
+density.
 
 More importantly, this stage forced me to really understand normals at a deeper level: how they're stored, sampled,
 transformed, and how fragile they can be if you get color space wrong. Those lessons carried into every shader I wrote
@@ -185,5 +190,5 @@ imagined.
 <br />
 
 The illusion still broke up close, if you walked into the water, it gave itself away. But from the right distance,
-it was believable enough to move on. Revo flowed on without new waves... until a post on X left me staring at the
+it was believable enough to move on. Revo flowed on without new waves for a while... until a post on X left me staring at the
 screen, making me realize just how far I still had to go.
