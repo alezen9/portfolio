@@ -28,7 +28,7 @@ The culprit? ==Normals==.
 Normals are 3D unit vectors that tell the renderer which way a surface is facing. I had to remind myself of that while
 working on this part. Without them, light has no idea how to bounce, so things end up looking flat and dull.
 
-They're stored per vertex and smoothly interpolated across each triangle (primitive), so each ==fragment== gets an
+They're stored per vertex and smoothly interpolated across each triangle (primitive), so each **fragment** gets an
 orientation.
 
 Geometries often come with extra precomputed attributes, normals are one of them. That works fine for static

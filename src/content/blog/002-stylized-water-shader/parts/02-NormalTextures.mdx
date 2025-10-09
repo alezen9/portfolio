@@ -82,10 +82,10 @@ sideways slopes. That's why normal maps usually look purple, we're really lookin
 
 **Color spaces**
 
-Most everyday textures are in ==sRGB==, which has a gamma curve baked in so they look "right to our eyes". That's fine
+Most everyday textures are in **sRGB**, which has a gamma curve baked in so they look "right to our eyes". That's fine
 for photos, but terrible for raw data.
 
-Normal maps must stay in ==linear== color space. If you accidentally sample them as sRGB, the gamma curve will distort
+Normal maps must stay in **linear** color space. If you accidentally sample them as sRGB, the gamma curve will distort
 the vectors. The math will still run, but highlights will most likely look muddy and reflections incorrect. It's one of
 those subtle bugs that can waste plenty of time (yep, source is still personal experience...as is the whole article).
 
