@@ -17,20 +17,21 @@ import sunGlintNormalHighlights from "../assets/highlights-dedicated-normal.webp
 
 After completing the second iteration, there was a period of "calm before the storm" :)
 
-I enjoyed time differently, travelled a bit, got more into game egnines and started tinkering with Godot. I learned the
+I enjoyed time differently, travelled a bit, got more into game engines and started tinkering with Godot. I learned the
 basics and jumped right into building a small world, starting with a moving character of course and a super simple test
 environment.
 
 That done, I began digging more and more into shaders. Thinking I had access to much more power than with Three.js,
-which I did but not soleily because of Three.js, Browsers tend to provide limited resources when it come sto graphics
-API, I decided to write a water shader, drawing inspiration from [this post](https://x.com/psergiomr/status/1899840041288917427)
+which I did but not solely because of Three.js, browsers tend to provide limited resources when it comes to graphics
+APIs, so I decided to write a water shader, drawing inspiration from [this post](https://x.com/psergiomr/status/1899840041288917427)
 I saw on X but also going all in with my creativity...still with an eye on performance.
 
-As long as my Macbook Pro M2 wasn't hot and my fans stayed silent I was happy.
+As long as my MacBook Pro M2 wasn't hot and my fans stayed silent, I was happy.
 
-I did start in Godot but was eager to port it into Revo, so I rewrote the shader in TSL and kept improving on it.
+I started in Godot, then ported the shader to Revo (Three.js/TSL). Browsers limit graphics resources more than native
+engines, but with some care you can still get plenty of headroom.
 
-What followed wasn't one breakthrough, but a stack of small pieces, each filling in part of the picture: normals to
+What followed wasn't a single breakthrough but a stack of small pieces, each filling in part of the picture: normals to
 shape the ripples, depth to give the water body, refraction to bend the world beneath, reflections and Fresnel to tie
 the surface to the sky, highlights and glints to make it sparkle, Beer-Lambert absorption for color and weight, and a
 simple opacity trick to give the final touch.
@@ -46,7 +47,7 @@ The surface is always the starting point. No matter what tricks come later: dept
 the ripples don't feel alive, the illusion collapses.
 
 This version reused the normal maps from Chapter II, reduced the layering from three samples to two, but with a twist.
-Instead of linearly interpolaing between the two normal, like I did in my previous attempt via `mix(n1, n2, 0.5)`, I
+Instead of linearly interpolating between the two normals, like I did in my previous attempt via `mix(n1, n2, 0.5)`, I
 blended them using RNM (Reoriented Normal Mapping), which preserves directionality and fine detail by reorienting one
 normal into the other's space before combining.
 
@@ -101,9 +102,9 @@ water feels.
 
 <br />
 
-This is how the `tsn` should look like if used as a color.
+This is how the `tsn` should look if visualized as a color.
 
-Of course, this is not what it's for so let's continue unravelling layers :)
+Of course, this is not what it's for so let's continue unraveling layers :)
 
 <br />
 
@@ -112,7 +113,7 @@ Of course, this is not what it's for so let's continue unravelling layers :)
 Now that I had normals in place, I needed another "tool" before going all in with effects: ==depth==.
 
 Unfortunately, we cannot reason about depth as in the everyday sense of how far something sinks under
-water, but we can in 3D graphics terms: **how far each fragment is from the camera**. Which is still super valuable.
+water, but rather in 3D graphics terms: **how far each fragment is from the camera**. Which is still super valuable.
 
 In Three.js TSL, the entry point is `viewportDepthTexture(uv)`. That gives you the value from the depth buffer, but it
 isn't in world units, it's in clip space. After projection, X, Y, and Z all get squeezed into a normalized cube (NDC,
@@ -121,7 +122,7 @@ or Normalized Device Coordinates).
 Here's where it gets tricky: different APIs disagree on the Z range. WebGL/OpenGL use `[-1..1]`, while WebGPU (along
 with DirectX and Metal) use `[0..1]`. A tiny detail, but if you ignore it, the math falls apart.
 
-I learned that the hard way: everything looked perfect in Chrome with WebGPU... until I opened Firefox (WebGL2) and
+I learned that the hard way: everything looked perfect in Chrome with WebGPU... until I opened Firefox (WebGL) and
 my lake collapsed into nonsense.
 
 <br />
@@ -184,7 +185,7 @@ often show row-major, the indices appear shifted. For example, what looks like r
 If you want to dive deeper into how projection matrices shape this math, [WebGPU fundamentals — perspective projection](https://webgpufundamentals.org/webgpu/lessons/webgpu-perspective-projection.html)
 and [Song Ho's OpenGL projection matrix breakdown](https://www.songho.ca/opengl/gl_projectionmatrix.html) helped me a lot.
 
-Here is how the depth of the lake looks like, scaled based on my world's units (`uDepthDistance`):
+Here's how the lake's depth looks, scaled based on my world's units (`uDepthDistance`):
 
 <Layout class="lg-small">
   <figure>
@@ -211,12 +212,11 @@ Look into a shallow lake and the pebbles below look sharp, step deeper and every
 if the world itself bends. That's refraction: light changing direction when it crosses from air into water.
 
 In the shader, I faked it by offsetting the screen texture with ripple normals. The trick is simple: take the
-tangent-space normal's X/Y tilt (not Z, that's "up", which doesn't bend UVs), scale it by depth, and use it to
-distort the screen UVs.
+tangent-space normal's X/Y tilt (not Z), scale by depth, and distort `screenUV`.
 
 In TSL, `viewportTexture(uv)` is basically a live snapshot of the scene already rendered to the screen. Feed it
 `screenUV` (ranging 0-1 across the viewport) and it hands you back the color at that pixel so far. Refraction is just
-re-sampling that snapshot at slightly shifted UVs, so the background bends with the ripples.
+resampling that snapshot at slightly shifted UVs, so the background bends with the ripples.
 
 ```typescript
 //...
@@ -232,8 +232,8 @@ const refractedScreenUv = screenUV.add(distortion.mul(isUnderWater));
 //...
 ```
 
-Now that we have our `refractedScreenUv` if we directly use it to sample from the `viewportTexture(uv)` we'd make a big
-mistake. I had the "pleasure" to get this wrong myself the first time but that's how I learned :)
+Now that I had my `refractedScreenUv` if I directly used it to sample from the `viewportTexture(uv)` I'd make a big
+mistake. I had the "pleasure" to get this wrong the first time, and that's how I learned :)
 
 Distortion can push UVs behind occluding geometry, pulling colors from places that shouldn't be visible. Without a
 fix, you end up with stretched pixels or peeking through geometry.
@@ -251,7 +251,7 @@ const zLinearRefr = p3z.div(zNdcCompatibleRefr.add(p2z));
 const isSafe = step(fragLinear, zLinearRefr);
 const fragmentDepthRefr = zLinearRefr.sub(fragLinear);
 const waterDepthRefr = fragmentDepthRefr.div(uDepthDistance).clamp();
-const safeScreenUv = mix(screenUV, refractedScreenUv, isSafe);
+const safeScreenUv = mix(screenUV, refractedScreenUv, isSafe).clamp();
 const screenColor = viewportTexture(safeScreenUv).rgb;
 //...
 ```
@@ -260,7 +260,7 @@ The `isSafe` mask ensures I only pull colors from fragments that actually exist 
 UV points behind geometry, I fall back to the original `screenUV`. A tiny guardrail, but it saves the effect from falling
 apart.
 
-Here you can see how big of a difference that makes (I slightl accentuated the refraction strength to make it more
+Here you can see how big of a difference that makes (I slightly accentuated the refraction strength to make it more
 obvious):
 
 <Layout columns={2} gap={2}>
@@ -279,7 +279,7 @@ obvious):
 Refraction also scales with depth. In shallow spots, distortion stays subtle; deeper down, I let it grow stronger.
 Without that, shallow water would wobble just as much as deep water, which feels wrong.
 
-So far my water really felt like a simple "painted" glass surface, this effect alone took it to a whole new level: now
+So far my water felt like a simple "painted" glass surface. This effect alone took it to a new level: now
 it started interacting with the world around it, it finally had a body!
 
 <br />
@@ -309,7 +309,7 @@ I kept it simple: an environment cubemap blended using a Fresnel weight.
 
 **Reflections**
 
-First of all we need to retrieve a reflection, which is simply a color for that specific fragment driven by the view
+First, I need to compute the reflection, which is simply a color for that specific fragment driven by the view
 direction.
 
 I built the view direction vector from the camera to each fragment, reflected it around the surface normal, and sampled
@@ -508,6 +508,8 @@ A smaller scale made the reflections nice and visible and the surface calmer, li
 became dull and condensed more and more into a white circle. A higher scale on the other hand had the opposite effect:
 reflections became unrecognizable, but the sun glints looked beautiful.
 
+This trades physical accuracy for a better look.
+
 <br />
 
 <Layout columns={2} gap={2}>
@@ -526,8 +528,8 @@ reflections became unrecognizable, but the sun glints looked beautiful.
 
 <br />
 
-> I had this idea during a late night gaming session, out of nowhere, while enjoying the marvellous environment of Ghost
-> of Tsushima. Highly reccommended, the art direction is absolutely mind blowing :)
+> I had this idea during a late night gaming session, out of nowhere, while enjoying the marvelous environment of Ghost
+> of Tsushima. Highly recommended, the art direction is absolutely mind-blowing :)
 
 <br />
 
