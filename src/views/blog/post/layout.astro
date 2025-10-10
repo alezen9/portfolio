@@ -5,6 +5,7 @@ import { type CollectionEntry } from "astro:content";
 import BlogHead from "../BlogHead.astro";
 import TableOfContents from "./TableOfContents.svelte";
 import ScrollToTop from "./ScrollToTop.svelte";
+import Background from "../Background.astro";
 
 import "./post.css";
 import "katex/dist/katex.min.css";
@@ -44,6 +45,7 @@ const { title, description, ogImageSrc } = Astro.props;
     </style>
   </head>
   <body>
+    <Background />
     <Menu />
     <TableOfContents client:load="svelte" />
     <ScrollToTop client:only="svelte" />

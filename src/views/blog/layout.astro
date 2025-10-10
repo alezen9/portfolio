@@ -3,6 +3,7 @@ import BaseHead from "@components/ui/BaseHead.astro";
 import Menu from "@components/ui/Menu.astro";
 import BlogHead from "./BlogHead.astro";
 import Bamboo from "./Bamboo.astro";
+import Background from "./Background.astro";
 ---
 
 <html lang="en" data-theme="dark">
@@ -55,6 +56,7 @@ import Bamboo from "./Bamboo.astro";
     </style>
   </head>
   <body>
+    <Background />
     <Menu />
     <Bamboo class:list={["bamboo"]} />
     <main class="wrapper">

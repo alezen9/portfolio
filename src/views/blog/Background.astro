@@ -1,0 +1,37 @@
+<div class="bg"></div>
+
+<style>
+  .bg {
+    --y: 0px;
+    position: fixed;
+    inset: -40vmax 0;
+    z-index: -2;
+    pointer-events: none;
+    transform: translateY(var(--y));
+    will-change: transform;
+
+    --size: 120vmax;
+    background:
+      radial-gradient(
+        circle var(--size) at 0% 0%,
+        color-mix(in oklab, var(--accent-bamboo) 30%, var(--background-color)),
+        var(--background-color) 75%
+      ),
+      radial-gradient(
+        circle var(--size) at 100% 100%,
+        color-mix(in oklab, var(--accent-bamboo) 30%, var(--background-color)),
+        var(--background-color) 75%
+      );
+    background-blend-mode: darken;
+  }
+
+  :root[data-theme="dark"] .bg {
+    background-blend-mode: lighten;
+  }
+
+  @media screen and (max-width: 720px) {
+    .bg {
+      --size: 100vmax;
+    }
+  }
+</style>
