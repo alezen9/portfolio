@@ -9,12 +9,12 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/mdx": "^4.3.5",
+    "@astrojs/mdx": "^4.3.7",
     "@astrojs/preact": "^4.1.1",
     "@astrojs/rss": "^4.0.12",
-    "@astrojs/sitemap": "^3.5.1",
-    "@astrojs/svelte": "^7.1.1",
-    "astro": "^5.13.6",
+    "@astrojs/sitemap": "^3.6.0",
+    "@astrojs/svelte": "^7.2.0",
+    "astro": "^5.14.4",
     "gsap": "^3.13.0",
     "katex": "^0.16.22",
     "preact": "^10.27.1",
