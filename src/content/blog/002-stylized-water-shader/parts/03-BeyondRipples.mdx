@@ -87,9 +87,9 @@ the scrolls would eventually sync up and reveal a repeating pattern. Using awkwa
 two layers drifting forever without tiling in lockstep, a dirt-cheap way to break repetition.
 
 Another small but important detail: I only scale the X and Y components of the tangent-space normal (`tsn`).
-Those represent sideways tilt, the part that makes ripples catch the light. Scaling Z (the "up" axis) would just squash
-the surface flat and kill the contrast. It's a subtle distinction, but it makes a big difference in how natural the
-water feels.
+Those represent sideways tilt, the part that makes ripples catch the light. Scaling Z (the "outward" axis) would just
+squash the surface flat and kill the contrast. It's a subtle distinction, but it makes a big difference in how natural
+the water feels.
 
 <br />
 
@@ -596,7 +596,7 @@ const depthOpacity = smoothstep(0, uDepthOpacityScale, waterThickness);
 It's a tiny touch, but it makes a huge difference. The shoreline blends softly, and the transition from shallow to deep
 water finally feels natural.
 
-I also experimented with another fade — one based on distance from the camera rather than depth. It wasn't physically
+I also experimented with another fade, one based on distance from the camera rather than depth. It wasn't physically
 accurate, but it worked as an artistic control: useful for tweaking underwater visibility when the player is submerged.
 I ended up keeping it optional, just a creative knob to turn when I wanted more mood or clarity underwater.
 
