@@ -1,0 +1,176 @@
+import Layout from "@components/blog/Layout.astro";
+import culled720p from "../assets/culled_720p.mp4?url";
+
+## Out of sight, out of the pipeline
+
+Once I started looking at the problem through the lens of overdraw, a very natural question followed:
+if a blade is not meant to be visible, why am I letting it go all the way through the pipeline?
+
+At first, my instinct was to “outsmart” the renderer.
+I added my own visibility logic on the GPU, computed per instance in the same compute shader I was already using for
+other per-instance traits, and felt pretty good about it.
+
+<br />
+
+```typescript
+class SsboUtils {
+  // GPU-side frustum test in NDC with a projected bounding-sphere radius.
+  // Returns 1 if inside, 0 if outside.
+  //
+  // Inputs:
+  // - worldPos: instance position in world space
+  // - cameraMatrix: Projection * View matrix
+  // - fX/fY: projection scale terms (proj[0], proj[5])
+  // - r: bounding sphere radius in world units
+  // - padNdc*: extra padding in NDC to hide camera rotation “lag” gaps
+  static computeVisibility = Fn(
+    ([
+      worldPos = vec3(0),
+      cameraMatrix = mat4(0),
+      fX = float(0),
+      fY = float(0),
+      r = float(0),
+      padNdcX = float(0),
+      padNdcYNear = float(0),
+      padNdcYFar = float(0),
+    ]) => {
+      // world space -> clip space
+      const clip = cameraMatrix.mul(vec4(worldPos, 1.0));
+
+      // clip space -> NDC
+      const invW = float(1).div(clip.w);
+      const ndc = clip.xyz.mul(invW);
+
+      // |clip.w| as a proxy for depth in view space
+      // (epsilon avoids div-by-zero; it's not meant to inflate the radius)
+      const eyeDepthAbs = clip.w.abs().max(EPSILON);
+
+      // project a world-space bounding sphere radius into NDC space.
+      // the idea: farther away => smaller NDC radius.
+      const rNdcX = fX.mul(r).div(eyeDepthAbs).add(padNdcX);
+      const rNdcY = fY.mul(r).div(eyeDepthAbs);
+      const rNdcYNear = rNdcY.add(padNdcYNear);
+      const rNdcYFar = rNdcY.sub(padNdcYFar);
+
+      const one = float(1);
+
+      // branchless slab tests in NDC
+      const visX =
+        step(one.negate().sub(rNdcX), ndc.x) * step(ndc.x, one.add(rNdcX));
+
+      const visY =
+        step(one.negate().sub(rNdcYNear), ndc.y) *
+        step(ndc.y.add(rNdcYFar), one);
+
+      const visZ = step(-1, ndc.z) * step(ndc.z, 1);
+
+      return visX.mul(visY).mul(visZ);
+    },
+  );
+}
+```
+
+<blockquote>
+This isn't exact geometric culling. It's a cheap, conservative test that behaves well for my camera and is good enough 
+to skip work most of the time.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      src={culled720p}
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    />
+    <figcaption>Rasterizing only visible grass</figcaption>
+  </figure>
+</Layout>
+</blockquote>
+
+<br />
+
+Later on, I learned that this wasn't as clever as I initially thought, at least not in the way I had framed it.
+
+WebGPU, like any modern renderer, already performs frustum checks. Even with instanced meshes, primitives that fall
+completely outside the camera frustum don't generate fragments.
+The vertex shader still runs, but if nothing intersects the frustum, there's nothing to rasterize, and therefore no
+fragment shader work to do.
+
+At first glance, this might look like pure redundancy, extra work without real benefit, but that's not actually the case.
+
+I built this test for a reason, but that doesn't mean I can't use it for a different one.
+
+My compute shader, other than this visibility check, takes care of positioning and wrapping instances, sampling
+textures to determine where grass is allowed on the map, evaluating noise-driven wind, handling trail logic, and more.
+
+It does all of this for every instance every other frame (I'm throttling it), even though roughly only one third of
+the blades are visible at any given moment.
+
+So instead of thinking in terms of culling, I started thinking in terms of early refusal.
+If I already know that a blade shouldn't matter, I can stop spending effort on it as early as possible, ideally before
+it reaches the expensive parts of the pipeline.
+
+This introduces a bit of branching, and GPUs are not particularly happy about that, but in this case, the benefits
+clearly outweighed the costs.
+
+The benefits don't stop there though.
+I combine this frustum check with stochastic thinning (more on this in the next section) and alpha mapping (where grass
+is allowed on the map). The result is a single flat boolean: visible or not, a simple signal that helps the pipeline
+avoid generating fragments for instances that shouldn't contribute anything.
+
+In earlier versions, I made the mistake of using this flag inside the fragment shader and calling discard. That felt
+logical at the time: if it shouldn't be drawn, just discard it.
+But discard happens after the fragment shader has already run. The GPU still did the work; I just told it to throw the
+result away. In a system already dominated by overdraw, that's about the worst thing you can do.
+
+The better option turned out to be much simpler.
+
+Instead of discarding fragments, I move the vertices of invisible blades far away from the camera, along the camera's
+forward direction. Effectively, those instances no longer intersect the frustum at all. No triangles make it to
+rasterization, no fragments are generated, and the fragment shader never runs for them.
+
+<br />
+
+```typescript
+class GrassMaterial extends SpriteNodeMaterial {
+  constructor() {
+    // ...
+    const offscreenOffset = uniforms.uCameraForward
+      .mul(INFINITY)
+      .mul(float(1).sub(isVisible));
+
+    this.positionNode = bladePosition
+      .add(offscreenOffset)
+      .add(/* ...wind, etc... */);
+    // ...
+  }
+}
+```
+
+It's not “true” GPU culling in the sense of removing instances from a draw call. The vertex shader still runs, and the
+instance is still technically there.
+But for my workload, where fragment cost is the real enemy, this small trick makes a very real difference.
+
+That's where the gain actually comes from: not from “beating” the renderer, but from aligning my own logic with how
+the pipeline really behaves.
+
+One could rightfully ask: why not actual culling with compaction and indirect draw calls?
+
+I did briefly explore it: fully compacting visible instances using a prefix sum and indirect draws. The theory was quite
+clear after some pen-and-paper work the old-fashioned way, and it's a powerful approach.
+In practice, it's also a completely different level of complexity: parallel algorithms, synchronization, multiple passes,
+and a lot more surface area for bugs.
+
+I gave it a try one evening, got incorrect results and frame drops, and decided to step back.
+For the curious, [here](https://github.com/alezen9/revo-realms/blob/feat/almost-real-frustum-culling-grass/src/entities/Grass.ts#L505)'s the link to my attempted implementation, ignore it, laugh at it, learn from my mistakes, up to
+you :)
+
+At that point, I had to ask myself a simple question: what am I optimizing for?
+
+Vertex processing was not my bottleneck. Overdraw was. The combination of early visibility decisions, moving invisible geometry out of the frustum, and avoiding discard already removed a large amount of wasted work. The system was fast, stable, and simple enough to reason about.
+
+Sometimes the right optimization is not the most advanced one, it's the one that solves your problem without turning the system into something you're afraid to touch six months later.

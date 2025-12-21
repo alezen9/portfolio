@@ -1,0 +1,36 @@
+---
+title: "Growing my Grass Shader"
+subtitle: "placeholder"
+description: "placeholder"
+pubDate: "2025-12-23"
+state: "Draft"
+---
+
+import PostHeader from "@components/blog/PostHeader.svelte";
+import PostFooter from "@components/blog/PostFooter.astro";
+import Intro from "./parts/Intro.mdx";
+import TheRulesOfThisWorld from "./parts/00-TheRulesOfThisWorld.mdx";
+import IKeptBlamingTriangles from "./parts/01-IKeptBlamingTriangles.mdx";
+import OutOfSightOutOfThePipeline from "./parts/02-OutOfSightOutOfThePipeline.mdx";
+
+import initial720p from "./assets/initial_720p.mp4?url";
+import blades from "./assets/blades.webp?url";
+import second720p from "./assets/second_720p.mp4?url";
+
+{/* prettier-ignore */}
+<PostHeader client:load="svelte" pubDate={new Date(frontmatter.pubDate)}>
+# Growing my Grass Shader
+</PostHeader>
+
+<Intro />
+<TheRulesOfThisWorld />
+<IKeptBlamingTriangles />
+<OutOfSightOutOfThePipeline />
+
+    ##	One face is enough
+    ##	Less grass, same feeling
+    ##	This bad boy can fit so much data
+    ##	A small shadow that caused big trouble
+    ##	The obvious solution I didn't pick
+    ##	A quick trip down memory lane
+    ##	Closing thoughts
