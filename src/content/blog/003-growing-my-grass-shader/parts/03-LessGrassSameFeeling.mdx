@@ -1,0 +1,79 @@
+import Layout from "@components/blog/Layout.astro";
+import thinning720p from "../assets/thinning_720p.mp4?url";
+
+## Less grass, same feeling
+
+Grass is one of those things where the brain does a lot of the work for you.
+You don't count blades. You read density, motion, and color. As long as those cues are there, the field still feels full,
+even if a surprising amount of geometry is missing.
+
+That observation opened the door to another small but very effective trick: stochastic thinning.
+
+Instead of trying to render every blade everywhere, I let probability do some of the work.
+Close to the player, density stays intact. As you move farther away, blades start disappearing — not in rings, not in
+obvious patterns, but randomly, in a way that stays stable over time.
+
+It's not LOD, and it's not culling.
+It's simply accepting that, beyond a certain distance, less grass can feel exactly the same.
+
+At its core, the idea turned out to be very simple.
+
+For each blade, I look at its distance from the player and map that distance into a 0 → 1 range. Inside a near radius
+(R0), blades are always kept. Beyond a far radius (R1), only a small percentage survives. In between, the probability
+fades smoothly.
+
+In simplified form, it looks like this:
+
+```typescript
+// distance-based fade (working in distance squared to avoid sqrt)
+t = clamp((distSq - R0 * R0) / (R1 * R1 - R0 * R0), 0, 1);
+
+// keep probability
+p = mix(1.0, pMin, t);
+
+// deterministic random per blade
+keep = step(hash(instanceIndex), p);
+```
+
+<br />
+
+The important part is not the math itself, but the properties it gives you.
+
+Because the random value is derived from instanceIndex, thinning is deterministic. Blades don't flicker or pop as
+the camera moves. Because the fade happens over a radius instead of a hard cutoff, density transitions feel natural.
+And because everything works on distance squared, the whole thing stays cheap enough to run per instance.
+
+Once this was in place, tuning it became almost intuitive. A handful of values were enough to shape the entire field: how
+far full density extends, how quickly it thins out, and how sparse the far grass becomes.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      src={thinning720p}
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    />
+    <figcaption>
+      Live tuning of stochastic thinning on the same patch of grass.
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+With my current values — a roughly 130 × 130 unit patch holding about 1.18 million blades, a dense inner radius of 10
+units, a thinning radius of 60, and a minimum keep probability of 0.1 — more than half of the blades are removed on
+average across the whole field.
+
+Crucially, this doesn't happen in isolation. The result feeds straight into the same `isVisible` signal from the
+previous section, alongside frustum checks. Blades that fail thinning follow the same cheaper path through the rest
+of the system.
+
+I didn't run clean A/B benchmarks here. The scene isn't static enough for that, wind, camera motion, and other systems
+make timings noisy. What was immediately noticeable, though, was extra headroom. Fewer worst-case frames and more freedom
+to push density.

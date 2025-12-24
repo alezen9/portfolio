@@ -1,0 +1,58 @@
+## This bad boy can fit so much data
+
+With the bigger pieces finally falling into place, I allowed myself a small side quest.
+
+Nothing was broken. Performance was already in a good place. This wasn't about fixing a bottleneck or chasing extra FPS.
+I was simply curious.
+
+I had heard about bit packing before, but I had never actually gone down that rabbit hole. It always felt like one of
+those techniques you know exists, but never quite touch unless you really need it. This felt like a good opportunity to
+finally explore it properly.
+
+At that point, each grass blade was already carrying a fair amount of state: offsets, scale, wind parameters, visibility
+flags, noise factors. In earlier iterations I had a few vec4 buffers — I think three — with slightly less state overall.
+In the current version, everything fits into one vec4 plus a single extra float (which I later added for vertical
+displacement), and there's still room left to grow.
+
+Memory usage is obviously lower this way, even if it wasn't a real problem to begin with. That alone didn't justify the
+effort. What interested me more was understanding how and when this kind of packing makes sense.
+
+Most of the data involved here doesn't need full floating-point precision. Some values are binary flags. Others live in
+small, well-defined ranges. Packing into fewer bits means fewer representable values. A floating-point number like
+0.50334532 ends up rounded to the closest fixed-point bucket, often something like 0.503.  
+That loss of precision is real, but for some states of the grass, it can be completely irrelevant visually. Once you
+accept that, packing multiple values into a single float starts feeling reasonable instead of scary.
+
+Conceptually, bit packing is just fixed-point arithmetic with explicit control over precision.
+
+You map a value from a known range into an integer interval, shift it into a specific bit region, and later reverse the
+process when reading it back. A simplified version of the idea looks like this:
+
+```typescript
+// |= means "OR and assign", it merges the new bits into the existing packed value
+// pack a normalized value into N bits at a given offset
+const packed |= int(clamp(value, 0.0, 1.0) * maxInt) << offset;
+
+// unpack it later
+const value = float((packed >> offset) & mask) / maxInt;
+```
+
+I won't go deep into the helpers here, but if you're curious, all the packing and unpacking utilities live in
+[this](https://github.com/alezen9/revo-realms/blob/main/src/utils/TSLUtils.ts) dedicated file that I reuse across systems.
+
+After implementing this, I didn't suddenly gain a bunch of extra performance. That was never the goal, and I don't have
+measurements claiming otherwise. The most obvious win is the reduction in memory footprint, which is nice but not
+game-changing on its own.
+
+What really mattered to me was everything else.
+
+I now understand bit packing because I've actually used it. The knowledge I gained is far more valuable to me than a
+few saved bytes in this specific system.
+
+Grass may not have needed bit packing, but I did.
+
+It turned a vague concept into something concrete, and that experience is now part of my toolbox. If I ever run into a
+system where memory layout or bandwidth really does matter, I won't be starting from zero.
+
+That's ultimately why this section exists at all: not because bit packing saved the day here, but because it was a
+worthwhile detour, and one I'm glad I took.
