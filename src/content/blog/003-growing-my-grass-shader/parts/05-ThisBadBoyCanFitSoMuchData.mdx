@@ -1,4 +1,7 @@
-## This bad boy can fit so much data
+import Layout from "@components/blog/Layout.astro";
+import ssboMeme from "../assets/ssbo_meme.webp?url";
+
+## 5. This bad boy can fit so much data
 
 With the bigger pieces finally falling into place, I allowed myself a small side quest.
 
@@ -39,6 +42,17 @@ const value = float((packed >> offset) & mask) / maxInt;
 
 I won't go deep into the helpers here, but if you're curious, all the packing and unpacking utilities live in
 [this](https://github.com/alezen9/revo-realms/blob/main/src/utils/TSLUtils.ts) dedicated file that I reuse across systems.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img src={ssboMeme} alt="Full AO intensity affecting everything" />
+    <figcaption>No coment</figcaption>
+  </figure>
+</Layout>
+
+<br />
 
 After implementing this, I didn't suddenly gain a bunch of extra performance. That was never the goal, and I don't have
 measurements claiming otherwise. The most obvious win is the reduction in memory footprint, which is nice but not

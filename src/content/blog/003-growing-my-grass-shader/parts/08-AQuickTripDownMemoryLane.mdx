@@ -1,0 +1,45 @@
+## 8. A quick trip down memory lane
+
+Before wrapping things up, it's worth taking a short look back — not to extract lessons or frame this as a clean
+progression, but simply to give some context to how this system actually came together.
+
+The very first version of the grass was as naïve as it gets.
+
+A single blade made of a few triangles, instanced in a grid, subdivided just enough to bend, with a bit of noise in the
+vertex shader to fake wind. On screen, it looked… fine. Actually, it looked pretty nice. Enough to make me think I was
+on the right track.
+
+Then I did the obvious thing and scaled it up.
+
+More blades, bigger patch, same logic — and suddenly everything fell apart. Frame times spiked, fans kicked in, and the
+machine started sounding like it had something personal against me. The scene was still basically empty, yet the grass
+alone was already pushing things too far. That was the first real reality check. (After only 3 weeks of working on Revo...
+I was off to a great start \*cries in a corner\*)
+
+The second iteration didn't come from some clever insight. It came from refusing to give up and deciding to dig deeper
+instead.
+
+That was the point where I really started learning TSL properly. I moved more logic to the GPU, set up SSBOs for the
+first time, and introduced compute shaders to handle per-instance work instead of pushing everything through the vertex
+stage. I also made some conscious trade-offs: giving up real lighting in favor of a simpler material, experimenting with
+GPU-side visibility checks, and trying to be more explicit about where work was happening.
+
+Not all of those choices were good ones.
+
+That early GPU culling logic, for example, was technically doing what I asked, but I paired it with fragment-level
+`discard`, which meant I was often making things worse instead of better. On top of that, the geometry was still
+double-sided, which quietly doubled my overdraw before I even realized it. Stochastic thinning came later and helped
+bring things back under control, but by that point the system was already a collection of compromises.
+
+That version is the one that's been live for a while now. It works, it's stable, and for a long time it felt “good
+enough”. But it was also much sparser than what I had originally imagined, and I knew I was still leaving a lot on the
+table.
+
+The current version didn't start from scratch. It builds directly on that live system.
+
+The difference is experience. By the time I revisited it, I had a much clearer picture of where the real costs were, how
+the pipeline actually behaved, and which trade-offs were worth making. Instead of layering fixes on top of fixes, I
+could finally step back, simplify aggressively, and push density without immediately paying for it.
+
+There's still a long way to go. I'm very aware of that. But the gap between what I imagined at the beginning and what I
+can actually run today has shrunk a lot — and that alone made the whole detour worth it.
