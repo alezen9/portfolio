@@ -2,20 +2,22 @@
 
 For a long time, I was convinced that triangle count was my main problem.
 
-It felt like the obvious culprit. More grass meant more blades. More blades meant more segments. More segments meant
-more triangles. And more triangles surely meant worse performance. That line of thinking is not entirely wrong, but it
+It felt like the obvious culprit: more grass meant more blades, more blades meant more segments, more segments meant
+more triangles, and more triangles surely meant worse performance. That line of thinking is not entirely wrong, but it
 turned out to be incomplete, and in my case, misleading.
 
 Modern GPUs are extremely good at processing vertices. They're built for it. With instancing, coherent memory access,
 and relatively simple vertex work, pushing a few million triangles isn't that dramatic anymore, especially when
 everything stays on the GPU and avoids round-trips to the CPU.
 
-What GPUs are not particularly fond of is doing work repeatedly only to throw the result away.
+What GPUs are not particularly fond of is doing the same work over and over, only to throw the result away.
 
 That's where my mental model started to crack.
 
 Grass is a near worst-case scenario for this kind of waste. Blades overlap heavily, especially close to the camera.
-Many of them sit behind others. Thin geometry stacks up in depth, and large portions of the screen end up being shaded multiple times for the same pixel. In my earlier versions, I was also using fragment-level discard in places where I already knew a blade shouldn't contribute visually.
+Many of them sit behind others, thin geometry stacks up in depth, and large portions of the screen end up being shaded
+multiple times for the same pixel. In my earlier versions, I was also using fragment-level `discard` in places where I
+already knew a blade shouldn't contribute visually.
 
 So while I kept looking at triangle counters, the GPU was busy doing something much more expensive: running the fragment
 shader over and over again on pixels that would never make it to the final image.
@@ -24,7 +26,7 @@ Once I reframed the problem from _"how many triangles am I drawing?"_ to _"how m
 a lot of things suddenly started to make more sense.
 
 This didn't mean triangles stopped mattering altogether. Blade width, segment count, and density still play a role, and
-finding a reasonable balance is important. But they weren't the bottleneck I thought they were.
+finding a reasonable balance is important, but they weren't the bottleneck I thought they were.  
 ==The real cost was hidden in overdraw==, in work happening late in the pipeline, after most of the heavy lifting had
 already been done.
 

@@ -1,36 +1,32 @@
 ## 0. The rules of this world
 
-Before getting into how the system works, it's worth pausing for a moment and describing the world this grass lives in,
-because many of the decisions that follow only make sense in that context.
+Before getting into how the system works, it's worth pausing for a moment to describe the world this grass lives in.
+Many of the decisions that follow only make sense with that context in mind.
 
-The grass you saw in the video is rendered as a single instanced mesh, driven almost entirely on the GPU. At the time
-of writing, it pushes a little over ==8.2 million triangles== just for grass, runs in ==one draw call==, and holds a
-==stable 120 FPS== on my M2 MacBook Pro. I did experiment with pushing it further, and while it can go beyond that, I
-eventually settled on four segments per blade as a good balance: smooth enough for wind motion, without adding work that doesn't
-really show.
+At the time of writing, the system renders a bit over 8.2 million grass triangles in a single draw call, holding a
+stable 120 FPS on my M2 MacBook Pro.
 
-Those numbers aren't here as a benchmark or a claim, they're just a snapshot of where the system currently sits, and
-they help explain some of the choices ahead.
+I did experiment with pushing it further, and while it can go beyond that, I eventually settled on four segments per
+blade as a good balance: smooth enough for wind motion, without adding work that doesn't really show.
 
-More importantly, this grass system isn't trying to solve the general case. It takes advantage of a few very specific
-rules:
+Those numbers aren't here as a benchmark or a claim. They're just a snapshot of where the system currently sits, and
+they help frame the choices I'll talk about next.
 
-<blockquote>
-- The camera has a fixed height and pitch.
-- It always stays behind the player.
-- The visual direction leans stylized rather than physically accurate.
-- Performance is treated as a first-class constraint, not an afterthought.
+More importantly, this grass system isn't trying to solve the general case.
 
-</blockquote>
+The camera has a fixed height and pitch, and it always stays behind the player. There's a single dominant light source,
+the sun, and the visual direction leans stylized rather than physically accurate. Above all, performance is treated as
+a first-class constraint, not something to patch later.
 
-These constraints might sound limiting, but in practice they're freeing. Knowing exactly how the camera behaves means
-I don't have to design for every possible viewpoint. Knowing that the grass doesn't need to react to dynamic lighting
-lets me simplify shading. Knowing that the player will never look straight down or orbit freely removes entire classes
-of problems before they even appear.
+These rules might sound limiting, but in practice they're freeing.
 
-Once I stopped thinking of these as compromises and started treating them as rules of the world, a lot of decisions
-became clearer. The goal wasn't to build the most general grass system possible, it was to build the right one for
+Knowing exactly how the camera behaves means I don't have to design for every possible viewpoint. Knowing that the grass
+doesn't need to react to fully dynamic lighting lets me simplify shading decisions. Knowing the player will never orbit
+freely or look straight down removes entire classes of problems before they even appear.
+
+Once I stopped thinking of these as compromises and started treating them as the rules of this world, a lot of decisions
+became clearer. The goal was never to build the most general grass system possible, it was to build the right one for
 this world.
 
-Everything that follows builds on that idea: fewer assumptions, fewer moving parts, and a focus on spending GPU time
-only where it actually shows.
+Everything that follows builds on that idea: fewer assumptions, fewer moving parts, and spending GPU time only where it
+actually shows.

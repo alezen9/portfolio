@@ -2,29 +2,34 @@ import Layout from "@components/blog/Layout.astro";
 import current720p from "../assets/current_720p.mp4?url";
 
 When I think of grass, I picture wide fields, uneven ground, a gentle wind moving through everything at once.  
-Something imperfect, soft, alive.
+Something soft, alive.
 
-That image has been with me since the very beginning of Revo. Long before there was a player, a world, or even a proper
-camera, I already knew I wanted vegetation to be a core part of it. Grass especially. Not as decoration, but as something
-that fills the space and gives the world a sense of scale and calm.
+That image has been with me since the very beginning of Revo.
 
-When I started working on Revo back in January, right after setting up Three.js and Rapier, grass was the first thing I
-touched. I didn't have a plan yet. I just wanted to see something green move on screen. A few instanced triangles, some
+Long before there was a player, a world, or even a proper camera, I knew I wanted vegetation to be a core part of what
+would become my most challenging project so far.  
+Grass especially. Not as decoration, but as something that fills the space and gives the world a sense of scale and calm.
+
+When I started working on it back in January, right after setting up Three.js and Rapier, grass was the first thing I
+touched.
+
+I didn't have a plan yet. I just wanted to see something green move on screen. A few instanced triangles, some
 subdivision, a bit of noise-driven motion, nothing fancy, but enough to feel like a starting point.
 
-It looked nice.. for a moment.
+It looked nice... for a moment.
 
-Then I did what everyone eventually does: I tried to scale it. And that's where reality stepped in. Frame rate dropped,
-the laptop warmed up, fans kicked in. The illusion didn't hold once the grass stopped being a small patch and started
-behaving like an actual field.
+Then I did what everyone eventually does: I tried to scale it. And that's where things got interesting.  
+Frame rate dropped, the laptop warmed up, fans kicked in. The illusion didn't hold once the grass stopped being a small
+patch and started behaving like an actual field.
 
 What you see below is the result of going back to that idea many times over the past year. Not all at once, and not
 always deliberately. Sometimes out of curiosity, sometimes out of frustration, sometimes simply because I wanted it to
 feel better than it did before.
 
-This is the version I'm currently working toward; part of a broader rewrite of Revo, where I've been revisiting old
-systems with a calmer mindset and a bit more experience. It's not live yet, and it will probably keep changing, but
-it's the first time the grass feels close to what I had in mind at the start.
+This is the version I'm currently working toward. It's part of a broader rewrite of Revo, where I've been revisiting old
+systems with a calmer mindset and a bit more experience.  
+It's not live yet, and it will probably keep changing, but it's the first time the grass feels close to what I had in
+mind from the beginning.
 
 <Layout class="lg-small">
   <figure>
@@ -36,15 +41,17 @@ it's the first time the grass feels close to what I had in mind at the start.
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
     />
-    <figcaption>???</figcaption>
+    <figcaption>
+      Showcase of the current version (not live at the time of writing)
+    </figcaption>
   </figure>
 </Layout>
 
 <br />
 
 This article is an attempt to write down what I learned along the way. Not as a guide, and not as a definitive solution,
-but as a collection of decisions, trade-offs, and small realizations that slowly shaped this system into something
-I'm happy with.
+but as a collection of decisions, trade-offs, and small realizations that slowly shaped this system into something I'm
+happy with.
 
-It'll start by setting the context and the rules of the world this grass lives in, and then dig into the parts that
+I'll start by setting the context and the rules of the world this grass lives in, and then dig into the parts that
 actually made a difference, especially the ones that took me the longest to understand.

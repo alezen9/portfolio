@@ -91,6 +91,11 @@ blockquote p:last-of-type {
   margin: 0;
 }
 
+q {
+  font-style: italic;
+  margin-inline: 0.5em;
+}
+
 .highlight {
   filter: saturate(1.5);
 }
