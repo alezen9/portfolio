@@ -13,44 +13,63 @@ those techniques you know exists, but never quite touch unless you really need i
 finally explore it properly.
 
 At that point, each grass blade was already carrying a fair amount of state: offsets, scale, wind parameters, visibility
-flags, noise factors. In earlier iterations I had a few vec4 buffers — I think three — with slightly less state overall.
-In the current version, everything fits into one vec4 plus a single extra float (which I later added for vertical
-displacement), and there's still room left to grow.
+flags, noise factors. In earlier iterations I had a few `vec4` buffers, three if I recall corretly, with slightly less state
+overall. In the current version, everything fits into one `vec4` plus a single extra `float`, which I later added for vertical
+displacement, and has still plenty of room left to store more data.
 
 Memory usage is obviously lower this way, even if it wasn't a real problem to begin with. That alone didn't justify the
 effort. What interested me more was understanding how and when this kind of packing makes sense.
 
-Most of the data involved here doesn't need full floating-point precision. Some values are binary flags. Others live in
-small, well-defined ranges. Packing into fewer bits means fewer representable values. A floating-point number like
-0.50334532 ends up rounded to the closest fixed-point bucket, often something like 0.503.  
-That loss of precision is real, but for some states of the grass, it can be completely irrelevant visually. Once you
-accept that, packing multiple values into a single float starts feeling reasonable instead of scary.
+Conceptually, bit packing is about accepting that not all data deserves the same precision.
 
-Conceptually, bit packing is just fixed-point arithmetic with explicit control over precision.
+A grass blade doesn't need a full 32-bit float to say whether it's visible. It doesn't need perfect precision to store a wind phase, a
+scale factor, or a small rotation. Most of these values live in tight ranges, or are simple on/off flags.
 
-You map a value from a known range into an integer interval, shift it into a specific bit region, and later reverse the
-process when reading it back. A simplified version of the idea looks like this:
+So instead of giving each one its own float, I started treating a single value as a tiny container.
 
-```typescript
-// |= means "OR and assign", it merges the new bits into the existing packed value
-// pack a normalized value into N bits at a given offset
-const packed |= int(clamp(value, 0.0, 1.0) * maxInt) << offset;
+I take a number with a known range, map it into a fixed number of discrete steps, and store it in a specific slice of bits. Later,
+I reverse the process and reconstruct an approximation of the original value.
 
-// unpack it later
-const value = float((packed >> offset) & mask) / maxInt;
+Here's what that looks like at a very concrete level:
+
+```
+initial value (all bits zero)
+00000000 00000000 00000000 00000000
+
+after storing visibility = 1 in bit 0
+00000000 00000000 00000000 00000001
+
+after storing yaw angle in bits 1-8
+00000000 00000000 00000010 10000001
+                         ↑ ↑↑↑↑↑↑↑
+                         quantized angle (8 bits)
 ```
 
+During the process, a number like `0.50334532` might come back as `0.503`. That loss of precision is real, but for grass, after a bit of tuning it's
+visually meaningless. Some values needed more care than others: positions and height offsets required finer granularity, while
+things like yaw rotation could be heavily quantized without anyone noticing, since they're already randomized by design.
+
+> Although we talk about a "32-bit value", this is still a floating-point number. In practice, that means I'm not using all 32 bits
+> freely. A float gives you about 24 bits of reliable integer precision (the mantissa), and I deliberately stay within that budget.
+>
+> That's not a limitation I ran into, it's one I chose.
+>
+> By keeping the total number of packed bits under that ~24-bit threshold, I avoid precision loss and bit corruption entirely. Flags
+> stay stable, angles decode consistently, and everything round-trips safely. The remaining loss of precision comes only from
+> intentional quantization, not from floating-point artifacts.
+
 I won't go deep into the helpers here, but if you're curious, all the packing and unpacking utilities live in
-[this](https://github.com/alezen9/revo-realms/blob/main/src/utils/TSLUtils.ts) dedicated file that I reuse across systems.
+[this](https://github.com/alezen9/revo-realms/blob/feat/new-world/src/utils/TSLUtils.ts) dedicated file that I reuse across systems.
 
 <br />
 
 <Layout class="lg-small">
   <figure>
-    <img src={ssboMeme} alt="Full AO intensity affecting everything" />
-    <figcaption>
-      I immediately thought of this when writing this section, hence the title
-    </figcaption>
+    <img
+      src={ssboMeme}
+      alt="Car salesman meme - This bad boy can fit so much data"
+    />
+    <figcaption>What I think about when I pick titles...</figcaption>
   </figure>
 </Layout>
 
@@ -60,12 +79,8 @@ After implementing this, I didn't suddenly gain a bunch of extra performance. Th
 measurements claiming otherwise. The most obvious win is the reduction in memory footprint, which is nice but not
 game-changing on its own.
 
-What really mattered to me was everything else.
-
-I now understand bit packing because I've actually used it. The knowledge I gained is far more valuable to me than a
-few saved bytes in this specific system.
-
-Grass may not have needed bit packing, but I did.
+What really mattered to me was everything else. Grass may not have needed bit packing, but I now understand it because I've actually
+used it. The knowledge I gained is far more valuable to me than a few saved bytes in this specific system.
 
 It turned a vague concept into something concrete, and that experience is now part of my toolbox. If I ever run into a
 system where memory layout or bandwidth really does matter, I won't be starting from zero.

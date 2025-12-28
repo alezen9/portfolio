@@ -1,25 +1,19 @@
 ## 7. The obvious solution I didn't pick
 
-At this point, it's probably fair to ask a very reasonable question:
+It's probably fair to ask a very reasonable question: Why not tiles?
 
-Why not tiles?
+While researching how grass is usually handled in games and real-time environments, tiling kept coming up as the first solution.
+The world is split into chunks, grass is attached to each tile, whole tiles are culled when they fall outside the frustum, LODs
+are added, and that's often enough. It's a solid, proven approach, and for many setups it's absolutely the right one.
 
-If you've worked with grass in games or real-time environments before, tiling is often the first solution you reach for.
-Split the world into chunks, attach grass to each tile, cull whole tiles when they're outside the frustum, add LODs,
-call it a day. It's a solid, proven approach, and for many setups it's absolutely the right one.
+I did consider it. I even implemented a basic version. It worked, but it pushed the system toward a different set of problems.
 
-I did consider it.
-I even tried a basic version.
+You gain real culling, geometry that never even reaches the pipeline when a tile is off-screen. You also open the door to
+classic LOD strategies. Those are real advantages, no question about it.
 
-It worked, but it pushed the system in a direction I wasn't aiming for.
+At the same time, new costs start to creep in.
 
-Tiling shifts the problem in a different direction. You gain “real” culling — geometry that never even reaches the
-pipeline when a tile is off-screen. You also open the door to classic LOD strategies. Those are real advantages, no
-question about it.
-
-At the same time, you introduce new costs.
-
-You now have multiple draw calls instead of one. Even with reasonably sized tiles, you'll quickly end up juggling
+Now there are multiple draw calls instead of one. Even with reasonably sized tiles, you'll quickly end up juggling
 several of them per frame. You also have to decide how big a tile should be: too large and you lose the benefit of
 culling, too small and you increase overhead and management complexity.
 
@@ -32,21 +26,23 @@ but it does push the system toward something heavier and harder to reason about.
 
 I also noticed something else when I tried it.
 
-Even when performance was fine on average, I occasionally saw small hitches — not dramatic frame drops, just tiny
-stutters. Enough to break the feeling of smoothness. That could almost certainly be improved with more time and care,
+Even when performance was fine on average, I occasionally saw small hitches, not dramatic frame drops, just tiny
+stutters, enough to break the feeling of smoothness. That could almost certainly be improved with more time and care,
 but it reinforced a pattern I had already seen a few times during this project.
 
 Simple systems tend to stay smooth.
 
-The approach I ended up with is not “better” in a general sense. It's just a better fit for my constraints:
+The approach I ended up with is not "better" in a general sense. It's just a better fit for my constraints:
 a fixed-height camera, a player-centric field of grass, a strong focus on visual continuity, and a desire to keep things
 predictable and easy to tweak.
 
-One draw call.
-One set of buffers.
-Visibility and density handled explicitly.
+One draw call.  
+One set of buffers.  
+Visibility and density handled explicitly.  
 No hidden heuristics.
 
+That simplicity was intentional.
+
 It's not the solution I would recommend blindly, and it's not the one I'd necessarily use in a different project.
-But for this world, at this scale, it let me move faster, experiment more freely, and keep the system approachable —
+But for this world, at this scale, it let me move faster, experiment more freely, and keep the system approachable,
 which, for something I work on in my free time, matters more than theoretical perfection.

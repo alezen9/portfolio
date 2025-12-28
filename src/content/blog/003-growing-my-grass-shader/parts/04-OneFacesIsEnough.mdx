@@ -1,3 +1,7 @@
+import Layout from "@components/blog/Layout.astro";
+import sprites720p from "../assets/sprites_720p.mp4?url";
+import windDisplacement720p from "../assets/wind_displacement_720p.mp4?url";
+
 ## 4. One face is enough
 
 Up until this point, all the work was about drawing less.
@@ -14,14 +18,34 @@ bending nicely in the wind.
 Visually, it made sense. Performance-wise, it was a silent tax.
 
 Every blade contributed twice the fragments, twice the overdraw, twice the opportunity to waste work, and all of that
-stacked brutally once density went up.  
-No amount of thinning or clever visibility logic could fully offset that.
+stacked brutally once density went up. No amount of thinning or clever visibility logic could fully offset that.
 
 The moment I finally questioned this assumption was uncomfortable, because the alternative sounded worse at first: sprites.
 
-Sprites felt like cheating. Flat. Fake. Too "billboardy". And yet, they solve exactly the problem I had.
+Sprites felt like cheating. Flat, fake, too "billboardy", and yet, they solve exactly the problem I had.
 
 A sprite always faces the camera, which means one face is enough.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      src={sprites720p}
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    />
+    <figcaption>
+      Less blades with exagerated width to better see how they stay
+      camera-facing
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
 
 Switching to a sprite-based material immediately removed half of the fragment work for every surviving blade. No second
 face. No back-facing fragments. No doubled overdraw. Just one surface doing the job.
@@ -30,11 +54,10 @@ It was one of those changes where nothing dramatic happens visually, but the sys
 
 Of course, it wasn't free.
 
-By giving up double-sided geometry, I also gave up something I had been relying on without realizing it:
-orientation-based bending.
+By giving up double-sided geometry, I also gave up something I had been relying on without realizing it: orientation-based bending.
 In the earlier versions, wind deformation was partly driven by rotating vertices around an axis. With sprites, that
-logic breaks down quickly. The blade still has a yaw (it can rotate around Y), but pitch becomes meaningless once the
-quad always faces the camera.
+logic breaks down quickly. The blade still has a yaw (it can rotate around the vertical axis), but pitch becomes meaningless once
+the geometry always faces the camera.
 
 The symptom was subtle but annoying: wind direction started feeling inconsistent. As the camera moved, the same breeze
 appeared to change direction. It wasn't wrong mathematically, it was wrong perceptually.
@@ -45,10 +68,26 @@ Instead of rotating the blade geometry to simulate wind, I now offset vertices i
 based on a stable wind direction. The wind vector lives in the world, not in the blade's local orientation, so it stays
 consistent no matter how the camera moves.
 
-That came with its own trade-off.
+That came with its own trade-off: too much displacement and the blades start stretching unnaturally, too little and the field
+feels lifeless.
 
-Too much displacement and the blades start stretching unnaturally.  
-Too little and the field feels lifeless.
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      src={windDisplacement720p}
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    />
+    <figcaption>Blades bending with displacement</figcaption>
+  </figure>
+</Layout>
+
+<br />
 
 Finding the balance took some tuning, but it was a trade I was happy to make. Ambient motion could stay subtle, while
 stronger gusts, the kind I wanted for moments of emphasis, could still exist without breaking the illusion.
@@ -57,6 +96,3 @@ In hindsight, this was probably the single biggest win in the whole system.
 
 Not because sprites are fancy, but because they let everything else work better: thinning, visibility decisions, soft
 culling... all of them benefit when each blade is only ever drawn once.
-
-Sometimes optimization isn't about adding complexity.  
-It's about realizing you've been paying for something you didn't actually need.

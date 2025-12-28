@@ -1,7 +1,6 @@
 ## Closing thoughts
 
-This grass system took far more time than I ever expected — not because it was especially complex, but because I kept
-finding new edges to push against.
+This grass system took far more time than I ever expected.
 
 Some ideas worked immediately. Others looked promising on paper and turned out to be dead ends. A few things only made
 sense months later, once I had enough context to recognize why they mattered in the first place. That's probably the
@@ -10,7 +9,7 @@ and more about understanding _when_ a technique actually applies.
 
 The version I'm working on now isn't live yet, and it's not some final destination either. It's just the first time the
 grass really matches the image I had in my head when Revo was nothing more than an empty scene and a moving camera. It's
-dense, calm, responsive, and — most importantly — it doesn't feel like it's constantly fighting the GPU.
+dense, calm, responsive, and, most importantly, it doesn't feel like it's constantly fighting the GPU.
 
 None of this is meant as a blueprint. The choices I made are deeply tied to my constraints: the camera, the scale, the
 style, the fact that this is a personal project I work on in bursts of energy between other things. In a different
@@ -20,7 +19,22 @@ But sharing this felt worthwhile.
 
 Not because every trick here is groundbreaking, but because this is what it actually looked like to build something
 iteratively, get it wrong multiple times, and slowly get closer by paying attention to where the work was really going.
-If any part of this helps you avoid a detour — or at least recognize one earlier — then writing it was time well spent.
+
+If any part of this helps you avoid a detour, or at least recognize one earlier, then writing it was time well spent.
 
 For now, the grass finally feels right.  
-And that's a nice place to pause.
+And that's a nice place to pause :)
+
+<br />
+<br />
+<br />
+
+<blockquote data-type="frame">
+If you're curious about how all of this comes together in practice, the grass system described here lives in a single file in the
+Revo codebase.
+It's not meant as a reference implementation or a drop-in solution, but it might be useful to see how these ideas connect in a
+real project.
+
+[Grass.ts](https://github.com/alezen9/revo-realms/blob/feat/new-world/src/entities/Vegetation/Grass.ts) (might not be the final version)
+
+</blockquote>
