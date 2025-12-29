@@ -1,17 +1,36 @@
+import Layout from "@components/blog/Layout.astro";
+import tiles from "../assets/tiles.webp?url";
+import singlePatch from "../assets/single_patch.webp?url";
+
 ## 7. The obvious solution I didn't pick
 
 It's probably fair to ask a very reasonable question: Why not tiles?
 
-While researching how grass is usually handled in games and real-time environments, tiling kept coming up as the first solution.
+While researching how grass is usually handled in games and real-time environments, tiling kept coming up as the default solution.
 The world is split into chunks, grass is attached to each tile, whole tiles are culled when they fall outside the frustum, LODs
 are added, and that's often enough. It's a solid, proven approach, and for many setups it's absolutely the right one.
 
-I did consider it. I even implemented a basic version. It worked, but it pushed the system toward a different set of problems.
+I did consider it. I even implemented a basic version. It worked, but it pushed the system toward a different set of trade-offs.
 
 You gain real culling, geometry that never even reaches the pipeline when a tile is off-screen. You also open the door to
 classic LOD strategies. Those are real advantages, no question about it.
 
 At the same time, new costs start to creep in.
+
+<br />
+
+<Layout columns={2} gap={1}>
+  <figure>
+    <img src={tiles} alt="" />
+    <figcaption>Smaller tiles covering a big area</figcaption>
+  </figure>
+  <figure>
+    <img src={singlePatch} alt="" />
+    <figcaption>One big single patch (my current approach)</figcaption>
+  </figure>
+</Layout>
+
+<br />
 
 Now there are multiple draw calls instead of one. Even with reasonably sized tiles, you'll quickly end up juggling
 several of them per frame. You also have to decide how big a tile should be: too large and you lose the benefit of
@@ -28,7 +47,7 @@ I also noticed something else when I tried it.
 
 Even when performance was fine on average, I occasionally saw small hitches, not dramatic frame drops, just tiny
 stutters, enough to break the feeling of smoothness. That could almost certainly be improved with more time and care,
-but it reinforced a pattern I had already seen a few times during this project.
+but it reinforced a pattern I had already noticed during this project.
 
 Simple systems tend to stay smooth.
 

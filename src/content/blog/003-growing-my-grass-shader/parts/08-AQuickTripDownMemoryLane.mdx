@@ -5,14 +5,14 @@ import second720p from "../assets/second_720p.mp4?url";
 
 ## 8. A quick trip down memory lane
 
-Before wrapping things up, it's worth taking a short look back, not to extract lessons or frame this as a clean
+Before wrapping things up, I'd like to take a short look back, not to extract lessons or frame this as a clean
 progression, but simply to give some context to how this system actually came together.
 
 The very first version of the grass was about as simple as it gets.
 
 A single blade made of a few triangles, instanced in a grid, subdivided just enough to bend, with a bit of noise in the
-vertex shader to fake wind. On screen, it looked... fine. Actually, it looked pretty nice. Enough to make me think I was
-on the right track.
+vertex shader to fake wind, statically positioned. On screen, it looked... fine. Actually, it looked pretty nice. Enough to
+make me think I was on the right track.
 
 <br />
 
@@ -32,7 +32,7 @@ on the right track.
 
 <br />
 
-Then I did the obvious thing and scaled it up.
+But I wanted to have grass everywhere so instinctively I scaled it up.
 
 More blades, bigger patch, same logic, and suddenly everything fell apart. Frame times spiked, fans kicked in, and the
 machine started sounding like it had something personal against me. The scene was still basically empty, yet the grass
@@ -49,8 +49,8 @@ alone was already pushing things too far. That was the first real reality check.
 
 <br />
 
-The second iteration didn't come from some clever insight. It came from stubbornness and a decision to dig deeper
-instead of giving up.
+The second iteration came almost immediately and not from some clever insight. It came from stubbornness and a decision to
+dig deeper instead of giving up.
 
 That's when I really started learning TSL properly. I moved more logic to the GPU, set up SSBOs for the first time, and
 introduced compute shaders to handle per-instance work instead of pushing everything through the vertex stage. Along
@@ -59,7 +59,7 @@ GPU-side visibility checks, and trying to be more explicit about where work was 
 
 Not all of those choices were good ones.
 
-That early GPU culling logic, for example, was technically doing what I asked, but I paired it with fragment-level
+That early soft GPU culling logic, for example, was technically doing what I asked, but I paired it with fragment-level
 `discard`, which meant I was often making things worse instead of better. On top of that, the geometry was still
 double-sided, which quietly doubled my overdraw before I even realized it. Stochastic thinning came later and helped
 bring things back under control, but by that point the system was already a collection of compromises.
@@ -76,7 +76,9 @@ bring things back under control, but by that point the system was already a coll
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
     />
-    <figcaption>Currently live version</figcaption>
+    <figcaption>
+      Second iteration, currently live at the time of writing
+    </figcaption>
   </figure>
 </Layout>
 
@@ -86,7 +88,7 @@ That version is the one that's been live for a while now. It works, it's stable,
 enough". But the grass was also much sparser than what I had originally imagined, and I knew I was still leaving a lot on the
 table.
 
-The version that inspired this article didn't start from scratch, it builds directly on that live system.
+The version that inspired this article did not start from scratch. It builds directly on the previous system.
 
 The difference is experience. By the time I revisited it, I had a much clearer picture of where the real costs were, how
 the pipeline actually behaved, and which trade-offs were worth making. Instead of layering fixes on top of fixes, I

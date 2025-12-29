@@ -1,59 +1,56 @@
 import Layout from "@components/blog/Layout.astro";
 import fullAo from "../assets/full_ao.webp?url";
 import anime from "../assets/anime.webp?url";
-import aliasing from "../assets/aliasing.webp?url";
+import aoShowcase from "../assets/ao.mp4?url";
 
 ## 6. A small shadow that caused big trouble
 
-So far, most of the work was about removing things: fewer fragments, fewer blades, less work where it didn't matter. This part
-goes in the opposite direction.
+Because the grass is not affected by light, it tends to look a bit flat if left as is.
 
-The grass still looked a bit flat.
+To break that monotony, I experimented with noise-driven color variation. It produced a pleasant, slightly anime-like
+look, but it was not quite what I was after. I wanted something stylized, not physically accurate, but also not fully
+blended into the terrain.
 
-Not wrong, just... a bit detached. Blades were moving nicely, density felt right, but they didn't quite sit in the world.
-They floated instead of belonging to the ground.
-
-The fix was obvious: a bit of ambient occlusion.
+The fix was obvious: a bit of **ambient occlusion**.
 
 Nothing fancy. Just a subtle darkening near the base of each blade to hint at contact with the ground and give the field
-some depth. I had done this before, so I added it almost automatically. This isn't screen-space AO or anything global, it's a
-tiny, per-blade shading term.
+some depth. This is not screen-space AO or anything global, just a tiny per-blade shading term. I had done this before,
+so I added it almost automatically.
 
-After this addition, I immediately ran into a familiar problem.
+After that, a few dots finally connected in my brain as I ran into a familiar problem.
 
-In earlier versions, I was applying AO along the entire blade. Thin geometry plus dark shading at a distance is a great recipe
-for aliasing, especially once blades start collapsing to sub-pixel sizes. Far blades started to shimmer. The grass gained depth,
-but lost stability.
-
-<br />
-
-<Layout class="lg-small">
-  <figure>
-    <img src={aliasing} alt="Aliasing induced by AO on the tip of the blades" />
-    <figcaption>
-      Aliasing showing in the currently live version (at the time of writing)
-    </figcaption>
-  </figure>
-</Layout>
-
-<br />
+In earlier versions, I was applying AO along the entire blade. Thin geometry plus dark shading at a distance is a great
+recipe for aliasing, especially once blades start collapsing to sub-pixel sizes. Blades began to shimmer. The grass
+gained depth, but lost stability.
 
 This time I treated it more carefully.
 
 Instead of occluding the whole blade, I limited AO to a small region near the base. The effect fades out quickly as you
 move up the blade, leaving the tip completely untouched. I also clamped both the radius and the intensity based on
-distance, so farther grass isn't affected at all.
+distance, so farther grass is not affected at all.
 
-The result is deliberately understated.
+<Layout class="lg-small">
+  <figure>
+    <video
+      src={aoShowcase}
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    />
+    <figcaption>Live tuning of AO radius and intensity</figcaption>
+  </figure>
+</Layout>
 
-Close to the player, blades feel grounded. Far away, the field stays clean and stable. No dark speckling, no crawling
-edges, no extra noise competing with motion.
+The result is deliberately understated. Close to the player, blades feel grounded. Far away, the field stays clean and
+stable. No dark speckling, no crawling edges, no extra noise competing with motion.
 
-It didn't change performance in any meaningful way. That was never the goal. It simply removed a visual distraction I
+It did not change performance in any meaningful way. That was never the goal. It simply removed a visual distraction I
 had created for myself in the past.
 
-As a side effect, it became a nice artistic control. By dialing the AO down even further, the grass shifts toward a more
-anime-like look. Pushing it slightly brings it back toward something more grounded. Same system, different mood.
+As a side effect, it became a useful artistic control. By dialing the AO down even further, the grass shifts toward a
+more anime-like look. Pushing it slightly brings it back toward something more grounded. Same system, different mood.
 
 <br />
 
@@ -61,7 +58,7 @@ anime-like look. Pushing it slightly brings it back toward something more ground
   <figure>
     <img src={fullAo} alt="Full AO intensity affecting everything" />
     <figcaption>
-      More grounded - full AO intensity affecting everything
+      More grounded - full AO intensity covering the whole patch
     </figcaption>
   </figure>
   <figure>
@@ -72,5 +69,5 @@ anime-like look. Pushing it slightly brings it back toward something more ground
 
 <br />
 
-For my version I settled somewhere in the middle: grounded enough, calm enough, and it's nice to know I can slide that
+For my version, I settled somewhere in the middle. Grounded enough, calm enough, and it is nice to know I can slide that
 dial whenever I want.
