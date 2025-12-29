@@ -11,7 +11,7 @@ To break that monotony, I experimented with noise-driven color variation. It pro
 look, but it was not quite what I was after. I wanted something stylized, not physically accurate, but also not fully
 blended into the terrain.
 
-The fix was obvious: a bit of **ambient occlusion**.
+The fix was obvious: a touch of **ambient occlusion**.
 
 Nothing fancy. Just a subtle darkening near the base of each blade to hint at contact with the ground and give the field
 some depth. This is not screen-space AO or anything global, just a tiny per-blade shading term. I had done this before,
@@ -29,6 +29,8 @@ Instead of occluding the whole blade, I limited AO to a small region near the ba
 move up the blade, leaving the tip completely untouched. I also clamped both the radius and the intensity based on
 distance, so farther grass is not affected at all.
 
+<br />
+
 <Layout class="lg-small">
   <figure>
     <video
@@ -42,6 +44,8 @@ distance, so farther grass is not affected at all.
     <figcaption>Live tuning of AO radius and intensity</figcaption>
   </figure>
 </Layout>
+
+<br />
 
 The result is deliberately understated. Close to the player, blades feel grounded. Far away, the field stays clean and
 stable. No dark speckling, no crawling edges, no extra noise competing with motion.

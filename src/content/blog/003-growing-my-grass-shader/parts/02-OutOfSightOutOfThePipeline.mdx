@@ -12,9 +12,9 @@ camera frustum volume and only if the object intersects, a draw call for it is d
 In Three.js this is built in and enabled by default. For instanced meshes, however, it works at the draw call level: either
 all instances are sent, or none of them are.
 
-Although per-instance is a little bit more complex, my first instinct was to add my own visibility logic GPU side, in the same
-compute shader I used to compute other per-instance traits. Something relatively simple, cheap and conservative, not necessarily
-an exact geometric culling.
+Although real per-instance culling is a little bit more complex, my first instinct was to add my own visibility logic GPU side,
+in the same compute shader I used to compute other per-instance traits. Something relatively simple, cheap and conservative,
+not necessarily an exact geometric culling.
 
 Here is the full implementation of the visibility check function I ended up after some trials:
 
@@ -86,9 +86,9 @@ The plan was to use this flag in order to avoid fragment work for blades that we
 Later on, I learned that this wasn't as clever as I initially thought, or at least not in the way I had framed it.
 
 Even without any custom culling, anything fully outside the frustum won't generate fragments. The vertex shader may still run, but
-if it doesn't intersect the clip volume, nothing gets rasterized—so the expensive part (fragment shading) doesn't happen.
+if it doesn't intersect the clip volume, nothing gets rasterized, so the expensive part (fragment shading) doesn't happen.
 
-At first glance, my implementation might look like pure redundancy, extra work without real benefit, but that's not
+At first glance, my implementation might now look like pure redundancy, extra work without real benefit, but that's not
 actually the case.
 
 I built this test for a reason, but that doesn't mean I can't use it for a different one :)
@@ -114,7 +114,7 @@ is allowed on the map).
 
 In earlier versions, I made the mistake of using this flag inside the fragment shader and calling `discard`. That felt
 logical at the time: if it shouldn't be drawn, just discard it. But `discard` happens after the fragment shader has already run.
-The GPU still did the work; I just told it to throw the result away. In a system already dominated by overdraw, that's about
+The GPU still did the work, I just told it to throw the result away. In a system already dominated by overdraw, that's about
 the worst thing you can do.
 
 The better option turned out to be much simpler.
@@ -155,8 +155,7 @@ In practice, it's also a completely different level of complexity: parallel algo
 and a lot more surface area for bugs.
 
 I gave it a try one evening, got incorrect results and frame drops, and decided to step back. I might give it another try in the
-future, if not out of necessity, then perhaps out of curiosity, now that WebGPU has solid support across all major browsers. For
-now, I'll leave it be.
+future, if not out of necessity, then perhaps out of sheer curiosity, but for now, I'll simply leave it be.
 
 > For the curious, [here](https://github.com/alezen9/revo-realms/blob/feat/almost-real-frustum-culling-grass/src/entities/Grass.ts#L505)
 > is the link to my attempted implementation.  
