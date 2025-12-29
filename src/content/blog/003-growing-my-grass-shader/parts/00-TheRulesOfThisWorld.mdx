@@ -3,16 +3,18 @@
 Before getting into how the system works, it's worth pausing for a moment to describe the world this grass lives in.
 Many of the decisions that follow only make sense with that context in mind.
 
-At the time of writing, the system renders a bit over 8.2 million grass triangles in a single draw call, holding a
-stable 120 FPS on my M2 MacBook Pro.
+At the time of writing, in my current (still work-in-progress) scene which I don't plan on crowding anyway, the grass
+alone accounts for a bit over 8.2 million triangles in a single draw call, and I can hold a stable 120 FPS on my M2
+MacBook Pro.
 
-I did experiment with pushing it further, and while it can go beyond that, I eventually settled on four segments per
-blade as a good balance: smooth enough for wind motion, without adding work that doesn't really show.
+I did experiment with pushing it further, and while it can go beyond that (FPS slightly drop to 110 with ~60 million triangles,
+just to give a rough idea), I eventually settled on four segments per blade and a bit over one million instances as a good balance:
+smooth enough for wind motion and dense enough without adding work that doesn't really show.
 
-Those numbers aren't here as a benchmark or a claim. They're just a snapshot of where the system currently sits, and
-they help frame the choices I'll talk about next.
+Those numbers aren't here as a benchmark or a claim. They're just a snapshot of where the system currently sits, and they help
+frame the choices I'll talk about next.
 
-More importantly, this grass system isn't trying to solve the general case.
+More importantly, **this grass system isn't trying to solve the general case**.
 
 The camera has a fixed height and pitch, and it always stays behind the player. There's a single dominant light source,
 the sun, and the visual direction leans stylized rather than physically accurate. Above all, performance is treated as
@@ -25,7 +27,7 @@ doesn't need to react to fully dynamic lighting lets me simplify shading decisio
 freely or look straight down removes entire classes of problems before they even appear.
 
 Once I stopped thinking of these as compromises and started treating them as the rules of this world, a lot of decisions
-became clearer. The goal was never to build the most general grass system possible, it was to build the right one for
+became clearer. The goal was never to build the most general grass system possible; it was to build the right one for
 this world.
 
 Everything that follows builds on that idea: fewer assumptions, fewer moving parts, and spending GPU time only where it

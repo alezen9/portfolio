@@ -131,7 +131,8 @@ pre::after {
   opacity: 0.8;
 }
 
-ul:has(+ p) {
+ul:has(+ p),
+ol:has(+ p) {
   margin-bottom: var(--space-s);
 }
 

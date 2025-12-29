@@ -4,23 +4,23 @@ import windDisplacement720p from "../assets/wind_displacement_720p.mp4?url";
 
 ## 4. One face is enough
 
-Up until this point, all the work was about drawing less.
+Up until now, all the work was about drawing less.
 
 But there was still something quietly expensive happening everywhere, even for the blades that survived thinning and
-visibility checks: each blade was being drawn twice.
+visibility checks: **each blade was being drawn twice**.
 
-For a long time, that felt... normal.
+For a long time, that felt normal.
 
-Grass blades are thin. You want to see them from both sides. Double-sided geometry sounds like the obvious choice, and
-for my early versions it was the obvious choice. Each blade was a thin strip of geometry, rendered with two faces,
-bending nicely in the wind.
+Grass blades are thin. You want to see them from both sides. Double-sided geometry sounds like the obvious choice, and for my early
+versions it was the obvious one. Each blade was a thin strip of geometry, rendered with two faces, bending nicely in the wind.
 
 Visually, it made sense. Performance-wise, it was a silent tax.
 
 Every blade contributed twice the fragments, twice the overdraw, twice the opportunity to waste work, and all of that
 stacked brutally once density went up. No amount of thinning or clever visibility logic could fully offset that.
 
-The moment I finally questioned this assumption was uncomfortable, because the alternative sounded worse at first: sprites.
+The moment I finally questioned this assumption I felt a bit uncomfortable, because the alternative sounded worse at
+first: **sprites**.
 
 Sprites felt like cheating. Flat, fake, too "billboardy", and yet, they solve exactly the problem I had.
 
@@ -39,7 +39,7 @@ A sprite always faces the camera, which means one face is enough.
       style={{ aspectRatio: "1154 / 720" }}
     />
     <figcaption>
-      Less blades with exagerated width to better see how they stay
+      Less blades with exaggerated width to better see how they stay
       camera-facing
     </figcaption>
   </figure>
@@ -55,21 +55,22 @@ It was one of those changes where nothing dramatic happens visually, but the sys
 Of course, it wasn't free.
 
 By giving up double-sided geometry, I also gave up something I had been relying on without realizing it: orientation-based bending.
-In the earlier versions, wind deformation was partly driven by rotating vertices around an axis. With sprites, that
-logic breaks down quickly. The blade still has a yaw (it can rotate around the vertical axis), but pitch becomes meaningless once
-the geometry always faces the camera.
 
-The symptom was subtle but annoying: wind direction started feeling inconsistent. As the camera moved, the same breeze
-appeared to change direction. It wasn't wrong mathematically, it was wrong perceptually.
+In the earlier versions, wind deformation was partly driven by rotating vertices around an axis. With sprites, that
+logic breaks down quickly. The blade still has a yaw, meaning it can rotate around the vertical axis, but pitch, which
+in my case was responsible for bending, becomes meaningless once the geometry always faces the camera.
+
+The symptom was subtle but annoying. Wind direction started feeling inconsistent. As the camera moved, the same breeze
+appeared to change direction. It was not wrong mathematically, but it was wrong perceptually.
 
 The solution was to stop thinking in terms of rotation and start thinking in terms of displacement.
 
-Instead of rotating the blade geometry to simulate wind, I now offset vertices in world space, pushing them sideways
-based on a stable wind direction. The wind vector lives in the world, not in the blade's local orientation, so it stays
-consistent no matter how the camera moves.
+Instead of rotating the blade geometry along the horizontal axes to simulate wind, I now offset vertices in world space, pushing
+them sideways based on a stable wind direction. The wind vector lives in the world, not in the blade's local orientation, so it
+stays consistent no matter how the camera moves.
 
-That came with its own trade-off: too much displacement and the blades start stretching unnaturally, too little and the field
-feels lifeless.
+Of course that also came with its own trade-off. Too much displacement and the blades start stretching unnaturally, too little
+and the field feels lifeless.
 
 <br />
 
@@ -83,7 +84,7 @@ feels lifeless.
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
     />
-    <figcaption>Blades bending with displacement</figcaption>
+    <figcaption>Blades bending using vertex displacement</figcaption>
   </figure>
 </Layout>
 
@@ -94,5 +95,9 @@ stronger gusts, the kind I wanted for moments of emphasis, could still exist wit
 
 In hindsight, this was probably the single biggest win in the whole system.
 
-Not because sprites are fancy, but because they let everything else work better: thinning, visibility decisions, soft
-culling... all of them benefit when each blade is only ever drawn once.
+Not because sprites are fancy, but because they let everything else work better. Thinning, visibility decisions, and
+soft culling all benefit when each blade is only ever drawn once.
+
+It is also worth mentioning that I opted for sprites because of their built-in camera-facing behavior, which meant I did
+not have to implement it myself, and because they are unaffected by lighting, matching the simple shading model I was
+already using with `MeshBasicNodeMaterial`.

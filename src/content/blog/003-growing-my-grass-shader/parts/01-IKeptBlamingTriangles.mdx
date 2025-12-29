@@ -1,3 +1,6 @@
+import Layout from "@components/blog/Layout.astro";
+import bigBrain from "../assets/big_brain.webp?url";
+
 ## 1. I kept blaming triangles
 
 For a long time, I was convinced that triangle count was my main problem.
@@ -14,10 +17,27 @@ What GPUs are not particularly fond of is doing the same work over and over, onl
 
 That's where my mental model started to crack.
 
-Grass is a near worst-case scenario for this kind of waste. Blades overlap heavily, especially close to the camera.
-Many of them sit behind others, thin geometry stacks up in depth, and large portions of the screen end up being shaded
-multiple times for the same pixel. In my earlier versions, I was also using fragment-level `discard` in places where I
-already knew a blade shouldn't contribute visually.
+Grass is a near worst-case scenario for this kind of waste. Even with a fixed, elevated camera at roughly 45°, blades
+overlap heavily in screen space, especially close to the player, where they occupy large portions of the framebuffer.
+Thin geometry stacks up in depth, many blades sit behind others, and the same pixels end up being shaded multiple times.
+
+Farther away, blades do collapse and overlap more densely, but they also shrink rapidly in screen space. Near the
+camera, that collapse hasn't happened yet, and fragment cost scales with screen coverage, not blade count. That's where
+the real pain shows up.
+
+In my earlier versions, I made things worse by using fragment-level `discard` in places where I already knew a blade
+shouldn't contribute visually, guaranteeing that the fragment work had already happened before being thrown away.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img src={bigBrain} alt="Big brain meme" />
+    <figcaption>Yeah, it's big brain time</figcaption>
+  </figure>
+</Layout>
+
+<br />
 
 So while I kept looking at triangle counters, the GPU was busy doing something much more expensive: running the fragment
 shader over and over again on pixels that would never make it to the final image.
@@ -26,9 +46,9 @@ Once I reframed the problem from _"how many triangles am I drawing?"_ to _"how m
 a lot of things suddenly started to make more sense.
 
 This didn't mean triangles stopped mattering altogether. Blade width, segment count, and density still play a role, and
-finding a reasonable balance is important, but they weren't the bottleneck I thought they were.  
-==The real cost was hidden in overdraw==, in work happening late in the pipeline, after most of the heavy lifting had
-already been done.
+finding a reasonable balance is important, but they weren't the bottleneck I thought they were.
 
-Understanding that shifted the focus of the entire system. Instead of obsessing over geometry counts, I started asking a
-different question: how can I avoid doing work that I already know won't matter?
+**The real cost was hidden in overdraw**: shading the same pixels over and over, only to throw most of that work away.
+
+This moment of enlightenment shifted the focus of the entire system. Instead of obsessing over geometry counts, I started asking a
+different question: _how can I avoid doing work I already know won't matter?_

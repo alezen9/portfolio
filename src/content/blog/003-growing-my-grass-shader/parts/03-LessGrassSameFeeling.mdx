@@ -7,7 +7,7 @@ Grass is one of those things where the brain does a lot of the work for you. You
 motion, and color. As long as those cues are there, the field still feels full, even if a surprising amount of geometry
 is missing.
 
-That observation opened the door to another small but very effective trick: stochastic thinning.
+That observation opened the door to another small but very effective trick: **stochastic thinning**.
 
 Instead of trying to render every blade everywhere, I let probability do some of the work. Close to the player, density
 stays intact. As you move farther away, blades start disappearing, not in rings, not in obvious patterns, but randomly,
@@ -19,10 +19,11 @@ the same.
 At its core, the idea turned out to be very simple.
 
 For each blade, I look at its distance from the player and remap it into a normalized `0` &rarr; `1` range. Inside a near
-radius (`R0`), blades are always kept. Beyond a far radius (`R1`), only a small percentage survives (`pMin`). In between, the probability
-fades smoothly.
+radius (`R0`), blades are always kept. Beyond a far radius (`R1`), only a small percentage survives (`pMin`). In between, the
+probability fades smoothly.
 
-In simplified form, it looks like this:
+As with the visibility check from the previous section, here's the full implementation of the stochastic thinning function I
+ended up with:
 
 ```typescript
 const computeStochasticKeep = Fn(
@@ -88,8 +89,8 @@ far full density extends, how quickly it thins out, and how sparse the far grass
 <br />
 
 With my current values: a roughly 130&times;130 unit patch holding about 1.18 million blades, a dense inner radius of 10
-units (`R0`), a thinning radius of 60 (`R1`), and a minimum keep probability of 0.1 (`pMin`), more than half of the
-blades are removed on average across the whole field (not just inside the frustum).
+units (`R0 = 10`), a thinning radius of 60 (`R1 = 60`), and a minimum keep probability of 10% (`pMin = 0.1`), more than half of
+the blades are removed on average across the whole patch (not just inside the frustum).
 
 As Nole (Novak Djokovic) would say: "Not too bad" :)
 

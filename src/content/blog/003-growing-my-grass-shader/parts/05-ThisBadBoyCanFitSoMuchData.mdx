@@ -5,61 +5,85 @@ import ssboMeme from "../assets/ssbo_meme.webp?url";
 
 With the bigger pieces finally falling into place, I allowed myself a small side quest.
 
-Nothing was broken. Performance was already in a good place. This wasn't about fixing a bottleneck or chasing extra FPS.
+Nothing was broken. Performance was already in a good place. This was not about fixing a bottleneck or chasing extra FPS.
 I was simply curious.
 
-I had heard about bit packing before, but I had never actually gone down that rabbit hole. It always felt like one of
-those techniques you know exists, but never quite touch unless you really need it. This felt like a good opportunity to
-finally explore it properly.
+I had heard about **bit packing** before, but I had never really used it in practice. It always felt like one of those
+techniques you know exists, but only reach for when you absolutely have to. This felt like a good opportunity to finally
+understand it properly, on a system I already trusted.
 
-At that point, each grass blade was already carrying a fair amount of state: offsets, scale, wind parameters, visibility
-flags, noise factors. In earlier iterations I had a few `vec4` buffers, three if I recall corretly, with slightly less state
-overall. In the current version, everything fits into one `vec4` plus a single extra `float`, which I later added for vertical
-displacement, and has still plenty of room left to store more data.
+At that point, each grass blade was already carrying quite a bit of state: offsets, scale, wind parameters, visibility,
+noise factors. In earlier iterations, all of this lived across multiple `vec4` buffers. In the current version, the same
+information fits into a single `vec4`, plus one extra `float` for vertical displacement, with room left to spare.
 
-Memory usage is obviously lower this way, even if it wasn't a real problem to begin with. That alone didn't justify the
-effort. What interested me more was understanding how and when this kind of packing makes sense.
+That alone was not the motivation. What interested me was how this works, and when it actually makes sense.
 
-Conceptually, bit packing is about accepting that not all data deserves the same precision.
+The core idea is simple: not all data deserves the same precision.
 
-A grass blade doesn't need a full 32-bit float to say whether it's visible. It doesn't need perfect precision to store a wind phase, a
-scale factor, or a small rotation. Most of these values live in tight ranges, or are simple on/off flags.
+A grass blade does not need a full float to say whether it is visible. It does not need perfect precision for a small
+rotation angle, a wind phase, or a noise factor that is already random by design. Most values live in tight ranges, or
+are binary choices. Instead of giving each one its own float, I treat a single float as a small container.
 
-So instead of giving each one its own float, I started treating a single value as a tiny container.
+Each value is first mapped into a known range, then quantized into a fixed number of steps, stored at a specific offset,
+and later decoded back into an approximation. The loss of precision is intentional and controlled.
 
-I take a number with a known range, map it into a fixed number of discrete steps, and store it in a specific slice of bits. Later,
-I reverse the process and reconstruct an approximation of the original value.
-
-Here's what that looks like at a very concrete level:
+Conceptually, imagine starting from a single float that currently stores zero:
 
 ```
-initial value (all bits zero)
 00000000 00000000 00000000 00000000
-
-after storing visibility = 1 in bit 0
-00000000 00000000 00000000 00000001
-
-after storing yaw angle in bits 1-8
-00000000 00000000 00000010 10000001
-                         ↑ ↑↑↑↑↑↑↑
-                         quantized angle (8 bits)
 ```
 
-During the process, a number like `0.50334532` might come back as `0.503`. That loss of precision is real, but for grass, after a bit of tuning it's
-visually meaningless. Some values needed more care than others: positions and height offsets required finer granularity, while
-things like yaw rotation could be heavily quantized without anyone noticing, since they're already randomized by design.
+Now suppose I want to store two things inside it:
 
-> Although we talk about a "32-bit value", this is still a floating-point number. In practice, that means I'm not using all 32 bits
-> freely. A float gives you about 24 bits of reliable integer precision (the mantissa), and I deliberately stay within that budget.
->
-> That's not a limitation I ran into, it's one I chose.
->
-> By keeping the total number of packed bits under that ~24-bit threshold, I avoid precision loss and bit corruption entirely. Flags
-> stay stable, angles decode consistently, and everything round-trips safely. The remaining loss of precision comes only from
-> intentional quantization, not from floating-point artifacts.
+- a visibility flag, either `0` or `1`
+- a yaw angle in the range `[0 .. 2π)`
 
-I won't go deep into the helpers here, but if you're curious, all the packing and unpacking utilities live in
-[this](https://github.com/alezen9/revo-realms/blob/feat/new-world/src/utils/TSLUtils.ts) dedicated file that I reuse across systems.
+First, the flag. I reserve one bit at offset `0`. Writing `1` into that slot simply flips the lowest bit:
+
+```
+00000000 00000000 00000000 00000001
+                                  ↑
+                                  visibility flag
+```
+
+Next, the angle. I decide that 7 bits are enough, which gives me 127 discrete steps over `[0 .. 2π)`.
+An angle like `45°` is first converted to radians, then mapped to an integer code:
+
+```typescript
+const angle = Math.PI / 4; // 45deg
+const steps = 2 ** 7 - 1; // our 127 discrete steps
+const quantized = Math.round((angle / Math.PI) * 2 * steps); // results in the number 16
+// 16 in binary is 0010000 (7 bits because of our choice)
+```
+
+And that is what I actually store, the integer `16`, not the original angle. That integer code is written starting at
+offset `1`, right after the flag:
+
+```
+                           quantized angle
+                           ↓↓↓↓↓↓↓
+00000000 00000000 00000000 00100001
+                                  ↑
+                                  visibility flag
+```
+
+The final value is still just a single floating-point number. When unpacking, the process is reversed: extract the bits
+at each offset, convert them back into their original ranges, and accept the small approximation error that comes from
+quantization.
+
+Even though this is a float, it works reliably because floats can represent integers exactly up to a certain size. As
+long as the packed payload stays below that threshold, values round-trip cleanly. I am not reinterpreting raw bits or
+touching exponent fields. I am encoding values arithmetically into a range the float can represent without ambiguity.
+Any loss of precision comes from quantization I chose, not from floating-point quirks.
+
+In practice, this lets me pack things like:
+
+- single-bit flag for visibility
+- unit ranges for noise factors
+- bounded ranges for wind vectors
+- quantized scales and height offsets
+
+all inside one float lane, while keeping the system predictable and easy to reason about.
 
 <br />
 
@@ -69,21 +93,20 @@ I won't go deep into the helpers here, but if you're curious, all the packing an
       src={ssboMeme}
       alt="Car salesman meme - This bad boy can fit so much data"
     />
-    <figcaption>What I think about when I pick titles...</figcaption>
+    <figcaption>Memes are always the answer</figcaption>
   </figure>
 </Layout>
 
 <br />
 
-After implementing this, I didn't suddenly gain a bunch of extra performance. That was never the goal, and I don't have
-measurements claiming otherwise. The most obvious win is the reduction in memory footprint, which is nice but not
-game-changing on its own.
+Did this suddenly make the grass faster? Not really. That was never the point.
 
-What really mattered to me was everything else. Grass may not have needed bit packing, but I now understand it because I've actually
-used it. The knowledge I gained is far more valuable to me than a few saved bytes in this specific system.
+What it did give me was a better mental model. Bit packing stopped being an abstract idea and became something concrete I
+could use, debug, and trust. If I ever run into a system where memory layout or bandwidth really does matter, I will not
+be starting from zero. That alone made the detour worth it.
 
-It turned a vague concept into something concrete, and that experience is now part of my toolbox. If I ever run into a
-system where memory layout or bandwidth really does matter, I won't be starting from zero.
+<br />
 
-That's ultimately why this section exists at all: not because bit packing saved the day here, but because it was a
-worthwhile detour, and one I'm glad I took.
+If you are curious, all the packing and unpacking helpers and underlying implementations live in
+[this](https://github.com/alezen9/revo-realms/blob/feat/new-world/src/utils/TSLUtils.ts)
+dedicated file that I reuse across systems.

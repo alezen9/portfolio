@@ -3,13 +3,20 @@ import frustum720p from "../assets/frustum_720p.mp4?url";
 
 ## 2. Out of sight, out of the pipeline
 
-Once I started looking at the problem through the lens of overdraw, a very natural question followed:
-if a blade is not meant to be visible, why am I letting it go all the way through the pipeline?
+Once I started looking at the problem through the lens of overdraw, a very natural question followed: _if a blade is not meant
+to be visible, why am I letting it go all the way through the pipeline?_
 
-At first, my instinct was to "outsmart" the renderer by adding my own visibility logic on the GPU. I computed per-instance
-frustum checks in the same compute shader I was already using for other per-instance traits, and felt pretty good about it.
+First thing that came to mind was frustum culling. A visibility check done CPU-side which tests the bounds of a mesh with the
+camera frustum volume and only if the object intersects, a draw call for it is dispatched.
 
-Here is the full implementation of the visibility check:
+In Three.js this is built in and enabled by default. For instanced meshes, however, it works at the draw call level: either
+all instances are sent, or none of them are.
+
+Although per-instance is a little bit more complex, my first instinct was to add my own visibility logic GPU side, in the same
+compute shader I used to compute other per-instance traits. Something relatively simple, cheap and conservative, not necessarily
+an exact geometric culling.
+
+Here is the full implementation of the visibility check function I ended up after some trials:
 
 ```typescript
 const computeVisibility = Fn(
@@ -54,12 +61,9 @@ const computeVisibility = Fn(
 );
 ```
 
-The result is a single `0/1` flag per blade: inside the padded frustum or not.
+It returns a single `0` or `1` flag per blade respectively for outside the padded frustum or inside.
 
-This isn't exact geometric culling. Just a cheap, conservative test that behaves well for my camera and is good enough
-to skip work most of the time.
-
-And the result visualized:
+<br />
 
 <Layout class="lg-small">
   <figure>
@@ -77,11 +81,12 @@ And the result visualized:
 
 <br />
 
+The plan was to use this flag in order to avoid fragment work for blades that were outside the view.
+
 Later on, I learned that this wasn't as clever as I initially thought, or at least not in the way I had framed it.
 
-WebGPU, like any modern renderer, already performs frustum checks. Even with instanced meshes, primitives that fall
-completely outside the camera frustum don't generate fragments. The vertex shader still runs, but if nothing intersects
-the frustum, there's nothing to rasterize, and therefore no fragment shader work to do.
+Even without any custom culling, anything fully outside the frustum won't generate fragments. The vertex shader may still run, but
+if it doesn't intersect the clip volume, nothing gets rasterized—so the expensive part (fragment shading) doesn't happen.
 
 At first glance, my implementation might look like pure redundancy, extra work without real benefit, but that's not
 actually the case.
@@ -91,8 +96,8 @@ I built this test for a reason, but that doesn't mean I can't use it for a diffe
 My compute shader, other than this visibility check, takes care of positioning and wrapping instances, sampling
 textures to determine where grass is allowed on the map, evaluating noise-driven wind, handling trail logic, and more.
 
-It does all of this for every instance, every other frame (since I'm throttling it), even though roughly only one third
-of the blades are visible at any given moment.
+It does all of this for every instance, every other frame (a deliberate trade: half the compute work, same perceived motion), even
+though roughly only one third of the blades are visible at any given moment.
 
 So instead of thinking in terms of culling, I started thinking in terms of early refusal.
 
@@ -105,13 +110,12 @@ clearly outweighed the costs.
 The benefits don't stop there though.
 
 I combine this frustum check with stochastic thinning (more on this in the next section) and alpha mapping (where grass
-is allowed on the map). The result is a single flat boolean: visible or not, a simple signal that helps the pipeline
-avoid generating fragments for instances that shouldn't contribute anything.
+is allowed on the map).
 
 In earlier versions, I made the mistake of using this flag inside the fragment shader and calling `discard`. That felt
-logical at the time: if it shouldn't be drawn, just discard it.
-But `discard` happens after the fragment shader has already run. The GPU still did the work; I just told it to throw the
-result away. In a system already dominated by overdraw, that's about the worst thing you can do.
+logical at the time: if it shouldn't be drawn, just discard it. But `discard` happens after the fragment shader has already run.
+The GPU still did the work; I just told it to throw the result away. In a system already dominated by overdraw, that's about
+the worst thing you can do.
 
 The better option turned out to be much simpler.
 
@@ -135,27 +139,31 @@ class GrassMaterial extends SpriteNodeMaterial {
 }
 ```
 
-It's not "true" GPU culling in the sense of removing instances from the draw call. The vertex shader still runs, and the
-instance is still technically there.
-But for my workload, where fragment cost is the real enemy, this small trick makes a very real difference.
+**It's not true GPU culling** in the sense of removing instances from the draw call. The vertex shader still runs, and the
+instance is still technically there. But for my workload, where fragment cost is the real enemy, this small trick makes a very
+real difference.
 
-That's where the gain actually comes from: not from “beating” the renderer, but from aligning my own logic with how
+That's where the gain actually comes from: not from "outsmarting" the renderer, but from aligning my own logic with how
 the pipeline really behaves.
 
-One could rightfully ask: why not actual culling with compaction and indirect draw calls?
+One could rightfully ask: _"Why not actual culling with compaction and indirect draw calls?"_
 
 I did briefly explore it: fully compacting visible instances using a prefix sum compact algorithm and indirect draws.
+
 The theory was quite clear after some pen-and-paper work the old-fashioned way, and it's a powerful approach.
 In practice, it's also a completely different level of complexity: parallel algorithms, synchronization, multiple passes,
 and a lot more surface area for bugs.
 
-I gave it a try one evening, got incorrect results and frame drops, and decided to step back. I might give it a try again
-in the future now that WebGPU has finally good support on all three major browsers but for now, I'll leave it be. For the
-curious, [here](https://github.com/alezen9/revo-realms/blob/feat/almost-real-frustum-culling-grass/src/entities/Grass.ts#L505)
-is the link to my attempted implementation, ignore it, laugh at it, learn from my mistakes, up to you :)
+I gave it a try one evening, got incorrect results and frame drops, and decided to step back. I might give it another try in the
+future, if not out of necessity, then perhaps out of curiosity, now that WebGPU has solid support across all major browsers. For
+now, I'll leave it be.
 
-Vertex processing was never my bottleneck. Overdraw was. The combination of early visibility decisions, moving invisible
-geometry out of the frustum, and avoiding `discard` already removed a large amount of wasted work. The system was fast,
+> For the curious, [here](https://github.com/alezen9/revo-realms/blob/feat/almost-real-frustum-culling-grass/src/entities/Grass.ts#L505)
+> is the link to my attempted implementation.  
+> Ignore it, laugh at it, learn from my mistakes, up to you :)
+
+To sum things up: vertex processing was never my bottleneck, overdraw was. The combination of early visibility decisions, moving
+invisible geometry out of the frustum, and avoiding `discard` already removed a large amount of wasted work. The system was fast,
 stable, and simple enough to reason about.
 
 Sometimes the right optimization is not the most advanced one, it's the one that solves your problem without turning the
