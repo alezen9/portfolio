@@ -51,8 +51,9 @@ An angle like `45°` is first converted to radians, then mapped to an integer co
 
 ```typescript
 const angle = Math.PI / 4; // 45deg
-const steps = 2 ** 7 - 1; // our 127 discrete steps
-const quantized = Math.round((angle / Math.PI) * 2 * steps); // results in the number 16
+const steps = 2 ** 7 - 1; // our 127 discrete steps for 7 bits
+const normalized = angle / (2 * Math.PI); // to rangee [0..1)
+const quantized = Math.round(normalized * steps); // results in the number 16
 // 16 in binary is 0010000 (7 bits because of our choice)
 ```
 
