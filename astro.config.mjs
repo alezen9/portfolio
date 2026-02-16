@@ -1,9 +1,7 @@
-// @ts-check
 import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import svelte from "@astrojs/svelte";
-// import preact from "@astrojs/preact";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { remarkHighlightPlugin } from "./src/utils/remarkHighlightPlugin";
@@ -16,7 +14,6 @@ export default defineConfig({
   trailingSlash: "ignore",
   integrations: [
     sitemap(),
-    // preact(),
     svelte(),
     mdx({
       rehypePlugins: [rehypeScopedH3Ids, rehypeTargetBlank, rehypeKatex],
