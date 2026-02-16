@@ -137,6 +137,13 @@
       stroke-linecap="round"
       stroke-linejoin="round"
     />
+    <path
+      class="letter-jera"
+      d="M163.75 69.9473L111.25 126.447L131.25 155.75M143.25 118.75L162.75 146.947L111.25 203.447"
+      stroke-width="14"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
   </g>
 
   <circle cx="137.852" cy="137.104" r="104" stroke-width="2"></circle>
@@ -184,7 +191,9 @@
       rotate: -360deg;
     }
   }
-
+  .rune.jera path.frame {
+    rotate: -90deg;
+  }
   .rune.raido path.frame {
     rotate: -60deg;
   }
@@ -211,6 +220,9 @@
     display: none;
   }
   .rune.tiwaz .letters path:not(.letter-tiwaz) {
+    display: none;
+  }
+  .rune.jera .letters path:not(.letter-jera) {
     display: none;
   }
   .rune.raido .letters path:not(.letter-raido) {

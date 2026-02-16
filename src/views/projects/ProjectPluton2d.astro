@@ -1,0 +1,149 @@
+---
+import IconGitHub from "@components/icons/IconGitHub.astro";
+import ProjectSlide from "./project-slide.astro";
+import Rune from "./Rune.svelte";
+import IconExternalLink from "@components/icons/IconExternalLink.astro";
+import IconNpm from "@components/icons/IconNpm.astro";
+---
+
+<style is:global>
+  .pluton-2d {
+    --text-accent: #7eb6ad;
+  }
+  .pluton-2d .mosaic {
+    grid-template-areas:
+      "a a a c c"
+      "a a a r r"
+      "a a a d d"
+      "b b b d d"
+      "b b b w w";
+  }
+
+  .pluton-2d .mosaic img {
+    object-position: center;
+    background-color: white;
+  }
+</style>
+
+<ProjectSlide class="pluton-2d">
+  <Fragment slot="title">Pluton 2D</Fragment>
+  <Fragment slot="year">2026</Fragment>
+  <Fragment slot="description">
+    Pluton 2D started while building another side project where I needed
+    reactive blueprints and technical drawings without wrestling raw SVG tags.
+    It evolved into a TypeScript <code>SVG engine</code> centered on a path-first
+    API, with scheduled rendering, batching, per-frame updates, reactivity, and diffing
+    behind a simple interface. What began as a focused wrapper is now a reusable
+    foundation I can extend toward richer tooling while keeping the core predictable
+    and easy to reason about.
+  </Fragment>
+  <Fragment slot="tags">
+    <span class="tag">TypeScript</span>
+    <span class="tag">SVG</span>
+    <span class="tag">NPM</span>
+  </Fragment>
+  <Fragment slot="highlights">
+    <li>
+      <span class="highlight">Built</span> the runtime around a path-first model,
+      treating geometry as composable commands instead of piling up one-off SVG tags.
+    </li>
+    <li>
+      <span class="highlight">Implemented</span> scheduled draws, batching, and
+      static/dynamic group usage so unchanged geometry avoids per-frame DOM churn.
+    </li>
+    <li>
+      <span class="highlight">Designed</span> a reactive params and diffing flow
+      where only changed state commits, keeping updates predictable and easy to reason about.
+    </li>
+    <li>
+      <span class="highlight">Packaged</span> practical drafting tools out of the
+      box: dimensions builder, hatch fill caching, pan/zoom camera, grid/axes, and
+      an optional pencil-style filter.
+    </li>
+  </Fragment>
+  <Fragment slot="footer">
+    <a
+      title="Dig in the code on Github"
+      class="icon-link"
+      aria-label="Pluton 2D GitHub repo"
+      rel="noopener"
+      href="https://github.com/alezen9/pluton-2d"
+      target="_blank"
+    >
+      <IconGitHub class:list={["animate", "icon-github"]} />
+    </a>
+    <a
+      title="Check it live"
+      class="icon-link"
+      aria-label="Documentation"
+      rel="noopener"
+      href="https://pluton-2d.aleksandargjoreski.dev/"
+      target="_blank"
+    >
+      <IconExternalLink class:list={["animate", "icon-demo"]} />
+    </a>
+    <a
+      title="Check it on NPM"
+      class="icon-link"
+      aria-label="NPM page"
+      rel="noopener"
+      href="https://www.npmjs.com/package/pluton-2d"
+      target="_blank"
+    >
+      <IconNpm class:list={["animate", "icon-npm"]} />
+    </a>
+  </Fragment>
+
+  <Fragment slot="mosaic">
+    <figure
+      class="tilt main"
+      style="grid-area: a;"
+      title="I-Beam with dimensions and hatch fill"
+    >
+      <img
+        src="/projects/pluton-2d/a.svg"
+        alt="Pluton 2D - I-Beam"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure
+      class="tilt"
+      style="grid-area: b;"
+      title="Not just technical stuff :)"
+    >
+      <img
+        src="/projects/pluton-2d/b.svg"
+        alt="Pluton 2D - Strawhat Jolly Roger showcase"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure
+      class="tilt"
+      style="grid-area: c;"
+      title="You can get a sketch feeling with the built-in filter"
+    >
+      <img
+        src="/projects/pluton-2d/c.svg"
+        alt="Pluton 2D - Pencil filter example"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <figure class="tilt" style="grid-area: d;" title="Amaterasu!">
+      <img
+        src="/projects/pluton-2d/d.svg"
+        alt="Pluton 2D - Akatsuki symbol"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <Rune client:load className="jera" />
+    <p class="caption">
+      <span class="name">Jera</span>
+      <span>From sketch into structure</span>
+      <span>Craft renewed each cycle</span>
+    </p>
+  </Fragment>
+</ProjectSlide>
