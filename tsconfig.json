@@ -3,7 +3,6 @@
   "include": [".astro/types.d.ts", "**/*"],
   "exclude": ["dist"],
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@components/*": ["src/components/*"],
       "@islands/*": ["src/components/islands/*"],
@@ -12,8 +11,6 @@
       "@content/*": ["src/content/*"],
       "@views/*": ["src/views/*"]
     },
-    "strictNullChecks": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "preact"
+    "strictNullChecks": true
   }
 }

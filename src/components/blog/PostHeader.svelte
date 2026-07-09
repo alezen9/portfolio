@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type BlogPost } from "src/content.config";
+  import { type BlogPost } from "../../content.config";
   import { onMount, type Snippet } from "svelte";
   import { fade } from "svelte/transition";
 

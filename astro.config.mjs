@@ -1,4 +1,5 @@
 import { defineConfig } from "astro/config";
+import { unified } from "@astrojs/markdown-remark";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import svelte from "@astrojs/svelte";
@@ -12,14 +13,13 @@ export default defineConfig({
   site: "https://aleksandargjoreski.dev",
   base: "/",
   trailingSlash: "ignore",
-  integrations: [
-    sitemap(),
-    svelte(),
-    mdx({
+  markdown: {
+    processor: unified({
       rehypePlugins: [rehypeScopedH3Ids, rehypeTargetBlank, rehypeKatex],
       remarkPlugins: [remarkHighlightPlugin, remarkMath],
     }),
-  ],
+  },
+  integrations: [sitemap(), svelte(), mdx()],
   devToolbar: {
     enabled: false,
   },

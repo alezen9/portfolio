@@ -2,7 +2,7 @@
 import { getCollection } from "astro:content";
 import Layout from "./layout.astro";
 import FormattedDate from "@components/ui/FormattedDate.astro";
-import type { BlogPost } from "src/content.config";
+import type { BlogPost } from "../../content.config";
 import type { CollectionEntry } from "astro:content";
 
 type RawPost = CollectionEntry<"blog">;
@@ -39,7 +39,6 @@ const posts = (await getCollection("blog"))
   .title {
     font-size: 1.15em;
     font-weight: bolder;
-    letter-spacing: 5;
     color: color-mix(in oklab, var(--text-accent) 65%, var(--text-color));
   }
 
