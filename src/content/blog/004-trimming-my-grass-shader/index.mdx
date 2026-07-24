@@ -1,0 +1,50 @@
+---
+title: "Trimming my Grass Shader"
+subtitle: "Coming back to cut most of what I once grew"
+description: "A return to the grass system from Growing my Grass Shader: fixing a stubborn popping bug, reusing a texture I'd been sitting on the whole time, a wind system that owes a debt to Ghost of Tsushima, and finally getting real GPU culling to work."
+pubDate: "2026-07-12"
+state: "Draft"
+ogImageSrc: "/og-images/article-004.jpg"
+---
+
+import PostHeader from "@components/blog/PostHeader.svelte";
+import PostFooter from "@components/blog/PostFooter.astro";
+import Intro from "./parts/Intro.mdx";
+import TickTickTockTockPickAClock from "./parts/09-TickTickTockTockPickAClock.mdx";
+import RollingTheDiceProperlyFinally from "./parts/10-RollingTheDiceProperlyFinally.mdx";
+import AWindFromTheEast from "./parts/11-AWindFromTheEast.mdx";
+import GPUCullingBestDealEver from "./parts/12-GPUCullingBestDealEver.mdx";
+import GPUCullingAimingHigher from "./parts/13-GPUCullingAimingHigher.mdx";
+import Outro from "./parts/Outro.mdx";
+import ExploreMore from "./parts/ExploreMore.mdx";
+
+{/* prettier-ignore */}
+<PostHeader client:load="svelte" pubDate={new Date(frontmatter.pubDate)}>
+# Trimming my Grass Shader
+</PostHeader>
+
+<Intro />
+<br />
+<br />
+<br />
+---
+<TickTickTockTockPickAClock />
+<br />
+<br />
+<RollingTheDiceProperlyFinally />
+<br />
+<br />
+<AWindFromTheEast />
+<br />
+<br />
+<GPUCullingBestDealEver />
+<br />
+<br />
+<GPUCullingAimingHigher />
+<br />
+<br />
+<Outro />
+<br />
+<ExploreMore />
+{/* TODO: PostFooter xUrl / linkedInUrl once this is actually posted */}
+<PostFooter />

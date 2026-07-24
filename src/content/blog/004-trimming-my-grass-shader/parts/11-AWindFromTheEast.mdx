@@ -1,0 +1,215 @@
+import Layout from "@components/blog/Layout.astro";
+import wind720p from "../assets/wind720p.mp4?url";
+import windPoster from "../assets/posters/wind720p.webp?url";
+
+## 11. A wind from the East
+
+About two years ago I played Ghost of Tsushima for the first time.
+
+I had already seen screenshots and clips from other people's playthroughs, and those were what first inspired the grass field. Playing
+it myself was a completely different story though.
+
+I could stop almost anywhere just to admire the scenery, which happened quite often because the game made almost everywhere worth
+looking at.
+
+Among everything that made me fall in love with it, the guiding wind is still one of my favourite features.
+
+It simply looked beautiful! It was genuinely useful and it let the HUD stay remarkably clean.
+
+Swipe upward and the world itself points towards your destination. No line painted on the ground and no marker asking to be
+followed every second.
+
+At the time of writing, figuratively speaking of course, I am playing Ghost of Yotei, which uses the same mechanism, but Tsushima
+is where the idea came from for me.
+
+Revo already had directional wind around the time I shared the previous article. The idea of making it visible with particles and
+lines had been there since I first added it. I just kept postponing that part until now.
+
+I do not want to disappear into every navigation system in the middle of a grass article. The particles and streaks are new, they
+move together with the grass, and that makes them connected enough for this little detour. Revo is open source anyway, so the
+radial menu, landmarks and everything around them are there for anyone curious enough to dig further.
+
+<br />
+
+### One wind to rule them all
+
+Before the `WindManager`, trees, flowers and grass each had their own version of wind. They could all move, but there was no shared
+directional event feeding them the same information.
+
+The manager filled that gap. It runs on the CPU, owns the direction and intensity, then exposes them as TSL uniforms that shaders
+across Revo can consume:
+
+```typescript
+export class WindManager {
+  private _uDirection = uniform(new Vector2(0, -1));
+  private _uIntensityDirectional = uniform(0);
+
+  // ...
+
+  get uDirection() {
+    return this._uDirection;
+  }
+
+  get uIntensityDirectional() {
+    return this._uIntensityDirectional;
+  }
+}
+```
+
+Selecting a discovered landmark gives it a target, and a trackpad swipe up starts four simple phases:
+
+1. **Calculate direction** &rarr; Point from the player's current position towards the selected landmark.
+2. **Ramp intensity** &rarr; Smoothly increase the directional wind until it reaches full strength.
+3. **Hold** &rarr; Keep it there for 3 seconds.
+4. **Decay** &rarr; Gradually bring the directional intensity back to zero.
+
+The direction is calculated once when the gust begins. Moving during those few seconds does not rotate it halfway through. Once it
+ends, another swipe calculates a fresh direction, while reaching the landmark clears the target automatically.
+
+Grass, flowers, particles and streaks all receive that same direction and intensity. Each system still decides how much it bends,
+how fast it moves and what full strength means for it.
+
+> One might rightfully ask: "Why didn't you also mention trees?"
+>
+> Fair question. Sharp eyes. Their shadows are currently baked, and making the trees sway much more than a subtle oscillation would
+> most likely break the illusion. Maybe in the not so distant future...who knows :)
+
+<br />
+
+### Volumetric air
+
+The names moved around a little while I worked on this. They started as lines, the longer version became ribbons, and the shorter
+trails I eventually kept are now streaks. Apparently even naming them needed a few passes :)
+
+The current visual layer uses a `56` &times; `56` field of sprite particles, `3,136` in total, and `12` streaks.
+
+I see the small particles as pollen or dust giving some volume to the air. The streaks are the readable part of the gust: long,
+soft strokes making the direction obvious without adding an arrow to the screen.
+
+<br />
+
+<Layout columns={2} gap={1}>
+  <figure>
+    <iframe
+      src="https://www.youtube-nocookie.com/embed/FEbS-_VZc0w?autoplay=1&mute=1&loop=1&playlist=FEbS-_VZc0w&controls=0&playsinline=1&rel=0"
+      title="Ghost of Tsushima guiding wind"
+      loading="lazy"
+      allow="autoplay; clipboard-write; encrypted-media; web-share"
+      referrerPolicy="strict-origin-when-cross-origin"
+      allowFullScreen
+      style={{
+        width: "100%",
+        aspectRatio: "16 / 10",
+        border: 0,
+        borderRadius: "var(--border-radius)",
+      }}
+    />
+    <figcaption>
+      Guiding wind in Ghost of Tsushima - by
+      <a href="https://www.youtube.com/@hijackedgames5258">Hijacked Games</a>
+    </figcaption>
+  </figure>
+  <figure>
+    <video
+      loading="lazy"
+      src={wind720p}
+      poster={windPoster}
+      type="video/mp4"
+      width={1158}
+      height={720}
+      autoplay
+      loop
+      muted
+      playsInline
+    ></video>
+    <figcaption>Directional wind in Revo Realms - by me</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+The particles were the simpler half.
+
+Their field covers `170` world units and stays centred around the player. I begin with a `56` &times; `56` grid, then give every
+cell a stable random offset. The distribution remains fairly even without looking like graph paper.
+
+Everything one particle needs fits inside one `vec4`: the first three components hold its XYZ position, while `w` stores its age.
+
+The initial compute pass fills that buffer, then the update pass takes over. Nothing on the CPU creates or removes individual
+particles.
+
+Age decides when a particle gets another life. Each one receives a slightly different lifetime from its stable hash, and once that
+time expires the compute shader reuses the same buffer slot. It places the particle on the upwind half of the field, anywhere across
+its width, then moves its age slightly below zero to add a short delay before it becomes visible again.
+
+Both the initial spawn and every later respawn sample the terrain height and grass mask at the new position. A particle over grass
+receives that terrain height plus a small random offset. One outside it gets a height of `0`, which the material recognises as an
+invalid spawn and keeps hidden until the next attempt.
+
+I only sample the grass mask at that point. Once a valid particle starts travelling, the wind is free to carry it above sand or
+water. Checking the mask continuously would make it pop in and out every time it crossed the edge of a grassy area.
+
+The shared wind direction provides the forward movement. A sample from the noise atlas adds some sideways and vertical drift,
+along with small changes in speed, so the whole field does not travel as one suspiciously organised block. The field follows the
+player, wrapping particles around its edges as Revo moves.
+
+The compute simulation continues between gusts, even while every particle is scaled down to zero. A stable hash gives each one a
+slightly different point during the intensity ramp at which it starts growing into view. The same happens in reverse during the
+decay, so they disappear gradually without another CPU-side fade or any transparency tricks.
+
+Keeping this small simulation alive gives every gust something already in motion instead of a field visibly starting from rest. I
+have not measured it as a problem worth complicating yet.
+
+<br />
+
+### A trail of positions
+
+The visible lines took a few more attempts.
+
+The first version gave every line one position and asked the material to build the whole body around it with sine curves and noise.
+The result could move nicely, but a long shape knowing only the terrain height under its centre was always going to meet a hill
+eventually.
+
+I tried sampling the terrain for every vertex. That stopped the line from passing straight through the ground. The movement no
+longer looked as smooth though, and I could suddenly see the individual segments as it curved.
+
+The next experiment used a different representation, and for a little while I kept both versions around while deciding which one I
+preferred. The first streaks were quite fat and very linear. Then they undulated too much. I kept adjusting their width, heading,
+length and speed until the shorter trails looked much closer to what I had in mind, then removed the ribbons and kept those.
+
+The current version is easier to picture as one moving point dragging a short memory of where it has been. That point is the head
+of the streak.
+
+In code, every streak is an instance of the same plane, split into `24` segments. Its shape comes from `25` positions stored in an
+SSBO: one current head and the history needed by the remaining segments. Each point stores its XYZ position, with `w` currently
+unused. A second, much smaller buffer stores one age per streak. That is all the per-streak state stored in the two buffers.
+
+The initial compute pass places every streak somewhere inside the field and gives it a different starting age. From there the update
+pass owns its lifecycle. A negative age keeps it waiting, reaching zero lets it move and reaching the end of its lifetime sends it
+to a new position with another short delay. The CPU never needs to spawn a streak or move one around.
+
+The head follows the direction from `WindManager`, although not perfectly. The noise atlas bends that direction slightly, a sine
+adds a gentle swirl and a few stable variations change the speed. The field itself is centred a little ahead of the player along
+that same wind direction.
+
+As the head moves, a small CPU-side timer decides when its position should be recorded. Every `0.075` seconds the next slot in the
+ring buffer becomes the new head. The compute shader copies the previous position into that slot before moving it, while
+`uRecordPhase` describes how far the current interval has progressed.
+
+The material then walks backwards through that ring buffer. Each row of the segmented plane reads an older pair of positions and
+interpolates between them using `uRecordPhase`, which keeps the trail moving smoothly between recordings. Those neighbouring
+positions also provide the direction of the trail. Crossing it with the camera direction gives the material the sideways axis it
+needs to spread the vertices into a camera-facing strip.
+
+This representation also made the terrain problem much easier. The compute shader first settles the head's final XZ position,
+including wrapping or respawning, and only then samples the heightmap there. It gently moves the head towards that terrain height
+plus its own lift, and the resulting Y position becomes part of the recorded history.
+
+The material only reads those stored positions. It does not need to sample the terrain for every vertex anymore.
+
+If a streak wraps around the field or respawns somewhere else, all `25` positions move together. Otherwise the head would appear on
+one side while the tail stretched across the entire world trying to catch up. Different starting ages, lengths and speed pulses
+keep all `12` from marching across the screen in formation.
+
+I am glad I finally built this small piece before moving on to culling. I had wanted it in Revo since the first time I saw it done
+so well in someone else's game I loved.

@@ -1,5 +1,6 @@
 import Layout from "@components/blog/Layout.astro";
 import frustum720p from "../assets/frustum_720p.mp4?url";
+import frustumPoster from "../assets/posters/frustum_720p.webp?url";
 
 ## 2. Out of sight, out of the pipeline
 
@@ -68,13 +69,16 @@ It returns a single `0` or `1` flag per blade respectively for outside the padde
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={frustum720p}
+      poster={frustumPoster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>Rasterizing only visible grass</figcaption>
   </figure>
 </Layout>

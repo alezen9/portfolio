@@ -1,6 +1,7 @@
 import Layout from "@components/blog/Layout.astro";
 import waterNormalMap from "../assets/waterNormal.webp?url";
 import v2Video from "../assets/v2-720p.mp4";
+import v2Poster from "../assets/posters/v2-720p.webp?url";
 import bigBrainTime from "../assets/big-brain.webp?url";
 
 ## Chapter II: Normal textures
@@ -176,13 +177,16 @@ imagined.
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={v2Video}
+      poster={v2Poster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>The second iteration, with layered normal maps</figcaption>
   </figure>
 </Layout>

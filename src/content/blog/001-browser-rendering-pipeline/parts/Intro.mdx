@@ -1,8 +1,10 @@
 import Layout from "@components/blog/Layout.astro";
 import laggy from "../videos/laggy.mp4";
+import laggyPoster from "../videos/posters/laggy.webp?url";
 import smooth from "../videos/smooth.mp4";
-import poster from "../images/poster.webp?url";
+import smoothPoster from "../videos/posters/smooth.webp?url";
 import gifBigLebowski from "../videos/gif-big-lebowski.mp4";
+import gifBigLebowskiPoster from "../videos/posters/gif-big-lebowski.webp?url";
 
 Recently, while working on my portfolio website, I hit a performance issue that completely threw me off.
 
@@ -18,28 +20,30 @@ Before we go any deeper, here's Safari v18.6 before and after the fix:
 <Layout columns={2} gap={1}>
   <figure>
     <video
+      loading="lazy"
       src={laggy}
-      poster={poster}
+      poster={laggyPoster}
       type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>Before</figcaption>
   </figure>
   <figure>
     <video
+      loading="lazy"
       src={smooth}
-      poster={poster}
+      poster={smoothPoster}
       type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>After</figcaption>
   </figure>
 </Layout>
@@ -72,14 +76,16 @@ I added it even though it seemed like it shouldn't do anything.
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={gifBigLebowski}
+      poster={gifBigLebowskiPoster}
       type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "480 / 258" }}
-    />
+    ></video>
     <figcaption>Confusion of the highest orda!</figcaption>
   </figure>
 </Layout>

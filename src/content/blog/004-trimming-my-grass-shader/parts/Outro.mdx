@@ -1,0 +1,38 @@
+## Closing thoughts
+
+Well, that became considerably more than a small trim :)
+
+The previous article ended with me saying I might give real culling another try someday, "if not out of necessity, then perhaps out
+of sheer curiosity". Turns out I needed both. Performance gave me the reason to return, while curiosity gave me enough energy to
+walk into the same problem again knowing I could fail.
+
+I did fail at the prefix-sum version, at least for now. I also stopped dismissing the atomic approach without measuring it, and that
+was enough to finally ship real GPU culling. Revo is back at 120 FPS in the place that kept dropping to 100, with most of the grass
+never reaching the vertex stage at all.
+
+A lot of what I know about this corner of graphics came from people writing down what they struggled with. That is also why I still
+wanted to explain the prefix-sum version properly. If it saves someone an evening of staring at eight numbers on a piece of paper,
+or at least makes it a shorter evening, it did its job.
+
+For now the grass is dense, stable and cheap enough to stop thinking about, which is probably the nicest thing I can say about any
+system I maintain.
+
+Now I should probably stop staring at it for a little while. I feel a certain urgency to finish watching My Hero Academia in the
+next couple of months. I think I am somewhere in its second half now and I am loving it :D.
+
+Finishing Vinland Saga would be nice too, and I still have some of the Yotei Six to butcher.
+
+I will still do my best not to disappear for too long, keep learning new things and share whatever I learn along the way.
+
+<br />
+<br />
+<br />
+
+<blockquote data-type="frame">
+As with last time, everything described here lives in the Revo codebase: the grass in one folder now, not a single file anymore, 
+the schedulers and wind ambiance should also be easy to find. It's not meant as a reference implementation, but it might be useful 
+to see how the pieces connect in the real project.
+
+[Grass.ts](https://github.com/alezen9/revo-realms/blob/main/src/entities/Vegetation/Grass/Grass.ts) (may be subject to changes)
+
+</blockquote>

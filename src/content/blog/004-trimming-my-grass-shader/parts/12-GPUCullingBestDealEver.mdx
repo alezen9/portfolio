@@ -1,0 +1,319 @@
+import Layout from "@components/blog/Layout.astro";
+import skipStepsMeme from "../assets/skip_steps_meme.webp?url";
+import gpuCulling720p from "../assets/gpu_culling.mp4?url";
+import gpuCullingPoster from "../assets/posters/gpu_culling.webp?url";
+
+## 12. GPU culling: best deal ever
+
+Alright, finally, the juicy part :)
+
+In the previous article I reduced the amount of grass that could make it to the fragment shader through a chain of three checks:
+
+1. **Frustum culling** &rarr; reject blades outside the camera
+2. **Stochastic thinning** &rarr; gradually draw fewer blades further away
+3. **Alpha map** &rarr; do not grow grass where I had painted it out
+
+All three eventually produced one flag: `isVisible`.
+
+The compute shader used it to skip most of the heavier work for rejected blades. The material also moved the blades dropped by
+stochastic thinning and the alpha map outside the frustum, since those could still be on screen and create overdraw otherwise.
+
+This helped quite a lot. Every draw still started with all 1M blades though, so the GPU had to begin the vertex work for each one
+before the material could move the rejected ones away.
+
+My target for Revo has always been at least 120 FPS, mostly because that is the refresh rate of the laptop I use to build it and I
+really like how smooth it feels there. Most of the time it stayed around that target quite comfortably.
+
+While wandering around the map I did notice a few small hiccups every now and then though, and unfortunately I never managed to
+find a pattern behind them.
+
+The bottom-left corner of the map, close to the lake, was much easier to reproduce. It usually stayed around 105 to 110 FPS but
+could drop as low as 100. The "good" part was that the final build, without monitoring or debugging hooked up, ran smoothly enough
+for those drops to be basically unnoticeable on my machine.
+
+I still knew they were there in development though. Revo is also far from finished, so carrying that overhead into everything I
+still want to add did not sound great.
+
+I did try to send fewer vertices first by reducing the number of segments in each blade. It helped a bit, but not enough to
+justify how much the look changed once I pushed it further. I had pictured the grass as that soft, fluffy carpet since the
+beginning, and reducing the blades to what were basically triangles did not match that at all.
+
+So I went after the blade count instead.
+
+The CPU could not cull individual blades because it knew basically nothing about them. Their positions, wrapping and visibility
+all lived on the GPU. I could move the whole thing back to JavaScript and finally give the CPU enough information, though
+processing 1M blades there just to make the draw cheaper felt like a wonderful way to achieve the opposite.
+
+So... GPU culling it was. I had tried that once already, and my choice of route looked more or less like this:
+
+<br />
+
+<Layout class="lg-small" colMaxWidth="500px">
+  <figure>
+    <img src={skipStepsMeme} alt="Skipping steps meme" />
+    <figcaption>I mean, what can I say...</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+I dismissed the atomic solution almost immediately. Thousands of GPU threads competing for the same value sounded like an obvious
+bottleneck, so naturally I skipped it and jumped straight to prefix-sum compaction instead.
+
+Basically me walking directly into the final boss because it looked fun (and because I can be stubborn sometimes), just to get
+humbled fairly quickly.
+
+I already had the visibility decision in `isVisible`, so the atomic route was conceptually much simpler than prefix-sum
+compaction: if a blade was visible, it claimed a place in a new list and wrote its index there.
+
+I still had the same prejudice about the simpler solution, but I decided to give it a shot anyway before deciding it was a
+bottleneck, and it proved me wrong.
+
+It actually worked great.
+
+<br />
+
+### A ticket machine for grass
+
+A ticket machine is probably the simplest analogy here. The blades queue around one shared counter, where each one receives a
+unique number that becomes its position in the list of visible blades.
+
+It does not matter who gets served first. I only need the numbers to start at `0`, contain no gaps and never be handed to two
+blades at the same time.
+
+The operation behind all of this is `atomicAdd`:
+
+```typescript
+private visibleBladeIndices = instancedArray(config.COUNT, "uint");
+
+// ...all the previous grass work
+
+If(isVisible, () => {
+  // ...trail, wind and shadow updates
+
+  const drawIndex = atomicAdd(this.atomicCounter, 1);
+
+  // save the original blade index at its new compacted position
+  this.visibleBladeIndices.element(drawIndex).assign(instanceIndex);
+});
+
+// ...
+```
+
+When a blade calls `atomicAdd`, it receives the current value of the counter and increments it by `1` as part of the same operation.
+If the counter contains `17`, that blade receives slot `17` and leaves `18` for the next one. The whole thing is atomic, so another
+thread cannot receive `17` too.
+
+`instanceIndex` is the blade's original index in the complete field. `drawIndex` is its new position among the blades that survived.
+
+If `A`, `C`, `D`, `G` and `H` are visible, the threads could reach the counter in any order and produce something like this:
+
+```text
+original:   A  B  C  D  E  F  G  H
+visible:    1  0  1  1  0  0  1  1
+compacted:  A  D  H  C  G  *  *  *
+count:      5
+
+* means whatever was there before, it doesn't matter
+```
+
+There is no point in preserving their original order here. The valid part of the list has no gaps, no two blades write into the
+same place and the counter already contains the number of blades I need to draw.
+
+Every frame begins by clearing one value: that counter.
+
+```typescript
+computeResetInstanceCount = Fn(() => {
+  atomicStore(this.atomicCounter, 0);
+})().compute(1, [1]); // one counter only needs one thread
+```
+
+`atomicStore` replaces the value instead of incrementing it. I do this in a separate one-thread compute pass because putting the
+reset inside the grass update could let one workgroup clear the counter while another was already using it. There is no global
+barrier inside one dispatch that could make every workgroup wait for the reset first.
+
+The foundational rework introduced earlier lets me keep that order explicit:
+
+```typescript
+this.computeTask = rendererManager.createComputeTask({
+  label: "Grass",
+  init: this.ssbo.computeInit,
+  update: [
+    this.ssbo.computeResetInstanceCount, // always reset first
+    this.ssbo.computeUpdate, // then rebuild the visible list
+  ],
+});
+```
+
+I do not clear the compacted list itself. Every visible blade overwrites one slot starting from `0`, and the final count limits the
+draw to exactly those slots. If one frame writes five indices and the next one writes only three, anything after the third slot is
+simply unreachable.
+
+<br />
+
+### Connecting the dots
+
+I now had the exact count and a compacted list of the blades that survived. I could read that count back into JavaScript every
+frame and update the mesh from there, but that would put the CPU right back in the middle.
+
+CPU and GPU normally keep working without waiting for one another. A readback introduces a synchronization point because the CPU
+cannot use the value until the GPU has finished writing it. Unified memory may remove a physical transfer, but it does not remove
+that wait. I would then send the exact same number straight back to the GPU with the next draw call.
+
+Quite the detour. An ==indirect draw== removes it.
+
+With a normal draw, the CPU gives the GPU the arguments, including how many instances to draw. An indirect draw reads those
+arguments from a GPU buffer instead.
+
+Since the compute shader already produced the visible count there, the draw can use it directly without reading anything back into
+JavaScript.
+
+Three.js provides an `IndirectStorageBufferAttribute` construct that makes it easy to wire it up with a geometry. Here is how I
+set it up:
+
+```typescript
+readonly indirectDrawAttribute = new IndirectStorageBufferAttribute(
+  new Uint32Array([
+    config.BLADE_INDEX_COUNT, // indexCount
+    0, // instance count, updated every frame by the atomic counter
+    0, // firstIndex
+    0, // baseVertex
+    0, // firstInstance
+  ]),
+  1, // size of each argument, all of them are uint so 1
+);
+
+private atomicIndirectDrawArguments = storage(
+  this.indirectDrawAttribute,
+  "uint",
+  this.indirectDrawAttribute.count,
+).toAtomic();
+
+// instance count is the second indirect draw argument
+private atomicCounter = this.atomicIndirectDrawArguments.element(1);
+```
+
+- **`indexCount`** &rarr; how many indices make one blade (mine uses `15` at the time of writing)
+- **`instanceCount`** &rarr; how many blades to draw (this is the counter)
+- **`firstIndex`** &rarr; where to begin in the geometry's index buffer
+- **`baseVertex`** &rarr; an offset added to the vertex indices (I do not need one)
+- **`firstInstance`** &rarr; where to begin in the available instances
+
+The counter is not copied into this buffer afterwards. `atomicCounter` is an atomic TSL reference to its second value from the
+beginning, so both `atomicAdd` and `atomicStore` update the exact memory the draw later reads as `instanceCount`. The other four
+values never change.
+
+`storage(...).toAtomic()` does not create another GPU buffer. It exposes the existing indirect attribute to the compute shader
+with atomic access, then `.element(1)` selects the counter.
+
+> One small detail here is that `toAtomic()` marks the whole five-value storage view as atomic, even though I only use atomic
+> operations on `instanceCount`. TSL models this version as one homogeneous array, so all its elements need the same type. I could
+> have described the indirect arguments as a custom `struct` and marked only that field atomic, but that would also mean maintaining
+> another exact description of WebGPU's layout for no practical benefit here. The other four values do not suddenly start doing
+> atomic work simply because they are declared that way.
+
+Strictly speaking, `baseVertex` is signed while the other four values are unsigned. Mine is `0` though, so using a `Uint32Array`
+does not change anything here.
+
+The first version of GPU culling was already working great with the `InstancedMesh` I had been using since the beginning.
+
+When I checked the setup again though, passing `COUNT` to the mesh first and then letting the indirect buffer provide the actual
+count for the draw felt a bit strange.
+
+I dug into whether a regular `Mesh` with `InstancedBufferGeometry` could do the same job and what the difference would be. The
+regular `Mesh` version worked exactly the same. That small detour also led me into the Three.js source, where `InstancedMesh`
+creates an `instanceMatrix` with `count` &times; `16` floats. Revo never used those matrices because every blade position came
+from the SSBO. Each matrix still took 64 bytes though (16 floats at 4 bytes each), which added up to roughly 67 MB of unused
+CPU-side memory across the whole field.
+
+Not exactly peanuts, so definitely a very welcome saving :)
+
+So I switched the blade geometry to `InstancedBufferGeometry` and used a regular `Mesh` instead:
+
+```typescript
+export class GrassBladeGeometry extends InstancedBufferGeometry {
+  // ...blade geometry
+}
+
+const geometry = new GrassBladeGeometry({
+  nSegments: config.SEGMENTS,
+  bladeHeight: config.BLADE_HEIGHT,
+  bladeWidth: config.BLADE_WIDTH,
+});
+
+geometry.instanceCount = config.COUNT; // logical maximum; the indirect draw supplies the current count
+geometry.setIndirect(this.ssbo.indirectDrawAttribute);
+
+const mesh = new Mesh(geometry, new GrassMaterial(this.ssbo));
+```
+
+`geometry.instanceCount = config.COUNT` keeps the complete field as the logical maximum. For a normal instanced draw, that is the
+count Three.js would use. Once the WebGPU backend sees the indirect attribute, it issues `drawIndexedIndirect` instead and reads
+the current count from the GPU buffer.
+
+The indirect attribute belongs to the geometry because those arguments describe how the geometry should be drawn: how many
+indices to use, where to begin and which offsets to apply. `InstancedBufferGeometry` already makes the draw instanced, so a regular
+`Mesh` is enough and I do not need 1M standard matrices just to get `instanceIndex`.
+
+The draw was compact now, which meant `instanceIndex` no longer referred directly to the original blade. It only told me which
+slot of the compacted list I was drawing. Draw instance `12`, for example, was not necessarily the original blade `12` anymore.
+
+```typescript
+// compacted draw index -> original blade index -> persistent blade data
+const bladeIndex = this.ssbo.visibleIndexBuffer.element(instanceIndex);
+const data1 = this.ssbo.computeBuffer1.element(bladeIndex);
+const data2 = this.ssbo.computeBuffer2.element(bladeIndex);
+```
+
+I read the real blade index from that slot first, then use it to access the same SSBO data as before.
+
+Pretty simple in the end.
+
+<br />
+
+### Was it worth it?
+
+TL;DR: I think so!
+
+The compute pass still starts one thread for every blade. As explained in the previous article, rejected blades leave before the
+later trail, wind and shadow work. Now they also stay out of the vertex stage completely. There is still some compute work attached
+to them though.
+
+The monitoring panel reads the final count asynchronously once per second, only so I can see what the GPU decided. Rendering never
+waits for that diagnostic readback.
+
+The visible count reaches around 250k blades at most in the densest views and can fall much lower depending on where I look. The
+lake area is also back at stable 120 FPS even in development on my M2 MacBook Pro, instead of hovering around 105 to 110 and
+occasionally dropping to 100.
+
+Those numbers only describe this scene on my machine. For this workload though, the atomic counter was clearly cheap enough to
+justify the vertex work it removed.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      loading="lazy"
+      src={gpuCulling720p}
+      poster={gpuCullingPoster}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1150 / 720" }}
+    ></video>
+    <figcaption>
+      Culling at its fullest: real GPU culling this time :){" "}
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+The atomic counter solved the practical problem, but it also made every surviving blade touch the same memory location.
+
+There is another, potentially better way to give every blade a unique output slot without asking a shared counter.
+
+Unfortunately, understanding that sentence was considerably easier than implementing it.

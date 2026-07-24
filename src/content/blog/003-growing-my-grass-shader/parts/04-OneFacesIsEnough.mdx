@@ -1,6 +1,8 @@
 import Layout from "@components/blog/Layout.astro";
 import sprites720p from "../assets/sprites_720p.mp4?url";
+import spritesPoster from "../assets/posters/sprites_720p.webp?url";
 import windDisplacement720p from "../assets/wind_displacement_720p.mp4?url";
+import windDisplacementPoster from "../assets/posters/wind_displacement_720p.webp?url";
 
 ## 4. One face is enough
 
@@ -31,13 +33,16 @@ A sprite always faces the camera, which means one face is enough.
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={sprites720p}
+      poster={spritesPoster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>
       Less blades with exaggerated width to better see how they stay
       camera-facing
@@ -77,13 +82,16 @@ and the field feels lifeless.
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={windDisplacement720p}
+      poster={windDisplacementPoster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>Blades bending using vertex displacement</figcaption>
   </figure>
 </Layout>

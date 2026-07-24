@@ -4,6 +4,7 @@ import sharedNormals from "../assets/shared-normals.svg?url";
 import fragment from "../assets/fragment.svg?url";
 import Layout from "@components/blog/Layout.astro";
 import v1Video from "../assets/v1-720p.mp4";
+import v1Poster from "../assets/posters/v1-720p.webp?url";
 import absoluteWin from "../assets/absolute-win.webp?url";
 
 ## Chapter I: Displacing vertices
@@ -207,13 +208,16 @@ a nice, cozy lake.
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={v1Video}
+      poster={v1Poster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>
       The first attempt: subtle displacement and dynamic normals
     </figcaption>

@@ -1,5 +1,6 @@
 import Layout from "@components/blog/Layout.astro";
 import current720p from "../assets/current_720p.mp4?url";
+import currentPoster from "../assets/posters/current_720p.webp?url";
 
 When I think of grass, I picture wide fields, uneven ground, a gentle wind moving through everything at once.  
 Something soft, alive.
@@ -33,13 +34,16 @@ feel better than it did before.
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={current720p}
+      poster={currentPoster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>
       Showcase of the current version (not published yet at the time of writing)
     </figcaption>

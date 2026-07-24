@@ -1,5 +1,6 @@
 import Layout from "@components/blog/Layout.astro";
 import gifBobRoss from "../videos/gif-bob-ross.mp4";
+import gifBobRossPoster from "../videos/posters/gif-bob-ross.webp?url";
 
 ## 4. Paint & Rasterization
 
@@ -11,14 +12,16 @@ The next step is to transform them into bitmaps tiles.
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={gifBobRoss}
+      poster={gifBobRossPoster}
       type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "250 / 192" }}
-    />
+    ></video>
     <figcaption>
       Meanwhile, Skia / WebRender / CoreGraphics: happy little tiles everywhere
     </figcaption>

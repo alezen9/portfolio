@@ -1,0 +1,261 @@
+import Layout from "@components/blog/Layout.astro";
+import monitoringPanel from "../assets/monitoring_panel.mp4?url";
+import monitoringPanelPoster from "../assets/posters/monitoring_panel.webp?url";
+import spidermanManagerMeme from "../assets/spiderman_meme_manager.webp?url";
+
+## 9. Tick-tick, tock-tock, pick a clock
+
+As mentioned in the introduction, this is not actually where I started.
+
+The first thing I worked on after returning to Revo was a small but annoying grass problem, which is the topic of the next chapter.
+
+I still want to explain this part first though.
+
+The scheduling and monitoring work gave me a better foundation for understanding what the grass was doing to Revo, while also giving
+me much more control over how the rest of the project runs.
+
+Timing had already caused a few problems.
+
+At some point Revo had behaved differently between my 120 Hz and 165 Hz monitors. I had already fixed that particular speed
+difference before this rework, but it was still a good reminder of how fragile timing can become when too many things depend on the
+same update.
+
+Halving the frame rate, which was the only knob I had at first, introduced some visible stutter, even when the physics itself
+remained stable.
+
+Rendering was the part I really wanted to control properly. Separating it from the rest of the loop also made me look at physics
+more carefully.
+
+It became much easier for me to reason about the loop once I stopped treating rendering and physics as if they followed the same
+clock.
+
+I was already using a fixed-step accumulator with interpolation. This rework let those physics steps run independently from the
+rendering schedule and gave time, physics and rendering a much clearer role in the loop.
+
+<br />
+
+### The orchestrator
+
+The main loop is small and simple on purpose. It helps me see what happens step by step at a glance.
+
+Every display update gives physics a chance to process the time it is owed, while rendering continues only when `FrameScheduler`
+allows it.
+
+This is how those pieces are orchestrated:
+
+```typescript
+private onAnimationFrame = (timestamp: DOMHighResTimeStamp) => {
+  timeManager.update(timestamp);
+  if (timeManager.isPaused) return;
+
+  physicsScheduler.update(timeManager.delta);
+  for (let i = 0; i < physicsScheduler.pendingSteps; i++) {
+    eventsManager.emit("engine-before-physics", this.physicsState);
+    physicsManager.step();
+    eventsManager.emit("engine-after-physics", this.physicsState);
+    physicsManager.flush();
+  }
+
+  frameScheduler.update();
+  if (!frameScheduler.shouldRender) return;
+
+  this.renderState.delta = timeManager.consumeRenderDelta();
+  eventsManager.emit("engine-render-update", this.renderState);
+  rendererManager.render();
+  monitoringManager?.sample(timestamp);
+};
+```
+
+- **Time** &rarr; `TimeManager` measures and accumulates the elapsed time.
+- **Physics** &rarr; `PhysicsScheduler` decides how many fixed steps are owed, then `PhysicsManager` executes them.
+- **Rendering** &rarr; `FrameScheduler` decides whether to draw, then `RendererManager` does the actual rendering.
+
+`EventsManager` connects everything else to the relevant physics and render phases, so the loop does not need to know that grass,
+wind, the player or any other particular system exists.
+
+Skipping a render also does not throw its time away. `TimeManager` keeps accumulating it, then `consumeRenderDelta()` gives the
+complete amount to the next render update. Anything animated from render delta therefore continues at the correct speed even when
+the scheduler draws less often.
+
+You might think: "So many managers...managing...stuff". Fair :)
+
+> The `for` loop inside a frame update may look a little scary at first, but it only processes the fixed physics steps currently
+> owed, and it can run at most four times (deliberate cap on my end). Based on what I have experienced, during normal 120 Hz
+> rendering, most display updates owe either zero or one.
+
+<br />
+
+### Physically fit
+
+The fixed-step accumulator itself was already in Revo before this rework.
+
+Physics generally behaves better when every update represents the same amount of simulated time. Real frames can arrive early or
+late, but the solver continues moving through equal steps instead of receiving a different-sized jump every time.
+
+I kept Rapier's default `1/60` step.
+
+It is a familiar compromise for this kind of simulation: frequent enough for Revo's movement and collisions, without running
+physics 120 times per second just because my laptop display can render that often.
+
+The scheduler stores whatever time has not been simulated yet in an accumulator:
+
+```typescript
+const FIXED_DELTA = 1 / 60;
+const MAX_STEPS_PER_FRAME = 4;
+
+export class PhysicsScheduler {
+  private accumulator = 0;
+  pendingSteps = 0;
+  fixedDelta = FIXED_DELTA;
+
+  get alpha() {
+    return this.accumulator / this.fixedDelta;
+  }
+
+  update(delta: number) {
+    this.accumulator += delta;
+
+    const owedSteps = Math.floor(this.accumulator / this.fixedDelta);
+    this.pendingSteps = Math.min(owedSteps, MAX_STEPS_PER_FRAME);
+
+    this.accumulator -= this.pendingSteps * this.fixedDelta;
+    if (this.accumulator > this.fixedDelta) this.accumulator = this.fixedDelta;
+  }
+}
+```
+
+If less than one step is available, physics waits. If enough time has accumulated for two, both are processed before rendering. At
+normal speed this averages out to 60 physics updates per second regardless of whether the scene renders at 120, 60 or 40 FPS.
+
+Pause and slow motion intentionally change the rate against wall-clock time, but each simulation step remains `1/60` of a second.
+
+`TimeManager` clamps an incoming frame delta to `1/15` of a second, roughly `66.7ms`, and `PhysicsScheduler` allows at most four
+`1/60` steps in one frame.
+
+The numbers match on purpose: both limit catch-up to roughly `66.7ms`.
+
+After those steps are removed, the final check prevents more than one step of debt from remaining in the accumulator, so a long
+stall cannot keep building a larger backlog across the frames that follow.
+
+The remaining fraction is exposed as `alpha`. The player uses it to interpolate its visual position between the previous and
+current physics snapshots:
+
+```typescript
+this.visualRoot.position.lerpVectors(
+  this.prevPosition,
+  this.targetPosition,
+  physicsScheduler.alpha,
+);
+```
+
+> Here `visualRoot` is just an `Object3D` wrapping the player's mesh, which lets me easily control squishing and other effects.
+
+The rigid body stays on the fixed simulation while only `visualRoot` is interpolated. That keeps movement smooth when the physics
+and render clocks do not land together, especially at the lower frame rates where I had noticed the stutter much more easily.
+
+<br />
+
+### Summertime Rendering
+
+The render side is tied to a different rhythm: the display refresh.
+
+On my 120 Hz laptop, rendering every refresh gives me 120 FPS. Rendering every second refresh gives me 60, every third gives me 40
+and every fourth gives me 30.
+
+All of those divide evenly into 120, so the time between rendered frames stays consistent.
+
+Asking for 80 FPS would not divide cleanly. Some frames would remain on the screen for one refresh and others for two, which can
+feel less smooth even if the average still says 80.
+
+`FrameScheduler` therefore works with a divisor:
+
+```typescript
+update() {
+  this.displayFrame++;
+  this.shouldRender = this.displayFrame % this.divisor === 0;
+}
+```
+
+The system measures the display first because the browser does not expose a reliable refresh-rate property. It collects 61
+consecutive animation-frame timestamps, ignores intervals longer than `50ms`, takes the median of the remaining deltas and snaps
+the result to a list of common display rates.
+
+Once it knows the refresh rate, `ceil(refreshHz / targetFps)` produces the divisor.
+
+The target is therefore treated as a maximum. A target of 120 on a 120 Hz display stays at 120. On a 165 Hz display the same target
+produces a divisor of `2`, so the effective rate becomes `82.5 FPS` instead of trying to fit an uneven 120 into 165 refreshes.
+
+60 FPS was always a perfectly reasonable fallback, and it is still the familiar smooth baseline for most things. But I knew Revo
+could comfortably run at 120 if I managed to reduce the grass overhead, so settling for 60 was a little bit frustrating.
+
+<br />
+
+### Press F
+
+I had been using [stats-gl](https://github.com/RenaudRohlinger/stats-gl) since the beginning. It was the first thing I used to see
+what Revo was doing.
+
+Alongside some of its built-in panels, I slowly added custom ones for things like draw calls and the number of triangles in the
+scene, until it grew into a fairly decent monitoring setup.
+
+The issues started when I wired up postprocessing.
+
+Without it, its GPU numbers looked reasonable for what was still a mostly empty world. I had no way to verify whether they were
+correct, but at least they looked believable.
+
+With postprocessing enabled, GPU time jumped above `25ms` and kept producing large spikes while the scene itself remained smooth.
+Maybe there was a valid explanation somewhere in the way the work was measured, but the result was misleading enough that I
+eventually disabled that panel.
+
+For a while, FPS was the only built-in panel I still used alongside my custom ones.
+
+Once I had built the scheduler and already owned the target and effective rates, keeping an entire third-party library for that
+one number felt unreasonable, so I thanked it for its service and uninstalled it.
+
+The replacement is a small `MonitoringManager` (exactly, yet another manager) that gathers one snapshot per second.
+
+It already shows quite a few things: the current, target and effective FPS, the render interval against its budget, late frames,
+display refresh and divisor, interpolation alpha, and more.
+
+On top of that, I can also easily wire up any extra information registered by another system such as grass.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      loading="lazy"
+      src={monitoringPanel}
+      poster={monitoringPanelPoster}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "720 / 408" }}
+    ></video>
+    <figcaption>Current panel, including grass data</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+It's not perfect, of course.
+
+What the panel calls `Average` shows the average interval between rendered frames over the last second, while `Budget` shows what
+that interval should be at the effective FPS, for example: `8.33ms` at 120 FPS or `16.67ms` at 60. Any interval exceeding it by
+more than `1ms` counts as late.
+
+These values describe render cadence, not CPU or GPU execution time.
+
+Frame time is more useful than FPS for finding individual problems, but I am not quite measuring it properly yet and I do not want
+to pretend otherwise. What I have now is closer to what I need, built around Revo and completely under my control. I know where
+the numbers come from, and I can change or extend the system as I understand more.
+
+The culling work later in the article added a provider for the rendered and total blade counts. `MonitoringManager` receives them
+asynchronously and uses them to correct the global triangle count. I had the grass use case in mind from the beginning, but I kept
+providers generic enough for other systems to contribute too.
+
+Having that control makes me much more confident about working on the actual world now.
+
+There is still plenty for me to learn and improve, but Revo keeps becoming more robust as I do :)

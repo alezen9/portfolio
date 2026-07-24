@@ -2,6 +2,7 @@ import Layout from "@components/blog/Layout.astro";
 import fullAo from "../assets/full_ao.webp?url";
 import anime from "../assets/anime.webp?url";
 import aoShowcase from "../assets/ao.mp4?url";
+import aoPoster from "../assets/posters/ao.webp?url";
 
 ## 6. A small shadow that caused big trouble
 
@@ -34,13 +35,16 @@ distance, so farther grass is not affected at all.
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={aoShowcase}
+      poster={aoPoster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>Live tuning of AO radius and intensity</figcaption>
   </figure>
 </Layout>

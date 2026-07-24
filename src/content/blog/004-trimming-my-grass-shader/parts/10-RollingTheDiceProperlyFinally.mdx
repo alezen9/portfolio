@@ -1,0 +1,312 @@
+import Layout from "@components/blog/Layout.astro";
+import growthEffect480p from "../assets/growth_effect480p.mp4?url";
+import growthEffectPoster from "../assets/posters/growth_effect480p.webp?url";
+
+## 10. Rolling the dice properly, finally
+
+The first grass problem I touched after returning to Revo was a strange little growth effect.
+
+While moving around, every now and then I would catch a blade growing from almost nothing back to its full height over a few
+frames. It was quick, it did not happen everywhere and following it on purpose was considerably harder than spotting it from the
+corner of my eye.
+
+This capture is slowed down because the real effect was much easier to miss:
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      loading="lazy"
+      src={growthEffect480p}
+      poster={growthEffectPoster}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "768 / 480" }}
+    ></video>
+    <figcaption>
+      One blade casually growing into existence (3x slower capture)
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+My first suspect was the trail system. Grass touched by the player gets crushed by reducing its scale, then slowly recovers to its
+original height. If that scale somehow ended up on a blade that had just appeared, the result would look exactly like what I was
+seeing.
+
+Checking the trail exposed the first issue in the wrapping logic.
+
+The grass field follows the player, reusing the same buffer slots as blades wrap from one side to the other. A slot carrying a
+crushed blade could therefore move to a completely different place while its scale was still recovering.
+
+I ended up separating movement from wrapping, which also made that exact moment much easier to detect. `unwrappedOffset` is where
+the slot would land after applying the player's movement, while `wrapPosition()` only folds it back inside the grass field:
+
+```typescript
+const previousOffset = vec2(data1.x, data1.y);
+const unwrappedOffset = previousOffset.sub(uniforms.uPlayerDeltaXZ);
+const wrappedOffset = VegetationSsboUtils.wrapPosition(
+  unwrappedOffset,
+  config.TILE_SIZE,
+);
+
+const wrapDelta = wrappedOffset.xz.sub(unwrappedOffset);
+const isWrapped = step(
+  config.TILE_HALF_SIZE,
+  max(abs(wrapDelta.x), abs(wrapDelta.y)),
+);
+```
+
+Most frames `wrappedOffset.xz` and `unwrappedOffset` are identical, so `wrapDelta` is `0`. Once a blade crosses an edge, the modulo
+inside `wrapPosition()` shifts it by one full tile. `step()` turns that jump into the `0/1` flag I need, and the comparison still
+works if a larger movement crosses more than one tile at once.
+
+Whenever `isWrapped` is `1`, that buffer slot now represents a different patch of ground. Resetting its scale to the base value of
+the new location got rid of the most obvious version of the growth.
+
+I could still catch the effect here and there though. Since it only became visible after a blade disappeared and came back, I
+followed the other part of the chain that can do exactly that while the blade is still inside the camera: stochastic thinning.
+
+That exposed another wrapping mistake and gave me a good excuse to improve the keep decision while I was already there.
+
+### A stable seed
+
+Stochastic thinning gives every blade a keep probability called `p`. Nearby blades get a value close to `1`, distant ones move
+towards `pMin`, and each blade compares that probability with its own random roll:
+
+```typescript
+const p = mix(1, pMin, t);
+const rnd = hash(float(instanceIndex).mul(0.73));
+
+const keep = step(rnd, p);
+```
+
+`step(rnd, p)` returns `1` when `p` reaches or passes the roll, otherwise it returns `0` and the blade is dropped.
+
+I used `instanceIndex` as the seed because the same index always produced the same roll. I even described the result as stable
+under wrapping in the previous article.
+
+The number was stable, sure. `instanceIndex` itself belongs to a reusable slot in the grass buffer though, not a fixed place in the
+world. Slot `42` may represent one patch of ground now and another one after wrapping, while its roll follows it to the new location.
+
+That new patch could therefore receive a completely different keep decision even if its distance from the player had barely
+changed.
+
+Another little source of popping to fix while I was already there.
+
+The roll needed to belong to the patch of ground instead. Dividing the world position by the spacing between blades gives me a
+stable grass cell, whichever buffer slot happens to represent it:
+
+```typescript
+const cell = floor(worldPos.xz.div(spacing));
+const rnd = hash(cell.x.mul(12.9898).add(cell.y.mul(78.233)));
+```
+
+Those constants only mix the two cell coordinates before the hash. The important part is `cell`: the slot may change after
+wrapping, but the patch now receives the same roll.
+
+### A flickering situation
+
+While I was already inside the keep function, distance alone did not feel like enough. Two blades can be equally far from the
+player and contribute very differently to the final image depending on their height and the camera.
+
+I added a rough estimate of the blade height on screen. `fY` comes from the camera projection and `clipPosition.w` gives me its
+depth. Their ratio is enough to estimate the projected height without doing anything particularly expensive.
+
+That estimate becomes `pScreen`: near `0` while the blade is tiny on screen and `1` once it is large enough to receive the full
+distance probability. Multiplying the two gives the final `p`.
+
+Adding projected size also made the decision more sensitive. The player moves, the camera moves, the depth changes, and `p` may end
+up hovering around the blade's random roll. One small movement puts it above the roll, another puts it below, and the blade keeps
+changing its mind.
+
+Have you ever tried to balance a light switch exactly in the middle? Well, I surely did, and of course I exactly as one might
+expect: I couldn't.
+
+Turns out, snap-action light switches are a very practical example of hysteresis. Instead of using one threshold in both
+directions, they have one point where they switch one way and another where they switch back.
+
+Imagine a threshold of `15` with a hysteresis of `5`. Moving upwards, the state changes when the value reaches `20`. Moving back
+down, it only changes after falling below `10`. The full gap is therefore `10`, exactly twice the hysteresis value.
+
+A value bouncing between `15` and `16` can no longer make the state fight back and forth. Once it has crossed `20`, it remains
+there until it drops below `10`.
+
+In my case, with `rnd = 0.60` and `hysteresis = 0.11`, a hidden blade needs `p` to reach `0.71` before it appears. Once visible, it
+remains there until `p` falls below `0.49`.
+
+There is no longer one switching point I could somehow balance on. At `10`, moving back to `11` is not enough to switch again, and
+the same happens at `20` when moving back to `19`. That point does not exist, which finally explains why balancing a light switch
+was a lost battle from the beginning.
+
+> The spring-loaded mechanism inside the switch makes the physical version even more obvious by snapping the lever towards either
+> side, but the hysteresis already made the switching boundary itself impossible to balance.
+
+Hysteresis needs to know whether the blade was visible in the previous frame. That state belongs to the old grass cell after
+wrapping though, so I clear it whenever `isWrapped` is `1`:
+
+```typescript
+const previousKeep = wasVisible.mul(float(1).sub(isWrapped));
+```
+
+The new location therefore starts with `previousKeep = 0` and has to make its own enter decision.
+
+Put together, with `t` still being the `0..1` distance remap from the previous article, the keep function now looks like this:
+
+```typescript
+const pDistance = mix(1, pMin, t);
+
+const eyeDepthAbs = clipPosition.w.abs().max(EPSILON);
+const projectedBladeHeight = fY.mul(bladeHeight).div(eyeDepthAbs);
+const pScreen = smoothstep(projectedMin, projectedFull, projectedBladeHeight);
+
+const p = pDistance.mul(pScreen);
+
+const cell = floor(worldPos.xz.div(spacing));
+const rnd = hash(cell.x.mul(12.9898).add(cell.y.mul(78.233)));
+
+const enterKeep = step(rnd.add(hysteresis), p);
+const stayKeep = step(rnd.sub(hysteresis), p);
+
+return mix(enterKeep, stayKeep, previousKeep);
+```
+
+When `previousKeep` is `0`, `mix()` selects `enterKeep` and the blade has to cross the higher threshold. When it is `1`, it selects
+`stayKeep` and the blade remains until it crosses the lower one.
+
+The roll now stays with the patch of ground, the probability also accounts for how large the blade is on screen, and hysteresis
+stops it from flickering around the threshold.
+
+### Full circle
+
+The thinning looked considerably calmer after all of that, especially around wrapping and the enter/exit thresholds. I could still
+catch the original growth effect though.
+
+The full sequence was:
+
+1. The trail crushes a blade by reducing its stored scale.
+2. Stochastic thinning hides it before the recovery finishes.
+3. The blade no longer enters the remaining update work, so recovery pauses at that partial scale.
+4. Stochastic thinning admits it again and the same partial scale comes back with it.
+5. The material draws the blade while the following frames finish the recovery on screen.
+
+The compute shader has two visibility gates. The first one combines the frustum and stochastic decisions:
+
+```typescript
+const passesStochasticThinning =
+  VegetationSsboUtils.computeStochasticKeep(/* ... */);
+
+const isInFrustum = VegetationSsboUtils.computeVisibilityFromClip(/* ... */);
+
+const isPotentiallyVisible = isInFrustum.mul(passesStochasticThinning);
+data1.assign(this.setVisibility(data1, isPotentiallyVisible));
+```
+
+Every blade has to reach those checks. Only the ones that survive both enter the first `If`, where I sample the grass map and work
+out their final scale:
+
+```typescript
+const originalScale = this.getOriginalScale(data1);
+
+If(isPotentiallyVisible, () => {
+  const grassScale = VegetationSsboUtils.computeGrassScale(worldPos);
+  const baseScale = originalScale.mul(grassScale);
+  const isVisible = step(config.MIN_VISIBLE_SCALE, baseScale);
+
+  data1.assign(this.setVisibility(data1, isVisible));
+
+  If(isVisible, () => {
+    // ...terrain height, trail, wind, shadow and atomic compaction
+  });
+});
+```
+
+`baseScale` combines the blade's original random size with the value painted into the grass map. The small
+`MIN_VISIBLE_SCALE` cutoff removes almost-flat blades around its edges.
+
+The second `If` is worth keeping even if most candidates pass it. Anything rejected there skips the terrain height, trail, wind,
+shadow and atomic work. Sampling the grass map before the first gate would make all 1M blades pay for it instead.
+
+That is exactly where the stored scale was getting stuck. Once a blade fails the first gate, its trail recovery no longer reaches
+the buffer. The scale stays exactly where it was until the blade becomes visible again.
+
+I already had the previous visibility and the current stored scale, so the missing reset ended up being quite small:
+
+```typescript
+const wasVisible = this.getVisibility(data1);
+const currentScale = this.getScale(data1);
+
+const recoveredScale = mix(currentScale, baseScale, uniforms.uTrailGrowthRate);
+
+const didAppear = isVisible.mul(float(1).sub(wasVisible));
+const shouldReset = max(isWrapped, didAppear);
+const scaleBeforeTrail = mix(recoveredScale, baseScale, shouldReset);
+```
+
+`didAppear` becomes `1` when the blade is visible now after being hidden in the previous frame. `shouldReset` also includes
+`isWrapped`, since a wrapped slot belongs to a new patch of ground even if it happened to remain visible through the move.
+
+For blades that stayed visible, `scaleBeforeTrail` keeps the usual gradual recovery. Newly visible or wrapped blades use
+`baseScale` immediately instead of carrying a stale partial height into the new frame.
+
+The same flag also resets the previous wind bend before the remaining work continues:
+
+```typescript
+If(isVisible, () => {
+  const nextScale = mix(
+    scaleBeforeTrail,
+    crushedScale,
+    uniforms.uKDown.mul(contact),
+  );
+  data1.assign(this.setScale(data1, nextScale));
+
+  const newWind = this.computeWind(
+    previousWind,
+    worldPos,
+    positionNoise,
+    shouldReset,
+  );
+
+  // ...shadow and atomic compaction
+});
+```
+
+That was the last case I was missing. Once wrapped slots and newly visible blades both started from the right state, I could no
+longer reproduce the growth effect.
+
+### Somewhere to play
+
+Revo became a football very early in the project. It was not its original design, technically, but it has been one almost since the
+beginning.
+
+Football has always been much more than just a sport to me personally.
+
+Once Revo became something I could kick and roll around, I naturally wanted to give it somewhere proper to do that.
+
+The recent World Cup only added to that excitement. I enjoyed it very, very much, watching matches even at 2 AM despite having to
+work the next day. It was wonderful.
+
+I wanted a small pitch with short, nice-looking grass, painted lines, proper goals and... more ;)
+
+The shorter grass was the first part, and achieving it turned out to be quite simple once I removed my blinders.
+
+You may have noticed that the code above now calls `computeGrassScale()` instead of `computeAlpha()`. Underneath, it is still the
+exact same sample from the same green channel of `grassMap`. The value had always been continuous between `0` and `1`; I was simply
+reducing it to a yes or no instead of using it to control the height.
+
+The texture was not missing anything. I was consuming it the wrong way.
+
+I still need to find a nice and neat way to paint the lines, apart from the obvious answer, although perhaps I can use one of the
+channels already sitting there. We will see :)
+
+<blockquote data-type="quote">
+_I love this game!_
+
+Patrice Evra
+
+</blockquote>

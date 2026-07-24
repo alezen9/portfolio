@@ -1,5 +1,6 @@
 import Layout from "@components/blog/Layout.astro";
 import gifInterpreterCovenant from "../videos/gif-security-guard.mp4";
+import gifInterpreterCovenantPoster from "../videos/posters/gif-security-guard.webp?url";
 
 ## 1. Parsing
 
@@ -11,14 +12,16 @@ Parsing is the act of taking raw text, HTML or CSS, and turning it into structur
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={gifInterpreterCovenant}
+      poster={gifInterpreterCovenantPoster}
       type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "270 / 364" }}
-    />
+    ></video>
     <figcaption>The engine's parser validating your code</figcaption>
   </figure>
 </Layout>

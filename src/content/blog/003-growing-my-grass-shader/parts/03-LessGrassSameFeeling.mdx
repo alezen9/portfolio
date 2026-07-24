@@ -1,5 +1,6 @@
 import Layout from "@components/blog/Layout.astro";
 import thinning720p from "../assets/thinning_720p.mp4?url";
+import thinningPoster from "../assets/posters/thinning_720p.webp?url";
 
 ## 3. Less grass, same feeling
 
@@ -75,13 +76,16 @@ far full density extends, how quickly it thins out, and how sparse the far grass
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={thinning720p}
+      poster={thinningPoster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>Live tuning of stochastic thinning</figcaption>
   </figure>
 </Layout>

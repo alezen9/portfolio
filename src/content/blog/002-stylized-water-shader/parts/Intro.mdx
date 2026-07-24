@@ -1,6 +1,8 @@
 import Layout from "@components/blog/Layout.astro";
 import v1Video from "../assets/v1-480p.mp4";
+import v1Poster from "../assets/posters/v1-480p.webp?url";
 import v3Video from "../assets/v3-480p.mp4";
+import v3Poster from "../assets/posters/v3-480p.webp?url";
 
 Faking things is at the heart of game development.
 
@@ -28,24 +30,30 @@ Before diving into the details, here's the contrast in motion: my first attempt 
 <Layout columns={2} gap={1}>
   <figure>
     <video
+      loading="lazy"
       src={v1Video}
+      poster={v1Poster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>How it started</figcaption>
   </figure>
   <figure>
     <video
+      loading="lazy"
       src={v3Video}
+      poster={v3Poster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>How it's going</figcaption>
   </figure>
 </Layout>

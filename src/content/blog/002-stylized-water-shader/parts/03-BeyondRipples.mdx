@@ -1,5 +1,6 @@
 import Layout from "@components/blog/Layout.astro";
 import v3Video from "../assets/v3-720p.mp4";
+import v3Poster from "../assets/posters/v3-720p.webp?url";
 import edgeBleed from "../assets/edge-bleed.webp?url";
 import noEdgeBleed from "../assets/no-edge-bleed.webp?url";
 import tsn from "../assets/tsn.webp?url";
@@ -629,13 +630,16 @@ Here's how it all came together:
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={v3Video}
+      poster={v3Poster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>
       The third iteration, refraction, reflections, absorption, and glints all
       working together

@@ -1,7 +1,9 @@
 import Layout from "@components/blog/Layout.astro";
 import initial720p from "../assets/initial_720p.mp4?url";
+import initialPoster from "../assets/posters/initial_720p.webp?url";
 import tryNotToCry from "../assets/try_not_to_cry_meme.webp?url";
 import second720p from "../assets/second_720p.mp4?url";
+import secondPoster from "../assets/posters/second_720p.webp?url";
 
 ## 8. A quick trip down memory lane
 
@@ -19,13 +21,16 @@ make me think I was on the right track.
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={initial720p}
+      poster={initialPoster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>My first patch of grass :)</figcaption>
   </figure>
 </Layout>
@@ -69,13 +74,16 @@ bring things back under control, but by that point the system was already a coll
 <Layout class="lg-small">
   <figure>
     <video
+      loading="lazy"
       src={second720p}
+      poster={secondPoster}
+      type="video/mp4"
       autoplay
       loop
       muted
       playsInline
       style={{ aspectRatio: "1154 / 720" }}
-    />
+    ></video>
     <figcaption>
       Second iteration, currently live at the time of writing
     </figcaption>

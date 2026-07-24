@@ -1,0 +1,54 @@
+import Layout from "@components/blog/Layout.astro";
+import current720p from "../assets/current720p.mp4?url";
+import currentPoster from "../assets/posters/current720p.webp?url";
+
+At the end of last year, on New Year's Eve, I published [Growing my Grass Shader](/blog/growing-my-grass-shader/), and soon after,
+things here went a bit quiet.
+
+Back in January a friend and I had started building something of our own, chasing the idea of turning a shared dream into something
+real, closer to maths and civil engineering than to 3D worlds :)
+
+That project is still going strong, and it took most of my time for a while.
+
+I enjoy working on it and I keep learning a ton, but I really needed a change of context.
+
+Coming back to [Revo](https://revo-realms.aleksandargjoreski.dev/) meant coming back to 3D graphics, where I can experiment freely,
+express myself creatively and generally feel much more at home.
+
+Fresh eyes also made me notice quite a few things I had ignored or simply missed before.
+
+Some of that work had very little to do with grass directly. I spent some time separating the render and physics schedules as well
+as replacing the diagnostics tool I had with something built around Revo itself. The monitoring is not perfect, for example I am
+still not measuring real CPU and GPU frame time as well as I would like but I know where the numbers come from, and I can extend the
+system whenever and however I need.
+
+It gave me more control over the whole project and helped me see what the grass was doing much more clearly.
+
+That is why this grass article starts there, even if it wasn't the first thing I touched after coming back to the project.
+
+Before getting into any of that, this is where Revo is at the time of writing:
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      loading="lazy"
+      src={current720p}
+      poster={currentPoster}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    ></video>
+    <figcaption>The world is slowly taking shape :)</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+The chapters below continue from where the previous article stopped because this is pretty much the next part of the same story.
+
+The flip in the title is a wink at where all of this is actually going ;)

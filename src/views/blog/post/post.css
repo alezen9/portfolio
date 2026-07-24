@@ -87,6 +87,14 @@ blockquote[data-type="frame"] {
   border-color: rgba(var(--text-raw), 0.25);
 }
 
+blockquote[data-type="quote"] {
+  background: none;
+  border-right: 2px solid rgba(var(--text-raw), 0.25);
+  border-radius: 0;
+  padding-block: 0.25em;
+  text-align: right;
+}
+
 blockquote p:last-of-type {
   margin: 0;
 }
