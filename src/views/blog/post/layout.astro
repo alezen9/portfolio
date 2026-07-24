@@ -12,7 +12,7 @@ import "katex/dist/katex.min.css";
 
 type Props = CollectionEntry<"blog">["data"];
 
-const { title, description, ogImageSrc } = Astro.props;
+const { title, description, ogImageSrc, state } = Astro.props;
 ---
 
 <html lang="en" data-theme="dark">
@@ -22,6 +22,7 @@ const { title, description, ogImageSrc } = Astro.props;
       description={description}
       imageSrc={ogImageSrc}
     />
+    {state === "Draft" && <meta name="robots" content="noindex" />}
     <BlogHead />
 
     <style>
@@ -47,7 +48,7 @@ const { title, description, ogImageSrc } = Astro.props;
   <body>
     <Background />
     <Menu />
-    <TableOfContents client:load="svelte" />
+    <TableOfContents client:load />
     <ScrollToTop client:only="svelte" />
 
     <main class="wrapper">

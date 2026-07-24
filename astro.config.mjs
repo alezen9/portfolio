@@ -19,7 +19,11 @@ export default defineConfig({
       remarkPlugins: [remarkHighlightPlugin, remarkMath],
     }),
   },
-  integrations: [sitemap(), svelte(), mdx()],
+  integrations: [
+    sitemap({ filter: (page) => !page.includes("/drafts/") }),
+    svelte(),
+    mdx(),
+  ],
   devToolbar: {
     enabled: false,
   },

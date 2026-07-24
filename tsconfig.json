@@ -4,12 +4,12 @@
   "exclude": ["dist"],
   "compilerOptions": {
     "paths": {
-      "@components/*": ["src/components/*"],
-      "@islands/*": ["src/components/islands/*"],
-      "@utils/*": ["src/utils/*"],
-      "@styles/*": ["src/styles/*"],
-      "@content/*": ["src/content/*"],
-      "@views/*": ["src/views/*"]
+      "@components/*": ["./src/components/*"],
+      "@islands/*": ["./src/components/islands/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@styles/*": ["./src/styles/*"],
+      "@content/*": ["./src/content/*"],
+      "@views/*": ["./src/views/*"]
     },
     "strictNullChecks": true
   }
