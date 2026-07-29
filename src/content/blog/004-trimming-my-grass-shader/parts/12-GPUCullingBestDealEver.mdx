@@ -51,7 +51,7 @@ So... GPU culling it was. I had tried that once already, and my choice of route 
 <Layout class="lg-small" colMaxWidth="500px">
   <figure>
     <img src={skipStepsMeme} alt="Skipping steps meme" />
-    <figcaption>I mean, what can I say...</figcaption>
+    <figcaption>Go big or go home!</figcaption>
   </figure>
 </Layout>
 
@@ -84,17 +84,17 @@ blades at the same time.
 The operation behind all of this is `atomicAdd`:
 
 ```typescript
-private visibleBladeIndices = instancedArray(config.COUNT, "uint");
+const visibleBladeIndices = instancedArray(config.COUNT, "uint");
 
 // ...all the previous grass work
 
 If(isVisible, () => {
   // ...trail, wind and shadow updates
 
-  const drawIndex = atomicAdd(this.atomicCounter, 1);
+  const drawIndex = atomicAdd(atomicCounter, 1);
 
   // save the original blade index at its new compacted position
-  this.visibleBladeIndices.element(drawIndex).assign(instanceIndex);
+  visibleBladeIndices.element(drawIndex).assign(instanceIndex);
 });
 
 // ...
@@ -124,7 +124,7 @@ Every frame begins by clearing one value: that counter.
 
 ```typescript
 computeResetInstanceCount = Fn(() => {
-  atomicStore(this.atomicCounter, 0);
+  atomicStore(atomicCounter, 0);
 })().compute(1, [1]); // one counter only needs one thread
 ```
 
@@ -135,12 +135,12 @@ barrier inside one dispatch that could make every workgroup wait for the reset f
 The foundational rework introduced earlier lets me keep that order explicit:
 
 ```typescript
-this.computeTask = rendererManager.createComputeTask({
+const computeTask = rendererManager.createComputeTask({
   label: "Grass",
-  init: this.ssbo.computeInit,
+  init: ssbo.computeInit,
   update: [
-    this.ssbo.computeResetInstanceCount, // always reset first
-    this.ssbo.computeUpdate, // then rebuild the visible list
+    ssbo.computeResetInstanceCount, // always reset first
+    ssbo.computeUpdate, // then rebuild the visible list
   ],
 });
 ```
@@ -172,7 +172,7 @@ Three.js provides an `IndirectStorageBufferAttribute` construct that makes it ea
 set it up:
 
 ```typescript
-readonly indirectDrawAttribute = new IndirectStorageBufferAttribute(
+const indirectDrawAttribute = new IndirectStorageBufferAttribute(
   new Uint32Array([
     config.BLADE_INDEX_COUNT, // indexCount
     0, // instance count, updated every frame by the atomic counter
@@ -183,17 +183,17 @@ readonly indirectDrawAttribute = new IndirectStorageBufferAttribute(
   1, // size of each argument, all of them are uint so 1
 );
 
-private atomicIndirectDrawArguments = storage(
-  this.indirectDrawAttribute,
+const atomicIndirectDrawArguments = storage(
+  indirectDrawAttribute,
   "uint",
-  this.indirectDrawAttribute.count,
+  indirectDrawAttribute.count,
 ).toAtomic();
 
 // instance count is the second indirect draw argument
-private atomicCounter = this.atomicIndirectDrawArguments.element(1);
+const atomicCounter = atomicIndirectDrawArguments.element(1);
 ```
 
-- **`indexCount`** &rarr; how many indices make one blade (mine uses `15` at the time of writing)
+- **`indexCount`** &rarr; how many indices make one blade (mine uses `21` at the time of writing)
 - **`instanceCount`** &rarr; how many blades to draw (this is the counter)
 - **`firstIndex`** &rarr; where to begin in the geometry's index buffer
 - **`baseVertex`** &rarr; an offset added to the vertex indices (I do not need one)
@@ -242,9 +242,9 @@ const geometry = new GrassBladeGeometry({
 });
 
 geometry.instanceCount = config.COUNT; // logical maximum; the indirect draw supplies the current count
-geometry.setIndirect(this.ssbo.indirectDrawAttribute);
+geometry.setIndirect(ssbo.indirectDrawAttribute);
 
-const mesh = new Mesh(geometry, new GrassMaterial(this.ssbo));
+const mesh = new Mesh(geometry, new GrassMaterial(ssbo));
 ```
 
 `geometry.instanceCount = config.COUNT` keeps the complete field as the logical maximum. For a normal instanced draw, that is the
@@ -260,9 +260,9 @@ slot of the compacted list I was drawing. Draw instance `12`, for example, was n
 
 ```typescript
 // compacted draw index -> original blade index -> persistent blade data
-const bladeIndex = this.ssbo.visibleIndexBuffer.element(instanceIndex);
-const data1 = this.ssbo.computeBuffer1.element(bladeIndex);
-const data2 = this.ssbo.computeBuffer2.element(bladeIndex);
+const bladeIndex = visibleBladeIndices.element(instanceIndex);
+const data1 = computeBuffer1.element(bladeIndex);
+const data2 = computeBuffer2.element(bladeIndex);
 ```
 
 I read the real blade index from that slot first, then use it to access the same SSBO data as before.

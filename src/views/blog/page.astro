@@ -2,7 +2,6 @@
 import { getCollection } from "astro:content";
 import Layout from "./layout.astro";
 import FormattedDate from "@components/ui/FormattedDate.astro";
-import type { BlogPost } from "../../content.config";
 import type { CollectionEntry } from "astro:content";
 
 type RawPost = CollectionEntry<"blog">;
@@ -12,6 +11,10 @@ const isProd = import.meta.env.PROD;
 const filterProd = (post: RawPost) => post.data.state === "Release";
 const filterDev = (post: RawPost) =>
   ["Release", "Draft", "Example"].includes(post.data.state);
+const getPostHref = (post: RawPost) => {
+  const variant = post.data.state === "Draft" ? "drafts" : "blog";
+  return `/${variant}/${post.id}/`;
+};
 
 const posts = (await getCollection("blog"))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
@@ -60,7 +63,7 @@ const posts = (await getCollection("blog"))
     {
       posts.map((post) => (
         <li>
-          <a href={`/blog/${post.id}/`}>
+          <a href={getPostHref(post)}>
             <h2 class="title">{post.data.title}</h2>
             <h3 class="subtitle">{post.data.subtitle}</h3>
             <p class="date">

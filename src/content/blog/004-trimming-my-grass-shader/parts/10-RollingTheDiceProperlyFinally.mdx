@@ -45,15 +45,20 @@ The grass field follows the player, reusing the same buffer slots as blades wrap
 crushed blade could therefore move to a completely different place while its scale was still recovering.
 
 I ended up separating movement from wrapping, which also made that exact moment much easier to detect. `unwrappedOffset` is where
-the slot would land after applying the player's movement, while `wrapPosition()` only folds it back inside the grass field:
+the slot would land after applying the player's movement, while the `mod()` on each axis only folds it back inside the grass field:
 
 ```typescript
 const previousOffset = vec2(data1.x, data1.y);
 const unwrappedOffset = previousOffset.sub(uniforms.uPlayerDeltaXZ);
-const wrappedOffset = VegetationSsboUtils.wrapPosition(
-  unwrappedOffset,
+const wrappedOffsetX = mod(
+  unwrappedOffset.x.add(config.TILE_HALF_SIZE),
   config.TILE_SIZE,
-);
+).sub(config.TILE_HALF_SIZE);
+const wrappedOffsetZ = mod(
+  unwrappedOffset.y.add(config.TILE_HALF_SIZE),
+  config.TILE_SIZE,
+).sub(config.TILE_HALF_SIZE);
+const wrappedOffset = vec3(wrappedOffsetX, 0, wrappedOffsetZ);
 
 const wrapDelta = wrappedOffset.xz.sub(unwrappedOffset);
 const isWrapped = step(
@@ -63,8 +68,8 @@ const isWrapped = step(
 ```
 
 Most frames `wrappedOffset.xz` and `unwrappedOffset` are identical, so `wrapDelta` is `0`. Once a blade crosses an edge, the modulo
-inside `wrapPosition()` shifts it by one full tile. `step()` turns that jump into the `0/1` flag I need, and the comparison still
-works if a larger movement crosses more than one tile at once.
+shifts it by one full tile. `step()` turns that jump into the `0/1` flag I need, and the comparison still works if a larger
+movement crosses more than one tile at once.
 
 Whenever `isWrapped` is `1`, that buffer slot now represents a different patch of ground. Resetting its scale to the base value of
 the new location got rid of the most obvious version of the growth.
@@ -125,7 +130,7 @@ Adding projected size also made the decision more sensitive. The player moves, t
 up hovering around the blade's random roll. One small movement puts it above the roll, another puts it below, and the blade keeps
 changing its mind.
 
-Have you ever tried to balance a light switch exactly in the middle? Well, I surely did, and of course I exactly as one might
+Have you ever tried to balance a light switch exactly in the middle? Well, I surely did, and of course, exactly as one might
 expect: I couldn't.
 
 Turns out, snap-action light switches are a very practical example of hysteresis. Instead of using one threshold in both
@@ -198,27 +203,29 @@ The full sequence was:
 The compute shader has two visibility gates. The first one combines the frustum and stochastic decisions:
 
 ```typescript
-const passesStochasticThinning =
-  VegetationSsboUtils.computeStochasticKeep(/* ... */);
+const passesStochasticThinning = computeStochasticKeep(/* ... */);
 
-const isInFrustum = VegetationSsboUtils.computeVisibilityFromClip(/* ... */);
+const isInFrustum = computeFrustumVisibility(/* ... */);
 
 const isPotentiallyVisible = isInFrustum.mul(passesStochasticThinning);
-data1.assign(this.setVisibility(data1, isPotentiallyVisible));
+data1.assign(setVisibility(data1, isPotentiallyVisible));
 ```
 
 Every blade has to reach those checks. Only the ones that survive both enter the first `If`, where I sample the grass map and work
 out their final scale:
 
 ```typescript
-const originalScale = this.getOriginalScale(data1);
+const originalScale = getOriginalScale(data1);
 
 If(isPotentiallyVisible, () => {
-  const grassScale = VegetationSsboUtils.computeGrassScale(worldPos);
+  // terrainMaps -> R = baked shadows, G = grass, B = water
+  const maps = texture(terrainMaps, computeMapUvByPosition(worldPos.xz));
+
+  const grassScale = maps.g;
   const baseScale = originalScale.mul(grassScale);
   const isVisible = step(config.MIN_VISIBLE_SCALE, baseScale);
 
-  data1.assign(this.setVisibility(data1, isVisible));
+  data1.assign(setVisibility(data1, isVisible));
 
   If(isVisible, () => {
     // ...terrain height, trail, wind, shadow and atomic compaction
@@ -238,8 +245,8 @@ the buffer. The scale stays exactly where it was until the blade becomes visible
 I already had the previous visibility and the current stored scale, so the missing reset ended up being quite small:
 
 ```typescript
-const wasVisible = this.getVisibility(data1);
-const currentScale = this.getScale(data1);
+const wasVisible = getVisibility(data1);
+const currentScale = getScale(data1);
 
 const recoveredScale = mix(currentScale, baseScale, uniforms.uTrailGrowthRate);
 
@@ -263,9 +270,9 @@ If(isVisible, () => {
     crushedScale,
     uniforms.uKDown.mul(contact),
   );
-  data1.assign(this.setScale(data1, nextScale));
+  data1.assign(setScale(data1, nextScale));
 
-  const newWind = this.computeWind(
+  const newWind = computeWind(
     previousWind,
     worldPos,
     positionNoise,
@@ -295,9 +302,9 @@ I wanted a small pitch with short, nice-looking grass, painted lines, proper goa
 
 The shorter grass was the first part, and achieving it turned out to be quite simple once I removed my blinders.
 
-You may have noticed that the code above now calls `computeGrassScale()` instead of `computeAlpha()`. Underneath, it is still the
-exact same sample from the same green channel of `grassMap`. The value had always been continuous between `0` and `1`; I was simply
-reducing it to a yes or no instead of using it to control the height.
+You may have noticed that the code above now turns that sample into `grassScale` instead of a visibility test. Underneath, it is
+still the exact same sample from the same green channel of `terrainMaps`. The value had always been continuous between `0` and `1`;
+I was simply reducing it to a yes or no instead of using it to control the height.
 
 The texture was not missing anything. I was consuming it the wrong way.
 

@@ -1,214 +1,331 @@
+import Layout from "@components/blog/Layout.astro";
+import blellowMeme from "../assets/blellow_meme.webp?url";
+import prefixSumCompact from "../assets/prefix-sum-compact.webp?url";
+
 ## 13. GPU culling: aiming higher
 
+Before we begin, one small disclaimer: this last chapter is purely explanatory. I tried implementing this approach, what felt like
+the final boss, and failed successfully.
+
+Failures are good. That is how we learn and improve. I may not have reached the end goal, but I came away understanding the concept,
+and that alone was already a huge win for me!
+
+So, with this last chapter, I want to share what I learned through personal experience, discovery and plenty of trial and error,
+perhaps in the way I wish someone had explained it to me.
+
+Hopefully, this helps someone spend fewer hours than I did trying to understand it and leaves them more time to make different
+mistakes than mine :)
+
 I first heard about this approach through [Acerola's grass videos](https://www.youtube.com/@Acerola_t). I have watched them more
-times than I can remember. I like the way he explains things, I like his humour, and I consider him highly competent. When he said
-that stream compaction was complicated, I believed him.
+times than I can remember. I like the way he explains things, I like his dry humour, and I have learned a lot from his videos.
+When he said that stream compaction was complicated, I had no reason not to believe him.
 
-I still wanted to understand it.
+Still, I wanted to dig into it.
 
-{/* TODO(media): "I want problems, always" meme */}
+From there I went through YouTube videos, GPU Gems and several websites I unfortunately cannot trace back anymore.
 
-From there I went through YouTube videos, GPU Gems and several websites I unfortunately cannot trace back anymore. The algorithm
-that eventually started to click was the Blelloch scan, helped mostly by a video that was only four minutes long.
-
-It took me considerably longer than that, with plenty of pausing, rewinding and eventually a piece of paper because apparently the
-screen was no longer enough. I still have that paper. It is covered in faint numbers, crossed-out indices and arrows which barely
-make sense to me now, so a clean text example will probably do a better job here.
-
-Before looking at the algorithm itself, there are three terms worth separating because I often found them used very close to one another:
-
-- **stream compaction** &rarr; the goal: take a sparse set of survivors and pack them into a continuous output
-- **prefix sum**, or **scan** &rarr; the operation that calculates where each survivor should go
-- **Blelloch scan** &rarr; one parallel algorithm for calculating that prefix sum
+The algorithm that eventually started to click was the Blelloch scan, helped mostly by
+[this video](https://www.youtube.com/watch?v=mmYv3Haj6uc). It was only four minutes long.
 
 <br />
 
-### What the prefix sum gives us
-
-Start with eight blades and one visibility flag for each of them:
-
-```text
-items:  A  B  C  D  E  F  G  H
-keep:   1  0  1  1  0  0  1  1
-```
-
-On a CPU, I could walk from left to right with a counter and append every item whose flag is `1`:
-
-```text
-output: A  C  D  G  H
-```
-
-If I write down the value of that counter before visiting each item, I get this:
-
-```text
-scan:   0  1  1  2  3  3  3  4
-```
-
-This is an **exclusive prefix sum**. Exclusive means that an element does not include its own flag in the sum. Each value simply answers the question: how many surviving items came before me?
-
-That answer also happens to be the destination of every survivor:
-
-```text
-A: keep 1, scan 0  -> output[0]
-C: keep 1, scan 1  -> output[1]
-D: keep 1, scan 2  -> output[2]
-G: keep 1, scan 3  -> output[3]
-H: keep 1, scan 4  -> output[4]
-```
-
-The discarded blades have scan values too, but they simply do not write anything. Every surviving blade receives a unique output position, and none of them had to increment a shared counter to get it.
-
-That result is exactly what I wanted. Producing the scan row in parallel is where it gets more complicated. Every value appears to
-depend on everything to its left, which sounds very much like the kind of sequential loop we are trying to avoid.
+<Layout class="lg-small" colMaxWidth="500px">
+  <figure>
+    <img
+      src={blellowMeme}
+      alt="Reese proudly holding up his green Blellow experiment"
+    />
+    <figcaption>Blello~w~ch</figcaption>
+  </figure>
+</Layout>
 
 <br />
 
-### Going up
+Understanding it took me considerably longer, with plenty of pausing, rewinding and eventually an old-school approach with pen and
+paper, because apparently the screen was no longer enough.
 
-Blelloch scan solves this in two phases. The first one is the **up-sweep**, sometimes called the reduce phase. Instead of walking through the entire array, it combines neighboring groups into progressively larger partial sums.
-
-We start with the visibility flags:
-
-```text
-[1, 0, 1, 1, 0, 0, 1, 1]
-```
-
-At the first level, split the values into pairs and add the left value of every pair into the right one:
-
-```text
-[1, 1, 1, 2, 0, 0, 1, 2]
-```
-
-The values at indices `1`, `3`, `5` and `7` now contain the totals for groups of two:
-
-```text
-[1+0, 1+1, 0+0, 1+1]
-   1      2      0      2
-```
-
-At the second level, combine those pairs into groups of four. The total of the left half is added into the total of the right half:
-
-```text
-[1, 1, 1, 3, 0, 0, 1, 2]
-```
-
-Index `3` now contains the total of the first four flags, while index `7` contains the total of the last four. One final addition combines the two halves:
-
-```text
-[1, 1, 1, 3, 0, 0, 1, 5]
-```
-
-The last cell now contains `5`, which is the total number of surviving blades.
-
-There is no actual tree stored somewhere in memory. The tree is just a useful way to picture which groups interact at every level. All the additions on one level are independent and can happen in parallel, but each level has to finish before the next one begins.
-
-For eight values, the total reaches the top after three ordered levels. Adding more values still adds work, of course, but it does not add one ordered step per value. The depth grows logarithmically.
-
-At this point we have the total, but not the scan row. The partial sums now need to travel back down through the same structure.
-
-Before that starts, save the total and replace the last cell with `0`:
-
-```text
-total: 5
-array: [1, 1, 1, 3, 0, 0, 1, 0]
-```
-
-That zero represents the prefix entering the complete array. Nothing comes before the first element, which is also what eventually makes the result exclusive.
+I still have that sheet. It is covered in faint numbers, crossed-out indices and arrows which barely make sense to me now. It
+deserves a brief appearance anyway, if only as proof of the process. The explanation below follows the same eight values in a
+cleaner form.
 
 <br />
 
-### Coming back down
-
-The **down-sweep** applies the same small operation to every pair, starting from the widest one and working back towards the original neighbors:
-
-1. Save the old value on the left.
-2. Move the prefix from the right into the left.
-3. Add the saved left value to that prefix and store the result on the right.
-
-At the widest pair, the old left value is `3` and the prefix on the right is `0`:
-
-```text
-before: left = 3, right = 0
-after:  left = 0, right = 3
-
-[1, 1, 1, 0, 0, 0, 1, 3]
-```
-
-The left half has nothing before it, so its prefix is `0`. The right half has the three survivors from the left half before it, so its prefix is `3`.
-
-Apply the same rule to the two groups below it:
-
-```text
-[1, 0, 1, 1, 0, 3, 1, 3]
-```
-
-Then apply it once more to the original neighboring pairs:
-
-```text
-[0, 1, 1, 2, 3, 3, 3, 4]
-```
-
-That is the exclusive scan we were looking for:
-
-```text
-items:  A  B  C  D  E  F  G  H
-keep:   1  0  1  1  0  0  1  1
-scan:   0  1  1  2  3  3  3  4
-```
-
-It is worth reading it normally again after all those steps. Before `A` there are `0` survivors. Before `B` there is `1`. Before `D` there are `2`, and before `H` there are `4`. The up-sweep collected the partial sums, planting the zero established the first prefix, and the down-sweep distributed the correct prefix to every position.
-
-Blelloch scan performs linear total work across all its levels, but the ordered depth is logarithmic. The number of additions still grows with the number of elements. The useful part is that many of those additions can happen at the same time.
+<Layout class="lg-small">
+  <figure>
+    <img src={prefixSumCompact} alt="My handwritten Blelloch scan notes" />
+    <figcaption>
+      My original Blelloch scan notes, untouched since then :)
+    </figcaption>
+  </figure>
+</Layout>
 
 <br />
 
-### Compacting the stream
+Before looking at the algorithm itself, there are three related terms worth separating because I often found them used very close
+to one another:
 
-Once the scan exists, the actual compaction is fairly straightforward. Every thread already knows its original blade index, whether the blade survived and the output position stored in the scan.
+- **Blelloch scan** &rarr; calculates the prefix sum in parallel, producing the total number of visible blades at the root along the
+  way
+- **prefix sum**, or **scan** &rarr; gives every visible blade its output position
+- **stream compaction** &rarr; writes those blades into their positions, producing a contiguous output
 
-Only the surviving threads write:
+In short:
+
+**Blelloch scan** &rarr; **prefix sum** &rarr; **stream compaction** &rarr; **contiguous output**
+
+> The atomic counter from the previous chapter was already performing stream compaction. It gave every visible blade a unique
+> output position, but they all had to update the same shared counter to get one. The prefix sum is another way to generate those
+> positions in parallel, without that single point of contention.
+
+<br />
+
+### All together now
+
+What helped me make sense of Blelloch scan was relating its shape to the more familiar merge sort algorithm. The two do very
+different jobs, but they have a similar structure and rhythm.
+
+Both start with pairs, combine them into groups of four, then eight, and continue until everything meets at the end. The difference
+is that merge sort combines sorted groups, while Blelloch scan combines partial sums.
+
+Same structure, different process.
+
+Just like in merge sort, every group on the same level can be processed independently. That familiar property is crucial here
+because it allows the GPU to process many groups in parallel before moving to the next level. Once the total reaches the top,
+Blelloch scan does something merge sort does not: it travels back down through the same structure, distributing the prefixes along
+the way.
+
+That structure is also what I was trying to capture in my notes above.
+
+It helps to picture Blelloch scan as a tree: the up-sweep is on the left and the down-sweep is on the right. We start at the leaves
+on the left, move towards the root in the middle, then descend towards the leaves on the right to produce the scan.
+
+That was simpler for me to imagine, but on screen and paper I found it easier to reason about each side as a stacked sequence of
+levels. That is the framing I will use below.
+
+Here is the complete input and the result we are trying to produce:
 
 ```text
-input A writes itself to output[0]
-input C writes itself to output[1]
-input D writes itself to output[2]
-input G writes itself to output[3]
-input H writes itself to output[4]
+blades:      A  B  C  D  E  F  G  H
+visibility:  1  0  1  1  0  0  1  1  // 1 = visible, 0 = not visible
+scan:        0  1  1  2  3  3  3  4  // result
 ```
 
-The final visible list becomes:
+The `scan` row is an **exclusive prefix sum**. Exclusive means that the visibility of the current blade is not included in its
+value. Each number answers one question:
+
+**How many visible blades came before this blade?**
+
+> The `scan` row may look sorted, but nothing was compared or reordered. It only increases because the visibility flags are either
+> `0` or `1`. The accumulated count can stay the same or go up, but never down.
+
+Producing that result sequentially from left to right would be fairly straightforward. Blelloch scan instead, calculates it in
+parallel through two phases: the **up-sweep** and the **down-sweep**.
+
+The up-sweep collects partial sums until they meet at the root (left side of the tree). The down-sweep then distributes those sums
+back through the same structure until every blade receives its prefix (leaves in the right side of the tree).
+
+**Up-sweep**
+
+During the up-sweep, neighbouring values are added in pairs. The resulting totals are combined again into fewer, progressively
+larger groups until everything meets at the root.
 
 ```text
-[A, C, D, G, H]
+blades:      A   B   C   D   E   F   G   H
+visibility:  1   0   1   1   0   0   1   1
+             └───┤   └───┤   └───┤   └───┤
+level 1:         1       2       0       2    // 1 + 0, 1 + 1, 0 + 0, 1 + 1
+                 └───────┤       └───────┤
+level 2:                 3               2    // 1 + 2, 0 + 2
+                         └───────────────┤
+root:                                    5    // 3 + 2
 ```
 
-The total saved at the end of the up-sweep, `5`, becomes the instance count in the indirect buffer. Conceptually, this produces the same two things as my atomic implementation: a compact list of visible blade indices and the exact number of entries the renderer should draw.
+At level 1, neighbouring pairs are added together. At level 2, those pair totals are combined into groups of four. The final
+addition produces `5`, the total number of visible blades.
 
-The prefix sum is therefore not doing the culling itself. It turns the visibility flags produced by the culling pass into collision-free output addresses.
+One level still has to finish before the next one begins, but we no longer need one ordered step for every blade.
+
+The root gives us the total, but it does not yet tell us how many visible blades came before each position. That is what the
+down-sweep calculates.
+
+**Down-sweep**
+
+Before the down-sweep begins, the root contains `5`, the total number of visible blades. We save it because it will later become
+the instance count for the indirect draw. Then we replace the root with `0`. This is the identity for addition, but it also has a
+useful meaning here: nothing comes before the complete array.
+
+At every stage of the down-sweep, each value is the prefix of the group it represents. It tells us how many visible blades come
+before that group begins. The complete array, `A..H`, begins with `0`. When we divide it, `A..D` still has `0` visible blades before
+it, while `E..H` has `3` because the up-sweep found three visible blades in `A..D`. This continues until every group contains a
+single blade.
+
+From there, every group is divided into a left child and a right child:
+
+1. The left child inherits the prefix of its parent.
+2. The right child receives that prefix and sums to it the up-sweep total of its left sibling.
+
+<br />
+
+```text
+blades:      A   B   C   D   E   F   G   H
+root:                                    0    // 0 before A..H
+                         ┌───────────────┤
+level 2:                 0               3    // 0 before A..D, 3 before E..H
+                 ┌───────┤       ┌───────┤
+level 1:         0       1       3       3    // 0 before A..B, 1 before C..D, 3 before E..F, 3 before G..H
+             ┌───┤   ┌───┤   ┌───┤   ┌───┤
+scan:        0   1   1   2   3   3   3   4    // 0 before A, 1 before B, 1 before C, 2 before D, 3 before E, 3 before F, 3 before G, 4 before H
+```
+
+At level 2, `A..D` inherits the root prefix of `0`. `E..H` begins after `A..D`, which the up-sweep found to contain three visible
+blades, so it receives `0 + 3`.
+
+At level 1, `A..B` inherits `0`, while `C..D` receives `0 + 1`, using the up-sweep total of `A..B`. On the other side, `E..F`
+inherits `3`, while `G..H` receives `3 + 0` because `E..F` contains no visible blades.
+
+The same rule applies at every level until we reach the leaves. The values at those leaves form the exclusive prefix sum:
+
+```text
+blades:      A  B  C  D  E  F  G  H
+visibility:  1  0  1  1  0  0  1  1
+scan:        0  1  1  2  3  3  3  4
+```
+
+Before `A`, there are no visible blades. Before `D`, there are two. Before `H`, there are four. The up-sweep collected the partial
+sums, while the down-sweep distributed the correct prefix to every position.
+
+<br />
+
+### Know your place
+
+With the prefix scan done, most of the work is already behind us.
+
+Every visible blade now knows how many visible blades came before it, and along the way we also found the total number of visible
+blades.
+
+An array index already tells us how many elements come before it. Nothing comes before `output[0]`, one element comes before
+`output[1]`, three come before `output[3]`, and so on.
+
+That gives every scan value a convenient second meaning. For a visible blade, it is also the exact position where that blade
+belongs in the compacted output.
+
+```text
+blades:      A  B  C  D  E  F  G  H
+visibility:  1  0  1  1  0  0  1  1
+scan:        0  1  1  2  3  3  3  4
+index:       0  -  1  2  -  -  3  4  // - = does not write because visibility is 0
+```
+
+Some scan values are repeated, true. Both `B` and `C`, for example, receive `1`. This does not create a collision though
+because `B` is not visible and does not write anything. Only `C` uses that position.
+
+The same happens with `E`, `F` and `G`. They all receive `3`, but only `G` survived the visibility check.
+
+Every visible blade therefore has a unique destination:
+
+```text
+A -> output[0]
+C -> output[1]
+D -> output[2]
+G -> output[3]
+H -> output[4]
+```
+
+Writing the blades into those positions produces the compacted stream:
+
+```text
+output:      A  C  D  G  H  *  *  *
+count:       5
+
+* means whatever was there before, it doesn't matter
+```
+
+The total saved before the down-sweep, `5`, becomes the instance count in the indirect buffer.
+
+The renderer now has both things it needs: a contiguous list of visible blade indices and the exact number of entries to draw.
+
+Conceptually, this is the same result as the atomic approach from the previous chapter. The difference is how those positions were
+assigned. The atomic counter handed them out one at a time, while the prefix sum calculated them in parallel beforehand.
 
 <br />
 
 ### Eight values were the friendly version
 
-My piece of paper had eight values. The grass field is a 1024 &times; 1024 grid: exactly 1,048,576 blades.
+I used eight values on my piece of paper because it was a small enough number to follow step by step, even manually.
 
-Both counts are powers of two, which is convenient because every level splits cleanly in half. A less cooperative count would
-usually need padding to the next block-sized boundary or special handling for its final partial block.
+The grass field in Revo has 1,048,576 blades, arranged in a 1024 &times; 1024 grid. A completely different scale.
 
-A small scan fits inside one GPU workgroup, where its threads can share fast local memory and synchronize between every level of the up-sweep and down-sweep. 1M values need many workgroups, and separate workgroups cannot stop halfway through one dispatch and synchronize with each other.
+Both counts happen to be powers of two (huehue).
 
-The large version therefore becomes a hierarchy of smaller scans:
+The scan itself is not restricted to them, but the clean tree-shaped version we have been following expects every level to split
+evenly. Luckily, that is easy to fix.
 
-1. Scan every workgroup-sized block independently.
-2. Save the total produced by each block.
-3. Scan the smaller array containing those block totals. If that array is still too large, repeat the same idea again.
-4. Add the resulting block offsets back to the values inside each block.
-5. Scatter the surviving blade indices into the final compacted list.
-6. Write the total survivor count into the indirect draw arguments.
+If your visibility list does not contain a power-of-two number of entries, pad its end with zeros until it reaches the next one. If
+we had five blades, for example, we would add three visibility flags to reach eight:
 
-These are conceptual stages rather than a promise that every implementation uses exactly six dispatches. The precise pipeline depends on the workgroup size, the scan implementation and the way its intermediate buffers are arranged.
+```text
+original visibility:  1  0  1  1  0
+padded visibility:    1  0  1  1  0  0  0  0  // three zeros added at the end
+```
 
-That list describes the proper hierarchical version. My first implementation took a more direct route instead.
+Now the tree is full and the scan can continue exactly as before. The padded entries have a visibility of `0`, so they add nothing
+to the scan and never write into the compacted output.
+
+A small, surgical adjustment :)
+
+Getting the visibility list into shape is the easy part. Its size introduces another problem though.
+
+When the GPU runs a compute shader, it does not launch all one million threads as one enormous group. It divides them into smaller
+workgroups. In Revo, each workgroup contains `64` threads, with one thread processing one blade.
+
+For 1,048,576 blades, that gives us:
+
+```text
+1 compute dispatch
+└── 16,384 workgroups
+    └── 64 threads each
+        = 1,048,576 blades
+```
+
+The `64` is my chosen workgroup size, not a universal WebGPU limit. The default limit exposed by WebGPU is `256` total threads per
+workgroup, while a particular GPU may expose more. The browser validates the shader against the limits of the selected GPU device.
+
+There is a limit because a workgroup runs as one small, coordinated unit. Its threads need to fit within finite GPU execution
+resources and share a limited amount of fast local memory. WebGPU provides `16 KB` of this shared workgroup memory by default. A
+workgroup containing one million threads could not fit into those resources.
+
+I have not explored this side extensively or benchmarked different workgroup sizes, so I kept the Three.js default for now.
+
+A size of `1` would create 1,048,576 tiny workgroups, throwing away most of the benefit of grouping the work. A size of `256` would
+reduce that to 4,096 larger groups, but fewer groups do not automatically mean better performance. Larger groups require more GPU
+resources at once, while smaller groups introduce more scheduling overhead.
+
+`64` is a practical middle ground for me. It divides the blade count evenly, stays comfortably within WebGPU limits and already
+performs well for this workload. I kept it as a configurable constant on purpose though. Maybe one day :)
+
+Threads inside one workgroup can share local memory and wait for one another at a barrier. Separate workgroups cannot. They may run
+at different times or in a different order, so there is no barrier inside one dispatch that can stop all 16,384 workgroups and
+make them wait for each other.
+
+That is perfectly fine for my regular grass update because every blade can mostly be processed independently. Blelloch scan is
+different. Every level depends on the totals produced by the previous one, and those dependencies eventually cross workgroup
+boundaries.
+
+The complete scan therefore has to be built as a hierarchy of smaller scans:
+
+1. Scan each block independently and save its total.
+2. Scan the smaller list of block totals, repeating if necessary.
+3. Add the resulting offsets back into each block.
+4. Scatter the visible blades and write the final draw count.
+
+It is still the same idea, only repeated at different scales. The precise number of passes depends on the workgroup size, the scan
+implementation and the way its intermediate buffers are arranged.
+
+<br />
+
+### Reality check
+
+That is the clean version. My first implementation took a more direct route instead.
 
 I first tried putting all the up-sweep and down-sweep levels inside GPU loops. It looked like the neat option and appeared faster
 than driving the levels from JavaScript, but every level depends on the previous one being complete. A workgroup barrier can only
@@ -236,14 +353,3 @@ For now, atomic add is what I shipped. It keeps the whole visibility-to-draw pat
 on my laptop. That was enough for me to stop treating it like a consolation prize.
 
 I still wanted to explain the failed version properly because the main idea is genuinely elegant once it clicks. If this small example saves someone else a few rounds of staring at the same eight numbers, then at least my piece of paper served a purpose after all.
-
-<br />
-
-### External resources
-
-- [How Do Games Render So Much Grass?](https://www.youtube.com/watch?v=Y0Ko0kvwfgA) by Acerola
-- [Modern Foliage Rendering](https://www.youtube.com/watch?v=jw00MbIJcrk) by Acerola
-- [What I Did To Optimize My Game's Grass](https://www.youtube.com/watch?v=PNvlqsXdQic) by Acerola
-- [Blelloch Scan - Intro to Parallel Programming](https://www.youtube.com/watch?v=mmYv3Haj6uc&t=1s) by Udacity
-- [Prefix Sums and Their Applications](https://www.cs.cmu.edu/afs/cs.cmu.edu/project/scandal/public/papers/CMU-CS-90-190.html) by Guy E. Blelloch
-- [GPU Gems 3, Chapter 39: Parallel Prefix Sum (Scan) with CUDA](https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-39-parallel-prefix-sum-scan-cuda)

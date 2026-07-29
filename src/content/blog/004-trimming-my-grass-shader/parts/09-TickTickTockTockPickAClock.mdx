@@ -44,23 +44,24 @@ allows it.
 This is how those pieces are orchestrated:
 
 ```typescript
-private onAnimationFrame = (timestamp: DOMHighResTimeStamp) => {
+// both are { delta, player }; physicsState.delta is always the fixed 1/60 step
+onAnimationFrame = (timestamp: DOMHighResTimeStamp) => {
   timeManager.update(timestamp);
   if (timeManager.isPaused) return;
 
   physicsScheduler.update(timeManager.delta);
   for (let i = 0; i < physicsScheduler.pendingSteps; i++) {
-    eventsManager.emit("engine-before-physics", this.physicsState);
+    eventsManager.emit("engine-before-physics", physicsState);
     physicsManager.step();
-    eventsManager.emit("engine-after-physics", this.physicsState);
+    eventsManager.emit("engine-after-physics", physicsState);
     physicsManager.flush();
   }
 
   frameScheduler.update();
   if (!frameScheduler.shouldRender) return;
 
-  this.renderState.delta = timeManager.consumeRenderDelta();
-  eventsManager.emit("engine-render-update", this.renderState);
+  renderState.delta = timeManager.consumeRenderDelta();
+  eventsManager.emit("engine-render-update", renderState);
   rendererManager.render();
   monitoringManager?.sample(timestamp);
 };

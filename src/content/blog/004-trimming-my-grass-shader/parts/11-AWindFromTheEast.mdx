@@ -41,18 +41,10 @@ across Revo can consume:
 
 ```typescript
 export class WindManager {
-  private _uDirection = uniform(new Vector2(0, -1));
-  private _uIntensityDirectional = uniform(0);
+  readonly uDirection = uniform(new Vector2(0, -1));
+  readonly uIntensityDirectional = uniform(0);
 
   // ...
-
-  get uDirection() {
-    return this._uDirection;
-  }
-
-  get uIntensityDirectional() {
-    return this._uIntensityDirectional;
-  }
 }
 ```
 
@@ -81,7 +73,7 @@ how fast it moves and what full strength means for it.
 The names moved around a little while I worked on this. They started as lines, the longer version became ribbons, and the shorter
 trails I eventually kept are now streaks. Apparently even naming them needed a few passes :)
 
-The current visual layer uses a `56` &times; `56` field of sprite particles, `3,136` in total, and `12` streaks.
+The current visual layer is made of sprite particles and `12` streaks.
 
 I see the small particles as pollen or dust giving some volume to the air. The streaks are the readable part of the gust: long,
 soft strokes making the direction obvious without adding an arrow to the screen.
@@ -115,12 +107,11 @@ soft strokes making the direction obvious without adding an arrow to the screen.
       src={wind720p}
       poster={windPoster}
       type="video/mp4"
-      width={1158}
-      height={720}
       autoplay
       loop
       muted
       playsInline
+      style={{ aspectRatio: "1158 / 720" }}
     ></video>
     <figcaption>Directional wind in Revo Realms - by me</figcaption>
   </figure>
@@ -128,88 +119,61 @@ soft strokes making the direction obvious without adding an arrow to the screen.
 
 <br />
 
-The particles were the simpler half.
+Particles were much simpler. I spread `4,096` of them around Revo in a `64` &times; `64` grid, give every position a stable little
+offset, and keep its position and age inside a `vec4` SSBO.
 
-Their field covers `170` world units and stays centred around the player. I begin with a `56` &times; `56` grid, then give every
-cell a stable random offset. The distribution remains fairly even without looking like graph paper.
+The field follows the player and wraps at its edges in a similar way grass does. When a particle reaches its lifetime, it respawns
+from the side the wind is coming from, while the wind direction and a little noise keep it moving in a less regular way.
 
-Everything one particle needs fits inside one `vec4`: the first three components hold its XYZ position, while `w` stores its age.
-
-The initial compute pass fills that buffer, then the update pass takes over. Nothing on the CPU creates or removes individual
-particles.
-
-Age decides when a particle gets another life. Each one receives a slightly different lifetime from its stable hash, and once that
-time expires the compute shader reuses the same buffer slot. It places the particle on the upwind half of the field, anywhere across
-its width, then moves its age slightly below zero to add a short delay before it becomes visible again.
-
-Both the initial spawn and every later respawn sample the terrain height and grass mask at the new position. A particle over grass
-receives that terrain height plus a small random offset. One outside it gets a height of `0`, which the material recognises as an
-invalid spawn and keeps hidden until the next attempt.
-
-I only sample the grass mask at that point. Once a valid particle starts travelling, the wind is free to carry it above sand or
-water. Checking the mask continuously would make it pop in and out every time it crossed the edge of a grassy area.
-
-The shared wind direction provides the forward movement. A sample from the noise atlas adds some sideways and vertical drift,
-along with small changes in speed, so the whole field does not travel as one suspiciously organised block. The field follows the
-player, wrapping particles around its edges as Revo moves.
-
-The compute simulation continues between gusts, even while every particle is scaled down to zero. A stable hash gives each one a
-slightly different point during the intensity ramp at which it starts growing into view. The same happens in reverse during the
-decay, so they disappear gradually without another CPU-side fade or any transparency tricks.
-
-Keeping this small simulation alive gives every gust something already in motion instead of a field visibly starting from rest. I
-have not measured it as a problem worth complicating yet.
+A stable hash makes them scale in and out at slightly different moments during a gust, so the air fills up gradually instead of
+everything appearing at once.
 
 <br />
 
-### A trail of positions
+### One curve, twenty-five points
 
-The visible lines took a few more attempts.
+The streaks took a few attempts, visually and technically.
 
-The first version gave every line one position and asked the material to build the whole body around it with sine curves and noise.
-The result could move nicely, but a long shape knowing only the terrain height under its centre was always going to meet a hill
-eventually.
+Ghost of Tsushima was the inspiration for both the idea and the look, but I still wanted to tailor it to Revo. The final version is
+shorter and a little more playful than the big guiding wind strokes in Tsushima. I think it fits better in this small world.
 
-I tried sampling the terrain for every vertex. That stopped the line from passing straight through the ground. The movement no
-longer looked as smooth though, and I could suddenly see the individual segments as it curved.
+I tried a few different representations, each with a different approach, before settling on the version I ended up keeping.
 
-The next experiment used a different representation, and for a little while I kept both versions around while deciding which one I
-preferred. The first streaks were quite fat and very linear. Then they undulated too much. I kept adjusting their width, heading,
-length and speed until the shorter trails looked much closer to what I had in mind, then removed the ribbons and kept those.
+Each of the `12` streaks starts as a very small piece of state stored in an SSBO: where its curve begins, how far it has travelled
+along that curve, and a smooth flight height.
 
-The current version is easier to picture as one moving point dragging a short memory of where it has been. That point is the head
-of the streak.
+The points that draw the actual stroke live in another buffer. Every streak is a plane split into `24` segments, which gives it `25`
+horizontal rows. The compute pass calculates one centre position for every row.
 
-In code, every streak is an instance of the same plane, split into `24` segments. Its shape comes from `25` positions stored in an
-SSBO: one current head and the history needed by the remaining segments. Each point stores its XYZ position, with `w` currently
-unused. A second, much smaller buffer stores one age per streak. That is all the per-streak state stored in the two buffers.
+Each row has two vertices, one for each edge of the plane. Both read the same centre position, then the material pushes one to the
+left and the other to the right to give the streak its width. Storing two separate positions for the row would only duplicate that
+centre point.
 
-The initial compute pass places every streak somewhere inside the field and gives it a different starting age. From there the update
-pass owns its lifecycle. A negative age keeps it waiting, reaching zero lets it move and reaching the end of its lifetime sends it
-to a new position with another short delay. The CPU never needs to spawn a streak or move one around.
+When the player swipes to call the wind, `WindManager` starts a gust and the streaks are placed around the field. During the
+gust, the compute pass moves them with the shared direction and intensity, each with a small stable speed variation so they do not
+all march across the screen together.
 
-The head follows the direction from `WindManager`, although not perfectly. The noise atlas bends that direction slightly, a sine
-adds a gentle swirl and a few stable variations change the speed. The field itself is centred a little ahead of the player along
-that same wind direction.
+The path itself is simple. It moves forward in the wind direction while a sine wave bends it sideways a little. That pass then
+calculates `25` points along the curve, each one a little further behind its front.
 
-As the head moves, a small CPU-side timer decides when its position should be recorded. Every `0.075` seconds the next slot in the
-ring buffer becomes the new head. The compute shader copies the previous position into that slot before moving it, while
-`uRecordPhase` describes how far the current interval has progressed.
+It also checks the terrain underneath every point. Each streak keeps its own smooth flight height, but no point is allowed below
+the terrain plus a small clearance. This keeps the strokes above hills without making them stick rigidly to every bump in the ground.
 
-The material then walks backwards through that ring buffer. Each row of the segmented plane reads an older pair of positions and
-interpolates between them using `uRecordPhase`, which keeps the trail moving smoothly between recordings. Those neighbouring
-positions also provide the direction of the trail. Crossing it with the camera direction gives the material the sideways axis it
-needs to spread the vertices into a camera-facing strip.
+Once a streak has travelled far enough across the field, it places the streak back behind the player and builds its points again
+from there. The CPU never needs to move individual streaks around.
 
-This representation also made the terrain problem much easier. The compute shader first settles the head's final XZ position,
-including wrapping or respawning, and only then samples the heightmap there. It gently moves the head towards that terrain height
-plus its own lift, and the resulting Y position becomes part of the recorded history.
+The material reads the positions on either side of each row to find a smoother direction, then uses that to turn the plane into a
+camera-facing strip. A small fallback keeps it stable when the camera looks almost directly along the streak, and a little width
+correction stops curves from pinching too much.
 
-The material only reads those stored positions. It does not need to sample the terrain for every vertex anymore.
+I also tried `SpriteNodeMaterial` briefly. On paper it looked like it could take care of the camera-facing part for me, but I
+struggled to make it work properly with all the rest. It also took my stable `120` FPS down to around `105` in that experiment.
+That may well have been my implementation rather than the material itself, but I was not going to keep it around just to prove a
+point.
 
-If a streak wraps around the field or respawns somewhere else, all `25` positions move together. Otherwise the head would appear on
-one side while the tail stretched across the entire world trying to catch up. Different starting ages, lengths and speed pulses
-keep all `12` from marching across the screen in formation.
+The custom `MeshBasicNodeMaterial` is a little more hands-on, but it is fairly simple now, the streaks look right and the frame
+rate stays nice and stable where I want it.
 
-I am glad I finally built this small piece before moving on to culling. I had wanted it in Revo since the first time I saw it done
-so well in someone else's game I loved.
+Easy decision.
+
+I built the whole wind system purely out of love for someone else's game :)
