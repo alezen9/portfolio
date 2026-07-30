@@ -4,7 +4,7 @@ import prefixSumCompact from "../assets/prefix-sum-compact.webp?url";
 
 ## 13. GPU culling: aiming higher
 
-Before we begin, one small disclaimer: this last chapter is purely explanatory. I tried implementing this approach, what felt like
+Before we begin, one small disclaimer: this last chapter is purely explanatory. I tried implementing this approach, which felt like
 the final boss, and failed successfully.
 
 Failures are good. That is how we learn and improve. I may not have reached the end goal, but I came away understanding the concept,
@@ -118,7 +118,7 @@ value. Each number answers one question:
 > The `scan` row may look sorted, but nothing was compared or reordered. It only increases because the visibility flags are either
 > `0` or `1`. The accumulated count can stay the same or go up, but never down.
 
-Producing that result sequentially from left to right would be fairly straightforward. Blelloch scan instead, calculates it in
+Producing that result sequentially from left to right would be fairly straightforward. Blelloch scan instead calculates it in
 parallel through two phases: the **up-sweep** and the **down-sweep**.
 
 The up-sweep collects partial sums until they meet at the root (left side of the tree). The down-sweep then distributes those sums
@@ -216,8 +216,8 @@ scan:        0  1  1  2  3  3  3  4
 index:       0  -  1  2  -  -  3  4  // - = does not write because visibility is 0
 ```
 
-Some scan values are repeated, true. Both `B` and `C`, for example, receive `1`. This does not create a collision though
-because `B` is not visible and does not write anything. Only `C` uses that position.
+Some scan values are repeated, true. Both `B` and `C`, for example, receive `1`. This does not create a collision because `B` is not
+visible and does not write anything. Only `C` uses that position.
 
 The same happens with `E`, `F` and `G`. They all receive `3`, but only `G` survived the visibility check.
 
@@ -273,7 +273,7 @@ to the scan and never write into the compacted output.
 
 A small, surgical adjustment :)
 
-Getting the visibility list into shape is the easy part. Its size introduces another problem though.
+Getting the visibility list into shape is the easy part, its size though, introduces another problem.
 
 When the GPU runs a compute shader, it does not launch all one million threads as one enormous group. It divides them into smaller
 workgroups. In Revo, each workgroup contains `64` threads, with one thread processing one blade.
@@ -287,8 +287,9 @@ For 1,048,576 blades, that gives us:
         = 1,048,576 blades
 ```
 
-The `64` is my chosen workgroup size, not a universal WebGPU limit. The default limit exposed by WebGPU is `256` total threads per
-workgroup, while a particular GPU may expose more. The browser validates the shader against the limits of the selected GPU device.
+The `64` is my chosen workgroup size, not a universal WebGPU limit. The default limit exposed by WebGPU seems to be `256` total
+threads per workgroup, but I suppose it may differ per GPU. The browser validates the shader against the limits of the selected
+GPU device.
 
 There is a limit because a workgroup runs as one small, coordinated unit. Its threads need to fit within finite GPU execution
 resources and share a limited amount of fast local memory. WebGPU provides `16 KB` of this shared workgroup memory by default. A
@@ -301,15 +302,16 @@ reduce that to 4,096 larger groups, but fewer groups do not automatically mean b
 resources at once, while smaller groups introduce more scheduling overhead.
 
 `64` is a practical middle ground for me. It divides the blade count evenly, stays comfortably within WebGPU limits and already
-performs well for this workload. I kept it as a configurable constant on purpose though. Maybe one day :)
+performs well for this workload. I kept it as a configurable constant on purpose so maybe one day I might reopen this front :)
 
-Threads inside one workgroup can share local memory and wait for one another at a barrier. Separate workgroups cannot. They may run
-at different times or in a different order, so there is no barrier inside one dispatch that can stop all 16,384 workgroups and
-make them wait for each other.
+Threads inside one workgroup can also share local memory and wait for one another at a barrier but separate workgroups cannot. They
+may run at different times or in a different order, so there is no barrier inside one dispatch that can stop all 16,384 workgroups
+and make them wait for each other.
 
-That is perfectly fine for my regular grass update because every blade can mostly be processed independently. Blelloch scan is
-different. Every level depends on the totals produced by the previous one, and those dependencies eventually cross workgroup
-boundaries.
+That is perfectly fine for my regular grass update because every blade can easily be processed independently.
+
+Blelloch scan is different. Every level depends on the totals produced by the previous one, and those dependencies eventually
+cross workgroup boundaries.
 
 The complete scan therefore has to be built as a hierarchy of smaller scans:
 
@@ -318,38 +320,5 @@ The complete scan therefore has to be built as a hierarchy of smaller scans:
 3. Add the resulting offsets back into each block.
 4. Scatter the visible blades and write the final draw count.
 
-It is still the same idea, only repeated at different scales. The precise number of passes depends on the workgroup size, the scan
-implementation and the way its intermediate buffers are arranged.
-
-<br />
-
-### Reality check
-
-That is the clean version. My first implementation took a more direct route instead.
-
-I first tried putting all the up-sweep and down-sweep levels inside GPU loops. It looked like the neat option and appeared faster
-than driving the levels from JavaScript, but every level depends on the previous one being complete. A workgroup barrier can only
-synchronize threads inside one workgroup, not the whole 1M-entry dispatch, so I could not trust the result once the scan crossed
-those boundaries.
-
-I tried the blunt version too: JavaScript issued one compute dispatch for every level and waited before starting the next one.
-Since 1,048,576 is 2<sup>20</sup>, that meant `20` ordered passes going up and another `20` coming back down, plus the identity reset
-and final compaction. The ordering was no longer ambiguous, but the incomplete pipeline was already making performance worse.
-
-Moving from that experiment to the proper hierarchy above meant adding the local scans, intermediate block totals, another scan
-over those totals, offsets to propagate back and the final scatter. I also had to express all of it through TSL, while the
-documentation left several of my questions unanswered. I ended up digging through the Three.js source just to understand how the
-indirect storage buffer was supposed to reach the geometry.
-
-Some attempts produced incorrect indices. Others made performance worse instead of better. By then a bad value could have come
-from almost any level of the scan, the compaction or the indirect draw, with very little visibility between them. Continuing to
-change things felt more like guessing than debugging, so I stopped.
-
-I am not blaming prefix-sum compaction for any of this. It can absolutely work for grass. My implementation had simply accumulated
-too many unverified boundaries for the time I could justify spending on it, so I left it there with the intention of returning one
-day.
-
-For now, atomic add is what I shipped. It keeps the whole visibility-to-draw path on the GPU and got the lake area back to 120 FPS
-on my laptop. That was enough for me to stop treating it like a consolation prize.
-
-I still wanted to explain the failed version properly because the main idea is genuinely elegant once it clicks. If this small example saves someone else a few rounds of staring at the same eight numbers, then at least my piece of paper served a purpose after all.
+It is still the same idea, only repeated at different scales. My implementation unfortunately never made it cleanly through those
+scales, but at least the eight values on my piece of paper did :)
