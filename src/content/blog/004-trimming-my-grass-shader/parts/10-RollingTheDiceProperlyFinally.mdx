@@ -145,9 +145,9 @@ there until it drops below `10`.
 In my case, with `rnd = 0.60` and `hysteresis = 0.11`, a hidden blade needs `p` to reach `0.71` before it appears. Once visible, it
 remains there until `p` falls below `0.49`.
 
-There is no longer one switching point I could somehow balance on. At `10`, moving back to `11` is not enough to switch again, and
-the same happens at `20` when moving back to `19`. That point does not exist, which finally explains why balancing a light switch
-was a lost battle from the beginning.
+There is no longer one switching point I could somehow balance on. After falling below `10`, moving back to `11` is not enough to
+switch again, and the same happens at `20` when moving back to `19`. That point does not exist, which also explains why
+balancing a light switch was a lost battle from the beginning.
 
 > The spring-loaded mechanism inside the switch makes the physical version even more obvious by snapping the lever towards either
 > side, but the hysteresis already made the switching boundary itself impossible to balance.
@@ -175,14 +175,22 @@ const p = pDistance.mul(pScreen);
 const cell = floor(worldPos.xz.div(spacing));
 const rnd = hash(cell.x.mul(12.9898).add(cell.y.mul(78.233)));
 
-const enterKeep = step(rnd.add(hysteresis), p);
-const stayKeep = step(rnd.sub(hysteresis), p);
+const enterThreshold = rnd.add(hysteresis).clamp();
+// keep it above 0, otherwise step(0, 0) returns 1 and keeps the blade
+const stayThreshold = rnd.sub(hysteresis).clamp(EPSILON, 1);
+
+const enterKeep = step(enterThreshold, p);
+const stayKeep = step(stayThreshold, p);
 
 return mix(enterKeep, stayKeep, previousKeep);
 ```
 
 When `previousKeep` is `0`, `mix()` selects `enterKeep` and the blade has to cross the higher threshold. When it is `1`, it selects
 `stayKeep` and the blade remains until it crosses the lower one.
+
+`p` never leaves the `0..1` range, so neither threshold should. Clamping the enter threshold means every blade can still appear
+when `p` reaches `1`. Starting the stay threshold at `EPSILON` gives us the opposite boundary: when `p` reaches `0`, every blade
+leaves.
 
 The roll now stays with the patch of ground, the probability also accounts for how large the blade is on screen, and hysteresis
 stops it from flickering around the threshold.
@@ -203,6 +211,8 @@ The full sequence was:
 The compute shader has two visibility gates. The first one combines the frustum and stochastic decisions:
 
 ```typescript
+const wasVisible = getVisibility(data1);
+
 const passesStochasticThinning = computeStochasticKeep(/* ... */);
 
 const isInFrustum = computeFrustumVisibility(/* ... */);
@@ -228,7 +238,7 @@ If(isPotentiallyVisible, () => {
   data1.assign(setVisibility(data1, isVisible));
 
   If(isVisible, () => {
-    // ...terrain height, trail, wind, shadow and atomic compaction
+    // ...terrain height, trail, wind, shadow and compaction
   });
 });
 ```
@@ -237,15 +247,16 @@ If(isPotentiallyVisible, () => {
 `MIN_VISIBLE_SCALE` cutoff removes almost-flat blades around its edges.
 
 The second `If` is worth keeping even if most candidates pass it. Anything rejected there skips the terrain height, trail, wind,
-shadow and atomic work. Sampling the grass map before the first gate would make all 1M blades pay for it instead.
+shadow and compaction work. We will get to that last part in chapter 12. Sampling the grass map before the first gate would make
+all 1M blades pay for it instead.
 
 That is exactly where the stored scale was getting stuck. Once a blade fails the first gate, its trail recovery no longer reaches
 the buffer. The scale stays exactly where it was until the blade becomes visible again.
 
-I already had the previous visibility and the current stored scale, so the missing reset ended up being quite small:
+I had already saved the previous visibility before either gate wrote a new value. Together with the current stored scale, the
+missing reset ended up being quite small:
 
 ```typescript
-const wasVisible = getVisibility(data1);
 const currentScale = getScale(data1);
 
 const recoveredScale = mix(currentScale, baseScale, uniforms.uTrailGrowthRate);
@@ -279,7 +290,7 @@ If(isVisible, () => {
     shouldReset,
   );
 
-  // ...shadow and atomic compaction
+  // ...shadow and compaction
 });
 ```
 

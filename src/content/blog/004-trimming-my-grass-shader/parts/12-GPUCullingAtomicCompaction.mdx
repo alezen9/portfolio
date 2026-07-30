@@ -7,16 +7,17 @@ import gpuCullingPoster from "../assets/posters/gpu_culling.webp?url";
 
 Alright, finally, the juicy part :)
 
-In the previous article I reduced the amount of grass that could make it to the fragment shader through a chain of three checks:
+Before real GPU culling, I was already reducing the amount of grass that could make it to the fragment shader through a chain of
+three checks:
 
 1. **Frustum culling** &rarr; reject blades outside the camera
 2. **Stochastic thinning** &rarr; gradually draw fewer blades further away
-3. **Alpha map** &rarr; do not grow grass where I had painted it out
+3. **Grass map** &rarr; reject blades whose resulting scale falls below a small threshold
 
 All three eventually produced one flag: `isVisible`.
 
 The compute shader used it to skip most of the heavier work for rejected blades. The material also moved the blades dropped by
-stochastic thinning and the alpha map outside the frustum, since those could still be on screen and create overdraw otherwise.
+stochastic thinning and the grass map outside the frustum, since those could still be on screen and create overdraw otherwise.
 
 This helped quite a lot. Every draw still started with all 1M blades though, so the GPU had to begin the vertex work for each one
 before the material could move the rejected ones away.

@@ -122,7 +122,7 @@ Producing that result sequentially from left to right would be fairly straightfo
 parallel through two phases: the **up-sweep** and the **down-sweep**.
 
 The up-sweep collects partial sums until they meet at the root (left side of the tree). The down-sweep then distributes those sums
-back through the same structure until every blade receives its prefix (leaves in the right side of the tree).
+back through the same structure until every blade receives its prefix (leaves on the right side of the tree).
 
 **Up-sweep**
 
@@ -162,7 +162,7 @@ single blade.
 From there, every group is divided into a left child and a right child:
 
 1. The left child inherits the prefix of its parent.
-2. The right child receives that prefix and sums to it the up-sweep total of its left sibling.
+2. The right child receives that prefix and adds to it the up-sweep total of its left sibling.
 
 <br />
 
@@ -273,7 +273,7 @@ to the scan and never write into the compacted output.
 
 A small, surgical adjustment :)
 
-Getting the visibility list into shape is the easy part, its size though, introduces another problem.
+Getting the visibility list into shape is the easy part. Handling one million values is a problem of its own, and not a trivial one.
 
 When the GPU runs a compute shader, it does not launch all one million threads as one enormous group. It divides them into smaller
 workgroups. In Revo, each workgroup contains `64` threads, with one thread processing one blade.
@@ -287,26 +287,27 @@ For 1,048,576 blades, that gives us:
         = 1,048,576 blades
 ```
 
-The `64` is my chosen workgroup size, not a universal WebGPU limit. The default limit exposed by WebGPU seems to be `256` total
-threads per workgroup, but I suppose it may differ per GPU. The browser validates the shader against the limits of the selected
-GPU device.
+The `64` is the workgroup size I use here, not a universal WebGPU limit. It is also the Three.js default, which I kept explicitly
+in Revo's config. WebGPU's default limit for the total number of threads per workgroup is `256`, although the selected GPU device
+may expose a different limit. The browser validates the shader against that device's limits.
 
 There is a limit because a workgroup runs as one small, coordinated unit. Its threads need to fit within finite GPU execution
 resources and share a limited amount of fast local memory. WebGPU provides `16 KB` of this shared workgroup memory by default. A
 workgroup containing one million threads could not fit into those resources.
 
-I have not explored this side extensively or benchmarked different workgroup sizes, so I kept the Three.js default for now.
+I have not explored this side extensively or benchmarked different workgroup sizes.
 
 A size of `1` would create 1,048,576 tiny workgroups, throwing away most of the benefit of grouping the work. A size of `256` would
 reduce that to 4,096 larger groups, but fewer groups do not automatically mean better performance. Larger groups require more GPU
 resources at once, while smaller groups introduce more scheduling overhead.
 
-`64` is a practical middle ground for me. It divides the blade count evenly, stays comfortably within WebGPU limits and already
-performs well for this workload. I kept it as a configurable constant on purpose so maybe one day I might reopen this front :)
+Conveniently, `64` divides the blade count evenly, stays comfortably within WebGPU limits and already performs well for this
+workload, so I had no reason to change the default. It remains a configurable constant on purpose so maybe one day I might reopen
+this front :)
 
-Threads inside one workgroup can also share local memory and wait for one another at a barrier but separate workgroups cannot. They
-may run at different times or in a different order, so there is no barrier inside one dispatch that can stop all 16,384 workgroups
-and make them wait for each other.
+Threads inside one workgroup can also share local memory and wait for one another at a barrier, but separate workgroups cannot.
+They may run at different times or in a different order, so there is no barrier inside one dispatch that can stop all 16,384
+workgroups and make them wait for each other.
 
 That is perfectly fine for my regular grass update because every blade can easily be processed independently.
 

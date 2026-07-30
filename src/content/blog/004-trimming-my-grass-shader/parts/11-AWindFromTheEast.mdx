@@ -19,8 +19,8 @@ It simply looked beautiful! It was genuinely useful and it let the HUD stay rema
 Swipe upward and the world itself points towards your destination. No line painted on the ground and no marker asking to be
 followed every second.
 
-At the time of writing, figuratively speaking of course, I am playing Ghost of Yotei, which uses the same mechanism, but Tsushima
-is where the idea came from for me.
+At the time of writing, I am playing Ghost of Yotei, which uses the same mechanism, but Tsushima is where the idea came from for
+me.
 
 Revo already had directional wind around the time I shared the previous article. The idea of making it visible with particles and
 lines had been there since I first added it. I just kept postponing that part until now.
@@ -47,7 +47,7 @@ export class WindManager {
 }
 ```
 
-Selecting a discovered landmark gives it a target, and a trackpad swipe up starts four simple phases:
+Selecting a discovered landmark gives `WindManager` a target, and a trackpad swipe up starts four simple phases:
 
 1. **Calculate direction** &rarr; Point from the player's current position towards the selected landmark.
 2. **Ramp intensity** &rarr; Smoothly increase the directional wind until it reaches full strength.
