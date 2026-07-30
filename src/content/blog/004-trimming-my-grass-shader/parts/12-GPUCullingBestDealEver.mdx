@@ -3,7 +3,7 @@ import skipStepsMeme from "../assets/skip_steps_meme.webp?url";
 import gpuCulling720p from "../assets/gpu_culling.mp4?url";
 import gpuCullingPoster from "../assets/posters/gpu_culling.webp?url";
 
-## 12. GPU culling: best deal ever
+## 12. GPU culling: atomic compaction
 
 Alright, finally, the juicy part :)
 
@@ -282,12 +282,16 @@ to them though.
 The monitoring panel reads the final count asynchronously once per second, only so I can see what the GPU decided. Rendering never
 waits for that diagnostic readback.
 
-The visible count reaches around 250k blades at most in the densest views and can fall much lower depending on where I look. The
-lake area is also back at stable 120 FPS even in development on my M2 MacBook Pro, instead of hovering around 105 to 110 and
-occasionally dropping to 100.
+The visible count reaches around 250k blades at most in the densest views, meaning only around one quarter of the complete field
+reaches the vertex stage there. It can fall much lower depending on where I look.
 
-Those numbers only describe this scene on my machine. For this workload though, the atomic counter was clearly cheap enough to
-justify the vertex work it removed.
+On my MacBook Pro's 120 Hz display, the lake area is back at a stable 120 FPS, instead of hovering around 105 to 110 and occasionally
+dropping to 100. On my 165 Hz monitor, Revo usually reaches the full 165 FPS, although the heavier views near the lake can still
+bring it down to around 130.
+
+These are still observations from this particular scene and machine, not proper CPU and GPU frame-time measurements. They do show
+that the culling recovered some headroom beyond the 120 FPS cap though. For this workload, the atomic counter was clearly cheap
+enough to justify the vertex work it removed.
 
 <br />
 
@@ -314,6 +318,6 @@ justify the vertex work it removed.
 
 The atomic counter solved the practical problem, but it also made every surviving blade touch the same memory location.
 
-There is another, potentially better way to give every blade a unique output slot without asking a shared counter.
+Prefix-sum compaction offers another way to give every blade a unique output slot without asking a shared counter.
 
 Unfortunately, understanding that sentence was considerably easier than implementing it.

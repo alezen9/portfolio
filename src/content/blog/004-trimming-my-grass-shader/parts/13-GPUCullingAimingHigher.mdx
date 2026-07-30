@@ -2,7 +2,7 @@ import Layout from "@components/blog/Layout.astro";
 import blellowMeme from "../assets/blellow_meme.webp?url";
 import prefixSumCompact from "../assets/prefix-sum-compact.webp?url";
 
-## 13. GPU culling: aiming higher
+## 13. GPU culling: prefix-sum compaction
 
 Before we begin, one small disclaimer: this last chapter is purely explanatory. I tried implementing this approach, which felt like
 the final boss, and failed successfully.
@@ -75,7 +75,7 @@ In short:
 
 > The atomic counter from the previous chapter was already performing stream compaction. It gave every visible blade a unique
 > output position, but they all had to update the same shared counter to get one. The prefix sum is another way to generate those
-> positions in parallel, without that single point of contention.
+> positions in parallel without using that shared counter.
 
 <br />
 
