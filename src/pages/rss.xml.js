@@ -8,7 +8,8 @@ export async function GET(context) {
   );
   return rss({
     title: "AG | Blog",
-    description: "...",
+    description:
+      "Personal notes, discoveries, and deep dives into web development, graphics, and everything I learn along the way.",
     site: context.site,
     items: posts.map((post) => ({
       ...post.data,

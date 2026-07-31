@@ -16,6 +16,7 @@ const zBlogPost = z.object({
   updatedDate: z.coerce.date().optional(),
   state: z.string(),
   ogImageSrc: z.string().optional(),
+  tags: z.array(z.string()),
 });
 
 export type BlogPost = z.infer<typeof zBlogPost>;

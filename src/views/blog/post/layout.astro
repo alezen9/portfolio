@@ -12,7 +12,30 @@ import "katex/dist/katex.min.css";
 
 type Props = CollectionEntry<"blog">["data"];
 
-const { title, description, ogImageSrc, state } = Astro.props;
+const { title, description, ogImageSrc, pubDate, updatedDate, state, tags } =
+  Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const imageURL = ogImageSrc ? new URL(ogImageSrc, Astro.site) : undefined;
+const articleStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  headline: title,
+  description,
+  datePublished: pubDate.toISOString(),
+  ...(updatedDate && { dateModified: updatedDate.toISOString() }),
+  ...(imageURL && { image: imageURL.href }),
+  keywords: tags,
+  mainEntityOfPage: {
+    "@type": "WebPage",
+    "@id": canonicalURL.href,
+  },
+  author: {
+    "@type": "Person",
+    name: "Aleksandar Gjoreski",
+    url: new URL("/about-me/", Astro.site).href,
+  },
+};
 ---
 
 <html lang="en" data-theme="dark">
@@ -21,8 +44,27 @@ const { title, description, ogImageSrc, state } = Astro.props;
       title={`AG | ${title}`}
       description={description}
       imageSrc={ogImageSrc}
+      ogType="article"
     />
     {state === "Draft" && <meta name="robots" content="noindex" />}
+    <meta property="article:published_time" content={pubDate.toISOString()} />
+    {
+      updatedDate && (
+        <meta
+          property="article:modified_time"
+          content={updatedDate.toISOString()}
+        />
+      )
+    }
+    <meta
+      property="article:author"
+      content={new URL("/about-me/", Astro.site).href}
+    />
+    {tags.map((tag) => <meta property="article:tag" content={tag} />)}
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(articleStructuredData)}
+    />
     <BlogHead />
 
     <style>
