@@ -227,7 +227,7 @@ creates an `instanceMatrix` with `count` &times; `16` floats. Revo never used th
 from the SSBO. Each matrix still took 64 bytes though (16 floats at 4 bytes each), which added up to roughly 67 MB of unused
 CPU-side memory across the whole field.
 
-Not exactly peanuts, so definitely a very welcome saving :)
+Not exactly peanuts, so definitely a very welcome saving.
 
 So I switched the blade geometry to `InstancedBufferGeometry` and used a regular `Mesh` instead:
 
