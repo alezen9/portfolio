@@ -1,7 +1,7 @@
 ---
 title: "The Book of Shadows"
 subtitle: "From baked textures to virtual shadow maps in Revo"
-description: "Why I stopped baking shadows in Blender, what I learned about shadow maps, cascades and virtual pages, and how I built virtual shadow maps into Revo with Three.js and WebGPU."
+description: "Why I stopped baking shadows in Blender, what I learned about shadow maps, cascades and virtual pages, and how I built virtual shadow maps into Revo with Three.js and WebGPU, light shafts included."
 pubDate: "2026-09-27"
 state: "Draft"
 tags:
@@ -13,6 +13,7 @@ tags:
   - "Shadow mapping"
   - "Compute shaders"
   - "Clipmaps"
+  - "Light shafts"
 ---
 
 import PostHeader from "@components/blog/PostHeader.svelte";
@@ -24,6 +25,7 @@ import FromABakeToACache from "./parts/04-FromABakeToACache.mdx";
 import FollowingOnePoint from "./parts/05-FollowingOnePoint.mdx";
 import GrassIsStillDifficult from "./parts/06-GrassIsStillDifficult.mdx";
 import TuningThePool from "./parts/07-TuningThePool.mdx";
+import LightThroughTheShadows from "./parts/08-LightThroughTheShadows.mdx";
 import Outro from "./parts/Outro.mdx";
 import ExploreMore from "./parts/ExploreMore.mdx";
 
@@ -56,6 +58,9 @@ import ExploreMore from "./parts/ExploreMore.mdx";
 <br />
 <br />
 <TuningThePool />
+<br />
+<br />
+<LightThroughTheShadows />
 <br />
 <br />
 <Outro />

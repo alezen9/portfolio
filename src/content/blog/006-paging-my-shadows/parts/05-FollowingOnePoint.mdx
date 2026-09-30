@@ -63,6 +63,47 @@ wide and two pages at x = 12 and x = 140. They land on the same table entry, but
 camera has moved far enough, the old slot must not pass as the new page just because the address matches. So every slot also
 stores a tag made from the page coordinates, and a lookup only counts if the tag matches too.
 
+The key picks the table entry, the tag tells two pages that share it apart:
+
+```typescript
+export const getPageTag = (pageCoordinate: Node<"uvec2">) => {
+  const tagX = pageCoordinate.x.bitAnd(TAG_MASK);
+  const tagY = pageCoordinate.y.bitAnd(TAG_MASK).shiftLeft(14);
+  return tagX.bitOr(tagY);
+};
+
+export const getPageKey = (
+  level: Node<"uint">,
+  pageCoordinate: Node<"uvec2">,
+) => {
+  const gridX = pageCoordinate.x.mod(VSM_PAGE_GRID_SIZE);
+  const gridY = pageCoordinate.y.mod(VSM_PAGE_GRID_SIZE);
+  const localKey = gridY.mul(VSM_PAGE_GRID_SIZE).add(gridX);
+  return level.mul(VSM_PAGES_PER_LEVEL).add(localKey);
+};
+```
+
+And the lookup every shadow sample goes through. A slot only counts if it still holds this exact page, with the same key, the same
+tag and the current generation (the generation changes when the sun moves and every page becomes stale at once):
+
+```typescript
+resolvePage(pageKey: Node<"uint">, pageTag: Node<"uint">) {
+  const entry = this.pageTableNode.element(pageKey);
+  const slotPlusOne = entry.x;
+  const hasSlot = slotPlusOne
+    .greaterThan(0)
+    .and(slotPlusOne.lessThanEqual(VSM_POOL_CAPACITY));
+  const slot = hasSlot.select(slotPlusOne.sub(1), uint(0));
+  const metadata = this.slotMetadataNode.element(slot);
+  const isResident = hasSlot
+    .and(metadata.x.equal(pageKey))
+    .and(metadata.y.equal(pageTag))
+    .and(metadata.w.equal(this.pageGeneration));
+  const hasDynamic = isResident.and(entry.y.equal(this.frame));
+  return { slot, isResident, hasDynamic, dynamicSlot: entry.z };
+}
+```
+
 {/* illustration S6, optional: a window 128 pages wide drawn as a strip, pages x = 12 and x = 140 both pointing to the same table entry, the entry storing a tag, and only the page whose tag matches getting through. */}
 
 What happens when the pool is full? Nothing clever, in this version. The page doesn't get a slot and that shadow is simply missing.
@@ -107,6 +148,33 @@ atomicMin(depth.element(depthIndex), storedDepth);
 Doing this in a compute shader instead of the normal raster pipeline gave me one path for every kind of caster: static meshes,
 things the CPU moves around and things whose shape only exists on the GPU.
 
+Rasterizing by hand sounds scarier than it is. Each triangle is projected into the page, and for every texel inside its bounding box
+three **edge functions** tell whether the texel center is inside. An edge function is just the signed area of the triangle formed by
+an edge and the point: positive on one side, negative on the other.
+
+```typescript
+const getEdge = (from: Node<"vec2">, to: Node<"vec2">, point: Node<"vec2">) => {
+  const edge = to.sub(from);
+  const offset = point.sub(from);
+  return edge.x.mul(offset.y).sub(edge.y.mul(offset.x));
+};
+```
+
+Divided by the area of the whole triangle, the three of them become the barycentric weights, which say how much each corner
+contributes to that texel. If none is negative the texel is covered, and the same weights interpolate the depth:
+
+```typescript
+const center = vec2(x, y).add(0.5);
+const firstWeight = getEdge(second.xy, third.xy, center).div(area).toVar();
+const secondWeight = getEdge(third.xy, first.xy, center).div(area).toVar();
+const thirdWeight = getEdge(first.xy, second.xy, center).div(area).toVar();
+const smallestWeight = firstWeight.min(secondWeight).min(thirdWeight);
+const isInside = smallestWeight.greaterThanEqual(0);
+```
+
+Alpha tested casters like the pine needles also interpolate the uvs with those weights and check the texture's opacity before
+writing.
+
 What gets stored is actually a height rather than a distance. With the sun above the world, the higher point along a ray is the one
 it meets first, which is all the comparison needs.
 
@@ -118,6 +186,17 @@ Static and moving casters live in separate pools, because they change at a very 
   GPU, so the player, anything moved from the CPU and things deformed on the GPU all work the same way
 
 That last part exists because of a cloth flag that broke the first version of it, but that's a story for another article ;)
+
+Registering a caster is the only thing an object has to do, and the options cover all of the above:
+
+```typescript
+export type VSMCasterOptions = {
+  type?: VSMLayerKind; // "static" or "dynamic"
+  depthBias?: number;
+  opacityNode?: Node<"float">; // alpha tested casters
+  positionNode?: Node<"vec3">; // shapes that only exist on the GPU
+};
+```
 
 <br />
 
@@ -142,6 +221,26 @@ Back to our pixel. It projects itself into the sun's view once more, follows the
 what's stored there. If the car was met first, the valley is blocked. Static and moving pages are sampled separately and their
 results multiplied.
 
+The simplest version of that comparison is also where the averaging rule from the first chapter shows up. Four neighbouring texels
+are each compared on their own, and only the yes or no answers get blended:
+
+```typescript
+compareDepth(slot: Node<"uint">, pageUv: Node<"vec2">, receiverDepth: Node<"float">) {
+  const position = pageUv.mul(VSM_PAGE_TEXELS).sub(0.5);
+  const origin = position.floor();
+  const weight = position.sub(origin);
+  const first = uvec2(origin.clamp(0, VSM_PAGE_TEXELS - 1));
+  const last = uvec2(origin.add(1).clamp(0, VSM_PAGE_TEXELS - 1));
+  const topLeft = this.getLit(slot, uvec2(first.x, first.y), receiverDepth);
+  const topRight = this.getLit(slot, uvec2(last.x, first.y), receiverDepth);
+  const bottomLeft = this.getLit(slot, uvec2(first.x, last.y), receiverDepth);
+  const bottomRight = this.getLit(slot, uvec2(last.x, last.y), receiverDepth);
+  const top = mix(topLeft, topRight, weight.x);
+  const bottom = mix(bottomLeft, bottomRight, weight.x);
+  return mix(top, bottom, weight.y);
+}
+```
+
 A single comparison is a hard yes or no, which looks jagged, so the final shadow is built from several comparisons around the
 point. How far apart they are depends on how far the blocker is. Close to the object that casts it, a shadow stays tight, further
 away it gets softer. The system first searches around the point for blockers to estimate that distance, then spreads a handful of
@@ -152,6 +251,19 @@ tiny it falls back to a cheap 3 x 3 filter instead.
 The shadow also doesn't just darken the final image. Remember the direct sun from step 1? Every material that receives shadows writes the
 part of its light that comes from the sun into a separate target, and the shadow only removes that part. The ambient light stays, so things in
 shadow keep their shape instead of turning into flat dark blobs.
+
+In code the whole resolve is short:
+
+```typescript
+private resolveShadows(sceneColor: Node<"vec4">, uv: Node<"vec2">) {
+  const visibility = this.sampler.resolveVisibility(uv);
+  const directSun = this.scene.directSun.sample(uv).rgb;
+  const shadowVisibility = mix(float(1), visibility, this.uShadowIntensity);
+  const sunOcclusion = float(1).sub(this.uSunVisibility.mul(shadowVisibility));
+  const occludedSun = directSun.mul(sunOcclusion);
+  return sceneColor.sub(vec4(occludedSun, 0)).max(0);
+}
+```
 
 <br />
 

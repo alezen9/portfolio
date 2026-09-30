@@ -1,0 +1,174 @@
+### Light through the shadows
+
+Once the system was stable, I started wondering what else all those pages could give me.
+
+The shadow maps can answer one question for any point in the world: does the sun reach it? Every receiver asks that about a point
+on a surface, but nothing stops me from asking about a point in the air.
+
+And that's exactly what light shafts are. Air in sunlight glows a little toward the camera, because dust and haze scatter some of
+the light your way. Air inside a shadow doesn't. The contrast between the two is what we call god rays: bright air, with dark gaps
+where something blocks the sun.
+
+Back to the car on the hill one last time. The air above the valley, inside the car's shadow, stays dark, and a ray from the camera
+that passes through it collects less light than one that doesn't.
+
+{/* illustration S7: side view, the car and valley from S1. A ray from the camera to the valley floor, split into a few sample dots. Dots in sunlit air drawn bright, dots inside the car's shadow volume drawn dark. Label "lit fraction = bright dots / all dots". */}
+
+<br />
+
+### Walking the ray
+
+For every pixel, the pass walks the camera ray from the eye to the surface it hits, in a few steps. At each step it asks the
+shadow maps whether the sun reaches that point, and counts how many of them were lit:
+
+```typescript
+Loop(STEP_COUNT, ({ i }) => {
+  const stepDistance = float(i).add(jitter).mul(stepLength);
+  const stepPosition = cameraPosition.add(rayDirection.mul(stepDistance));
+  const level = getReceiverLevel(stepDistance.mul(SEARCH_DISTANCE_SCALE));
+  litSum.addAssign(this.sampler.sampleSunVisibility(stepPosition, level));
+});
+const litFraction = litSum.div(STEP_COUNT);
+```
+
+The glow is the sun's color times three things:
+
+- the lit fraction along the ray
+- how much air there is between the camera and the surface, `1 - exp(-density * length)`, so a long ray through haze glows more
+  than a short one
+- how much light bounces toward the camera at that angle. That's a phase function, and I used the classic
+  Henyey-Greenstein one. Its
+  single knob says how much the air prefers scattering forward, which is why the effect is strongest when you look toward the sun
+
+```typescript
+const cosTheta = rayDirection.dot(sunDirection.negate());
+const phase = getHenyeyGreenstein(cosTheta, this.anisotropy);
+const opticalDepth = this.density.mul(rayLength);
+const scattering = float(1).sub(exp(opticalDepth.negate()));
+return this.lighting.uSunRadiance
+  .mul(phase)
+  .mul(scattering)
+  .mul(litFraction)
+  .mul(this.intensity);
+```
+
+The result is added to the image after the shadows and the water, and before bloom.
+
+<br />
+
+### Nothing showed up
+
+The first version rendered pure black. The debug view I built for it showed that the fog and the angle terms were fine, and the
+lit fraction was zero everywhere.
+
+TSL only emits statements like `Loop`, `toVar` and `addAssign` when they are built inside a `Fn`. My march was a plain method, so
+the whole loop was silently dropped and the sum stayed at its initial zero. Wrapping it in a `Fn`, like the sampler's own
+functions, fixed it. No error, no warning, just black.
+
+<br />
+
+### Pages nobody asked for
+
+The second version worked, and shimmered as soon as the camera moved, then calmed down after standing still for a moment.
+
+This one taught me something about the system itself. Remember step 1: pages only exist where some visible surface asked for them.
+A point in the air near the camera, followed along a low sun, lands on ground much further away, and that ground asked for a much
+coarser level. So the fine page the air sample wanted usually didn't exist, and a missing page counted as lit.
+
+I made a debug view that painted the share of missing samples, and the screen came out 75 to 85 percent grey, even standing still.
+Most of my light shafts were fake, and the real ones came and went while new pages were being drawn.
+
+The fix is to walk up the levels until one exists. Fog doesn't need centimetre texels anyway, so the search also starts two levels
+coarser than the distance suggests. Four times the distance is exactly two levels coarser, since each level is twice as wide:
+
+```typescript
+sampleSunVisibility(worldPosition: Node<"vec3">, level: Node<"uint">) {
+  const lightPosition = getLightPosition(
+    worldPosition,
+    this.context.lightBasis,
+  ).toVar();
+  const visibility = float(1).toVar();
+  Loop(
+    { start: level, end: uint(VSM_LEVEL_COUNT), type: "uint" },
+    ({ i: candidateLevel }) => {
+      const pagePosition = lightPosition.div(getPageSize(candidateLevel));
+      const pageCoordinate = getPageCoordinate(pagePosition);
+      const page = this.lookupPage(pageCoordinate, candidateLevel);
+      If(page.isResident, () => {
+        const pageTexel = pagePosition.fract().mul(VSM_PAGE_TEXELS).floor();
+        const texel = uvec2(pageTexel.clamp(0, VSM_PAGE_TEXELS - 1));
+        const staticLit = getPointLit(this.staticPool, page.slot, texel, worldPosition.y);
+        const dynamicLit = getPointLit(this.dynamicPool, page.dynamicSlot, texel, worldPosition.y);
+        const dynamicVisibility = mix(1, dynamicLit, float(page.hasDynamic));
+        visibility.assign(staticLit.mul(dynamicVisibility));
+        Break();
+      });
+    },
+  );
+  return visibility;
+}
+```
+
+A single height comparison per sample is plenty here. Unlike a shadow on the ground, nobody looks at the edge of a single sample in
+the air.
+
+<br />
+
+### Making it cheap
+
+The first working version cost 1.27 ms on my M2 Pro, at half resolution with 16 steps. Far too much for fog.
+
+What brought it down, in order:
+
+- **Quarter resolution and 12 steps**, down to about 0.37 ms. Haze is smooth, it doesn't need every pixel
+- **Reusing the previous frame.** The starting point of the steps is jittered with a pattern that changes every frame, and each
+  pixel blends 10 percent of the new result into what it had last frame. To find what it had, it projects its world position with
+  the previous frame's camera matrix. Four steps per frame then add up to many steps over a few frames
+- **Starting the level search coarser**, so most of the lookups that used to miss are skipped
+- **Eighth resolution**, which looked the same
+- **One pass instead of two.** The march and the frame reuse were separate passes at first. On Apple GPUs every render pass has a
+  fixed cost, so doing both in the same shader was a clear win
+
+```typescript
+const previousClip = this.previousViewProjection.mul(vec4(worldPosition, 1));
+const previousNdc = previousClip.xy.div(previousClip.w);
+const previousUv = vec2(
+  previousNdc.x.mul(0.5).add(0.5),
+  previousNdc.y.mul(-0.5).add(0.5),
+).toVar();
+const uvMinimum = previousUv.x.min(previousUv.y);
+const uvMaximum = previousUv.x.max(previousUv.y);
+const isOnScreen = uvMinimum
+  .greaterThanEqual(0)
+  .and(uvMaximum.lessThanEqual(1));
+const history = this.history.sample(previousUv);
+const historyWeight = float(isOnScreen).mul(HISTORY_WEIGHT);
+return mix(current, history, historyWeight);
+```
+
+I also tried moving it to a compute shader, expecting it to be even cheaper. It wasn't, it was noticeably slower, so it went back
+to a single small render pass and I didn't dig any further.
+
+Toggling it on and off in the same session, it now costs somewhere around 0.1 ms. The measurements were jumping around too much to
+give a more precise number, but it's in the range where I stopped caring.
+
+<br />
+
+### The lake
+
+One last surprise: a dark rim appeared all around the lake. The water blends toward the scene behind it near the shore, and it
+sampled that scene before the light shafts were added, while the terrain around it got them. Near the shore the water was mixing
+hazy terrain with haze free terrain. Moving the light shafts after the water fixed it.
+
+<br />
+
+### What it looks like
+
+{/* media: the pine near the Goku statue facing the sun, light shafts on, and the same shot with them off */}
+
+From Revo's camera, looking down at the ground from above, rays are short, 10 to 20 metres before they hit the ground, so the effect
+is subtle most of the time. It really shows when you look toward the sun past the pines or the statue, and that's exactly where I
+wanted it.
+
+It's also a nice proof of the whole design: the shadow maps already knew where the sun reaches, so light shafts were mostly a matter
+of asking them a new question.
