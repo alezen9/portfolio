@@ -37,10 +37,19 @@ block took it to **0.25 ms**.
 
 I refused to believe nobody had solved this better, so I went looking. Unreal and Blender both scan the depth buffer every single
 frame. Revo only does it when the view changes, and on a quarter of the pixels. What's left while moving is that scan and the first
-draw of pages the camera never needed before, which is simply the price of the view changing. After everything that went into this
-system, that felt like a good peak to stop on, even if there's probably a higher one somewhere.
+draw of pages the camera never needed before, which is simply the price of the view changing.
 
 Then I tried the Air again, and it flies. No more stutter in the fields :D
+
+Well, almost. Outside the map, where there's nothing but grass, terrain and the ball, it still lagged a little. The grass was doing
+its full shadow filter on pages that had nothing drawn in them, and at the edge of every blade it did it twice, once for the blade
+and once for the ground behind it. A page with no caster in it can only ever answer "lit", so now every page remembers whether
+anything was drawn into it, and the grass skips the work when nothing was. That took about 0.3 ms off out there, with no visible
+difference.
+
+It still doesn't feel perfect on the Air, and on my M2 Pro the field outside the map and the one in the middle of it now measure
+exactly the same, so that last bit stays open for now. After everything that went into this system, it felt like a good peak to stop
+on, even if there's probably a higher one somewhere.
 
 <br />
 
