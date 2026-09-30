@@ -1,0 +1,598 @@
+## Under the hood
+
+Everything so far was the story. This chapter is the manual. It walks through how the shadow system in Revo is actually built, file
+by file, in the order the work happens every frame, with the decisions behind each piece and the ones I tried and dropped.
+
+It's long on purpose. I wanted something I could come back to and read a bit at a time, and I tried to write it so it works at two
+levels: every concept gets a plain picture first, then the precise version. If you already know what a page table is, skip the
+metaphors. If you don't, skip the code blocks on the first read.
+
+<br />
+
+### The folder
+
+Everything lives in `src/systems/vsm`, one file per responsibility:
+
+```text
+src/systems/vsm/
+  VSMPass.ts              the conductor: owns everything, runs the frame, resolves shadows, debug views
+  VSMContext.ts           shared state: page table, slot metadata, counters, jobs, caster registry, change detection
+  VSMMath.ts              pure math: light space, clipmap levels, page keys and tags, window wrapping
+  VSMPages.ts             which pages are needed, which slot each one gets (requests and residency)
+  VSMClusterBucket.ts     casters cut into clusters of 64 triangles, their bounds in the sun's view, work lists
+  VSMDepthPool.ts         a pool of page slots and the compute rasterizer that fills them
+  VSMDynamicLayer.ts      the per-frame layer for moving casters, built on a second, smaller pool
+  VSMSampler.ts           everything a receiver does to get its shadow: lookup, compare, filter
+  VSMReceiverMaterials.ts materials that split their direct sunlight into a separate target
+  VSMLightShafts.ts       light shafts, the bonus from the previous chapter
+```
+
+And the wiring, from the outside in:
+
+```text
+Game ──► Graphics ──► FramePipeline ──► ScenePass ─► VSMPass ─► WaterPass ─► VSMLightShafts ─► HDR ─► Bloom ─► Tone mapping
+                                          │            │
+                                          │            ├── VSMContext (shared state, caster registry)
+                                          │            ├── VSMPages (requests, residency)
+                                          │            ├── VSMDepthPool "static" (512 slots)
+                                          │            ├── VSMDynamicLayer ── VSMDepthPool "dynamic" (64 slots)
+                                          │            ├── VSMSampler (reads both pools)
+                                          │            └── VSMLightShafts (reads through the sampler)
+                                          │
+                                          └── materials: VSMReceiverLambertMaterial / VSMReceiverStandardMaterial
+                                              write "directSun" and "softShadow" next to the color
+
+entities ──► graphics.vsmPass.registerCaster(mesh, options)
+```
+
+The rest of the game only ever touches two things: `registerCaster` to cast, and a receiver material to receive. Everything else is
+internal. That was a deliberate goal of the second version, after the special cases per receiver of the scrolling cache and the
+first paged attempt.
+
+<br />
+
+### A frame, in order
+
+This is what happens between two frames, from the top:
+
+```text
+1.  ScenePass renders the scene with 4x MSAA into color, depth, directSun and softShadow
+2.  VSMPass.render()
+      a. VSMContext.beginFrame   did the camera move, the sun change, a caster move?
+      b. pools sync              depth range, cluster buckets rebuilt if casters were added or removed
+      c. request pass            visible pixels set bits for the pages they need      (only if the view changed)
+      d. residency passes        reset, invalidate, collect, free, allocate            (only if something changed)
+      e. static raster           clear and draw newly allocated static pages           (only if residency ran)
+      f. dynamic layer           prepare, mark, touch, jobs, clear, raster             (every frame)
+      all of c to f go to the GPU as one list of compute dispatches
+3.  shadow resolve               every pixel looks up its page, compares, filters, removes blocked sunlight
+4.  WaterPass                    the lake, sampling the shadowed scene for refraction
+5.  VSMLightShafts               one small pass at 1/8 resolution
+6.  HDR, bloom, tone mapping
+```
+
+Steps c, d and e are the "only when needed" part. Standing still with nothing moving, the whole static side of the system does
+nothing at all.
+
+<br />
+
+### Looking from the sun
+
+Everything in the system happens in **light space**: the world seen from the sun, flattened.
+
+Imagine standing on the sun and looking down at Revo with a camera that has no perspective. Every sun ray is a straight line going
+into the picture, and a point in the world only needs two numbers to say which ray it's on. The third number, how far along the
+ray, is what the shadow map stores.
+
+Two axes perpendicular to the sun direction are enough to build that picture:
+
+```typescript
+export const computeLightBasis = (
+  sunDirection: Vector3,
+  lightX: Vector3,
+  lightY: Vector3,
+) => {
+  const horizontalLength = Math.hypot(sunDirection.x, sunDirection.z);
+  if (horizontalLength < 0.0001) lightX.set(1, 0, 0);
+  else
+    lightX.set(
+      sunDirection.z / horizontalLength,
+      0,
+      -sunDirection.x / horizontalLength,
+    );
+  lightY.crossVectors(sunDirection, lightX).normalize();
+};
+
+export const getLightPosition = (
+  worldPosition: Node<"vec3">,
+  lightBasis: VSMLightBasis,
+) => vec2(worldPosition.dot(lightBasis.x), worldPosition.dot(lightBasis.y));
+```
+
+Two dot products, that's the whole projection. The basis is only recomputed when the sun moves.
+
+For the third number I don't store a distance along the sun ray but the world **height**, normalized between a minimum and a
+maximum: `(maximumY - y) / (maximumY - minimumY)`. With the sun above the world, the highest thing on a ray is the first thing the
+ray hits, so "higher" and "closer to the sun" mean the same. The range is the terrain's own height range, 8 metres below and 64
+above, stretched to include every caster. If that range ever changes, every static page is redrawn, because every stored number
+would mean something else.
+
+Depths are stored as 24 bit integers in a plain storage buffer, not in a depth texture. More on why in the raster section.
+
+<br />
+
+### Clipmap levels, in numbers
+
+A **clipmap** is a stack of maps centered on the viewer, each twice as wide as the one below it but with the same number of
+texels, so each one is half as detailed. The name comes from a 1998 paper by Tanner, Migdal and Jones about terrain textures, and
+it's exactly the structure Unreal uses for directional light virtual shadow maps.
+
+Think of it as a set of maps of the same city at different zoom levels, all centered on where you stand. For your street you look at
+the detailed one, for the far hills the coarse one.
+
+In Revo:
+
+```text
+level   page size   covers (128 x 128 pages)   texel size
+0       0.5 m       64 m                        3.9 mm
+1       1 m         128 m                       7.8 mm
+2       2 m         256 m                       1.6 cm
+3       4 m         512 m                       3.1 cm
+4       8 m         1 km                        6.3 cm
+5       16 m        2 km                        12.5 cm
+6       32 m        4 km                        25 cm
+```
+
+A receiver picks its level from its distance to the camera:
+
+```typescript
+export const getReceiverLevel = (viewDistance: Node<"float">) => {
+  const distanceLevel = ceil(log2(viewDistance.max(0.0001)));
+  const biasedLevel = distanceLevel.add(vsmResolutionBias).sub(VSM_FIRST_LEVEL);
+  return uint(biasedLevel.clamp(0, VSM_LEVEL_COUNT - 1));
+};
+```
+
+`log2` of the distance means every doubling of distance moves one level coarser, so a shadow texel covers roughly the same number of
+screen pixels at any distance. The resolution bias (2 by default, a slider in the debug panel) shifts everything finer or coarser at
+once.
+
+Each level has a **window** of 128 by 128 pages that follows the camera. The page table doesn't store absolute positions, it stores
+the window, and the window wraps around: page 12 and page 140 share the same table entry, `140 mod 128 = 12`.
+
+A treadmill is a good picture. The belt is always the same 128 panels, and as you walk forward, the panel leaving behind you comes
+back around in front of you. Only the new panels in front need drawing.
+
+```typescript
+export const getPageKey = (
+  level: Node<"uint">,
+  pageCoordinate: Node<"uvec2">,
+) => {
+  const gridX = pageCoordinate.x.mod(VSM_PAGE_GRID_SIZE);
+  const gridY = pageCoordinate.y.mod(VSM_PAGE_GRID_SIZE);
+  const localKey = gridY.mul(VSM_PAGE_GRID_SIZE).add(gridX);
+  return level.mul(VSM_PAGES_PER_LEVEL).add(localKey);
+};
+```
+
+Page coordinates are shifted by `2^20` so they are always positive integers, which keeps all the page math in unsigned integers on
+the GPU, no negative modulo surprises.
+
+<br />
+
+### The data on the GPU
+
+Almost everything lives in storage buffers owned by `VSMContext`, shared by every pass. The hotel is the picture I kept in my head
+while building this.
+
+- **Rooms** are the pool slots. 512 static slots and 64 dynamic ones, each a 128 by 128 block of depths.
+- **The front desk ledger** is the page table: one entry for every page that could ever exist, 7 levels of 16,384, and each entry
+  says which room that page is in.
+- **The name on the door** is the slot metadata. The ledger can be wrong, because two pages share an entry, so every room also keeps
+  a card saying who's actually staying there.
+- **The check-out date** is the generation. When the sun moves, every stored depth becomes wrong at once, so instead of clearing
+  512 rooms I bump a single number, and every card with the old number counts as empty.
+
+```text
+page table     uvec4 per virtual page   x: slot + 1 (0 = none)   y: frame a moving caster marked it
+                                        z: dynamic slot          w: frame it was last active
+slot metadata  uvec4 per slot           x: page key   y: tag   z: last frame it was needed   w: generation
+request bits   1 bit per virtual page   114,688 bits in 3,584 words
+page jobs      uvec4 list               allocated section, active section, dynamic section
+counters       atomic uints             allocated, missing, active, empty, reusable, misses per level, redraws
+lists          uint list                miss list per level, empty slots, reusable slots
+depth pools    u32 per texel            24 bit height, plus one flag word per slot: "anything drawn here?"
+```
+
+Both the page table and the metadata have to agree for a lookup to count, which is `resolvePage` from step 2 of the previous chapter.
+
+<br />
+
+### Requests: raising hands
+
+`VSMPages.ts`, the request pass. One compute thread per 2 by 2 pixel block, reading one pixel of it.
+
+Picture a classroom where every pixel raises a hand for the page it needs. Thousands of pixels want the same few pages, so before
+raising your hand you look whether someone already did. That's the "check before write":
+
+```typescript
+const isBitClear = atomicLoad(word).bitAnd(bit).equal(0);
+const isNewRequest = isInWindow.and(isBitClear);
+If(isNewRequest, () => {
+  atomicOr(word, bit);
+});
+```
+
+An `atomicOr` is a read, modify and write that the GPU has to serialize when many threads hit the same word. A plain `atomicLoad` is
+just a read. Doing the read first and only writing when needed took the pass from 0.8 to 0.5 ms, and reading one pixel per 2 by 2
+block took it to 0.25 ms.
+
+Each pixel requests the pages its filter can touch, a margin of 3 texels around its own position, because the soft filter samples
+around the point and a sample on a page nobody asked for would read nothing.
+
+Soft receivers, grass and pine needles, request two levels: their dithered level and the one above, because they blend between two.
+
+The pass only runs when the view actually changed. `VSMContext.beginFrame` compares the camera with the last requested view, with a
+move threshold of 2 millimetres and a turn threshold of 0.0005 radians, plus the sun, the resolution sliders and the caster roster.
+If nothing changed, the request bits from last time are still valid.
+
+What I tried here and dropped, all measured: request tiles of 4 by 4 pixels, moving the pass to the end of the frame, merging
+requests per workgroup in shared memory, two level slots per tile. None of them helped, and the last one was slower.
+
+<br />
+
+### Residency: the front desk
+
+Five small compute passes turn raised hands into rooms:
+
+```text
+reset      counters to zero
+invalidate slots whose page left the window, or whose area a moved static caster touched, get generation 0
+collect    for every requested bit: resident?  yes: mark it used this frame, add an "active" job
+                                              no:  add the page key to its level's miss list
+free       every slot not used this frame goes to the "empty" list (no page, old generation) or the "reusable" list
+allocate   every miss gets a rank, finer levels first; the rank picks an empty slot, then a reusable one;
+           write the metadata, the page table entry and an "allocated" job
+```
+
+The ranking is what decides who sleeps outside when the hotel is full:
+
+```typescript
+// finer levels rank first so they win the free slots
+const rank = missIndex.toVar();
+Loop({ start: uint(0), end: level, type: "uint" }, ({ i: finer }) => {
+  const finerMisses = atomicLoad(
+    counters.element(finer.add(VSM_COUNTER_LEVEL_MISSES)),
+  );
+  const isWithinPool = finerMisses.lessThan(VSM_POOL_CAPACITY);
+  const cappedMisses = isWithinPool.select(
+    finerMisses,
+    uint(VSM_POOL_CAPACITY),
+  );
+  rank.addAssign(cappedMisses);
+});
+```
+
+Close detail is what you notice, so if space runs out it's the far, coarse pages that go without.
+
+Why so many tiny passes instead of one clever one? Each step needs the previous one to be completely finished on the whole GPU, and a
+separate dispatch is the simplest barrier there is. Each pass is trivially cheap, and they all go into the same compute submission.
+
+Two details worth knowing:
+
+- **Invalidation is local.** When a static caster moves, its old and new bounds are turned into page rectangles per level on the CPU
+  (`growPageRanges`), and only slots inside those rectangles are thrown away. Before that, any static caster that moved redrew
+  every page.
+- **The CPU mostly doesn't know.** Page counts come back to the CPU with an async readback once per second, only for the monitoring
+  panel and to know if pages are still missing. Nothing waits for the GPU.
+
+<br />
+
+### Casters, cut into clusters
+
+`VSMClusterBucket.ts`. A caster isn't drawn as a whole mesh. At registration, its triangles are cut into **clusters** of 64, each
+with a bounding box, like cutting a big poster into small tiles so you only have to carry the tiles you need.
+
+The idea comes from Nanite and mesh shading in general: small groups of triangles are the unit of culling. A cluster whose box doesn't
+touch a page never gets looked at for that page.
+
+```typescript
+export const VSM_CLUSTER_TRIANGLES = 64;
+```
+
+The last cluster of a mesh is padded with a triangle of zero area, so every cluster has exactly 64 triangles and the GPU never needs
+a special case.
+
+Casters are grouped into **buckets**. All plain opaque casters share one bucket, one set of buffers and one raster pass. Alpha tested
+casters, like the pine canopy, and casters whose shape comes from the GPU, like the flag, get a bucket each, because their raster
+shader is different.
+
+```typescript
+let key = "opaque";
+if (caster.opacityNode || caster.positionNode) key = caster.mesh.uuid;
+```
+
+A bucket stores four things per cluster instance: which instance, where its first vertex is, which cluster, how many triangles. Every
+instance of a `BatchedMesh` becomes its own instance, which is how all the pine trunks and canopies are one caster each.
+
+Every frame something moved, a small compute pass projects each cluster's box corners into light space:
+
+```typescript
+Loop({ start: 0, end: 8, type: "uint" }, ({ i: corner }) => {
+  const cornerSide = vec3(
+    corner.bitAnd(1),
+    corner.shiftRight(1).bitAnd(1),
+    corner.shiftRight(2).bitAnd(1),
+  );
+  const local = size.mul(cornerSide).add(minimum).toVar();
+  const world = getWorldPosition(
+    matrices,
+    instanceCluster.x,
+    local,
+    positionNode,
+  );
+  const light = getLightPosition(world, lightBasis);
+  bounds.assign(vec4(bounds.xy.min(light), bounds.zw.max(light)));
+});
+```
+
+For casters with a `positionNode`, the flag, box corners aren't enough, because the shape between them can bulge. Those clusters are
+bounded from every vertex instead. And `positionNode` itself is evaluated here, in a compute shader, by overriding what
+`positionLocal` and `instanceIndex` mean for that node:
+
+```typescript
+if (positionNode)
+  return positionNode.context({
+    overrideNodes: new Map<Node, () => Node>([
+      [instanceIndex, () => instance],
+      [positionLocal, () => local],
+      [positionGeometry, () => local],
+    ]),
+  });
+```
+
+That's the trick that lets the same TSL node that moves the flag's vertices in its material also move them in the shadow rasterizer.
+
+<br />
+
+### Work lists: who draws what
+
+For every cluster and every page job, one more compute pass checks whether the cluster's light space box overlaps the page, and if
+so appends a **work item**: "draw cluster 12 into page 305".
+
+```typescript
+If(overlaps, () => {
+  const itemIndex = atomicAdd(workCounter.element(WORK_COUNT_INDEX), 1);
+  If(itemIndex.lessThan(VSM_CLUSTER_MAX_WORK_ITEMS), () => {
+    workItems.element(itemIndex).assign(uvec2(jobIndex, instanceIndex));
+  });
+});
+```
+
+That's **stream compaction** with an atomic counter: every thread that has something to add grabs the next free index. It's the same
+technique I benchmarked against a prefix sum in the grass culling article, and for lists this size it's the right one.
+
+<br />
+
+### The rasterizer: painting by hand
+
+`VSMDepthPool.ts`. This is the heart of it, and the part I was most nervous about.
+
+Normally the GPU's rasterizer turns triangles into pixels. Here a compute shader does it itself. The reason is WebGPU: drawing into a
+page of a big atlas needs a viewport and scissor per page, and with one draw call for everything, I couldn't get that. In compute, a
+page is just an offset in a buffer. It also gave me one path for static meshes, instanced meshes, batched meshes and shapes that only
+exist on the GPU. Nanite does the same for small triangles, and this is a very small version of that idea.
+
+One workgroup of 64 threads per work item:
+
+1. Every thread projects one triangle of the cluster into the page and stores its three corners in **shared memory**, the fast memory
+   a workgroup shares.
+2. `workgroupBarrier()`, wait until all 64 triangles are there.
+3. Then the whole workgroup goes through the triangles one by one, and splits each triangle's bounding box of texels among its 64
+   threads.
+
+For each texel, the edge functions decide coverage, as shown in the previous chapter, and the depth is interpolated with the same
+weights. That approach, testing every pixel against three edge equations, goes back to Pineda's 1988 paper on parallel rasterization,
+and it's still how hardware does it.
+
+Many threads can hit the same texel with different triangles, and they finish in any order. The closest one has to win:
+
+```typescript
+const storedDepth = uint(texelDepth.mul(DEPTH_SCALE));
+atomicMin(depth.element(depthIndex), storedDepth);
+```
+
+Picture a wall where many painters paint at the same time, but a painter can only paint over a color that's further away than theirs.
+In the end, the wall shows the nearest color everywhere, no matter who came first.
+
+That's also why depth is a 24 bit integer in a buffer and not a depth texture: `atomicMin` only works on integers in storage buffers.
+
+Before drawing, the page is cleared to "infinitely far" (the maximum value), and the caster flag word of the slot is set to 0. Any
+triangle that touches the page sets it to 1. Receivers read that flag to skip filtering on pages with nothing in them, which saves
+the grass about 0.3 ms outside the map.
+
+Alpha tested casters, the pine needles, interpolate their uvs with the same weights and evaluate the material's own opacity node on
+the spot:
+
+```typescript
+const opacity = opacityNode.context({
+  forceUVContext: true,
+  getUV: () => texelUv,
+});
+isCovered = isInside.and(opacity.greaterThanEqual(alphaTest));
+```
+
+The static pool is 512 slots of 128 by 128 texels, 32 MiB. It started at 1,024. It never came close to running out, so I halved it.
+
+<br />
+
+### The dynamic layer: the overlay sheet
+
+`VSMDynamicLayer.ts`. Static pages are drawn once and kept. Moving casters would ruin that, because every frame they move, every page
+under them would have to be redrawn, including everything static in it.
+
+So moving casters get their own layer, like a transparent sheet on top of a printed map. The map is the static pool. The sheet is
+wiped and redrawn every frame, but only where something moving actually is. The final shadow is the map times the sheet.
+
+The layer runs every frame:
+
+```text
+prepare   clear its counters; stamp every page that is active this frame
+mark      every moving cluster stamps the active pages its light space box covers        (on the GPU)
+touch     count the stamped pages per level
+jobs      give each stamped page a dynamic slot, finer levels first, 64 slots in total
+clear, raster   into the dynamic pool, same rasterizer as the static one
+```
+
+Moving casters mark their own pages on the GPU. That's the flag's legacy: the first version asked the CPU for bounds, which a shape
+that only exists on the GPU can't give. Now nothing has to come back to the CPU, and a caster can be moved by the CPU, deformed on
+the GPU, or both.
+
+The pool was 400 slots once. In normal play the player uses between 5 and 15, the flag around 20, so it's 64 now, 4 MiB.
+
+<br />
+
+### Receivers: separating the sunlight
+
+`VSMReceiverMaterials.ts`. A shadow can't just darken a pixel. If it did, something in shadow would lose its ambient light and its
+shape too, and turn into a flat dark blob.
+
+So receiver materials split their light while shading. They extend three's own lighting models, let the parent compute the light as
+usual, and write the difference caused by the sun into a separate render target, `directSun`:
+
+```typescript
+const diffuseBefore = vec3(reflectedLight.directDiffuse).toVar();
+const specularBefore = vec3(reflectedLight.directSpecular).toVar();
+super.direct(lightData, builder);
+const diffuseGain = vec3(reflectedLight.directDiffuse).sub(diffuseBefore);
+const specularGain = vec3(reflectedLight.directSpecular).sub(specularBefore);
+this.directSun.addAssign(diffuseGain.add(specularGain));
+```
+
+It's like painting a picture in two layers: everything, and a separate sheet with only the sunlight. The shadow is allowed to erase
+parts of the sunlight sheet, nothing else.
+
+Two versions exist, one on top of Lambert (Phong lighting model) and one on top of Standard (physical lighting model). Grass and
+flowers also write a `softShadow` value into a third target, which tells the resolve to treat them as soft receivers.
+
+The three targets are compact on purpose: color, direct sun in an 11/11/10 bit float format, softness in 8 bits.
+
+<br />
+
+### The sampler: from a pixel to a shadow
+
+`VSMSampler.ts` is the biggest file, because it's where the quality is.
+
+For every pixel, `resolveVisibility` first checks the softness target. Sharp receivers, most of the world, go down one path. Soft
+receivers, grass and needles, go down another.
+
+**Sharp receivers.**
+
+1. **Receiver plane depth bias.** A surface that's tilted relative to the sun covers several shadow texels, and comparing all of them
+   at the pixel's own height causes acne. Using the screen space derivatives `dFdx` and `dFdy`, the sampler works out how the height
+   changes across light space, and every tap compares against the plane of the receiver, not a single height. The technique is known
+   as receiver plane depth bias, from Isidoro's 2006 GDC talk on shadow mapping tips.
+2. **Blocker search.** Five taps around the point, the center and four diagonals, at the widest filter radius. They collect the
+   average height of whatever is above the receiver.
+3. **Penumbra estimate.** Like with percentage closer soft shadows (Fernando, NVIDIA 2005): the further the blocker is from the
+   receiver, the wider the penumbra. Your hand's shadow on a wall is sharp when the hand is close and blurry when it's far.
+   ```typescript
+   const averageBlockerHeight = heightSum.div(count.max(1));
+   const sunHeight = this.context.sunDirection.y.abs().max(0.25);
+   const rayDistance = averageBlockerHeight.div(sunHeight);
+   const penumbraMeters = rayDistance.mul(filter.lightSize);
+   const penumbraTexels = penumbraMeters.div(receiver.texelMeters);
+   return penumbraTexels.clamp(filter.softness, filter.maxSoftness).toVar();
+   ```
+4. **Filter.** If the penumbra is tiny, a 3 by 3 tent filter, 9 comparisons with weights that fall off linearly, which gives smooth
+   edges for the price of nine loads. Otherwise, 8 taps on a spiral with the golden angle between them (a Vogel disk), rotated per
+   pixel with interleaved gradient noise, so the noise pattern changes from pixel to pixel without clumping. Interleaved gradient
+   noise is Jorge Jimenez's, from his 2014 talk on Call of Duty: Advanced Warfare's post processing.
+
+**Soft receivers.**
+
+- They read a coarser level on purpose, dithered between two neighbours, so shadows on grass are smooth gradients instead of sharp
+  noisy fragments. Like reading glasses for the blades: the detail is lost on purpose.
+- They read all four MSAA depths of the pixel. At the edge of a blade, one pixel holds grass and the ground behind it, and the color
+  already blended both. So the sampler shades the near surface, and, when the two are far enough apart and the page has casters, the
+  far one too, and mixes them by coverage.
+- If the page has no caster at all, they skip the filter, since the answer can only be "lit".
+
+Every lookup, sharp or soft, samples the static pool, and multiplies by the dynamic pool if the page has a dynamic slot this frame.
+
+<br />
+
+### The resolve
+
+In `VSMPass.ts`, one function, applied to the scene color in the HDR pass:
+
+```typescript
+const visibility = this.sampler.resolveVisibility(uv);
+const directSun = this.scene.directSun.sample(uv).rgb;
+const shadowVisibility = mix(float(1), visibility, this.uShadowIntensity);
+const sunOcclusion = float(1).sub(this.uSunVisibility.mul(shadowVisibility));
+const occludedSun = directSun.mul(sunOcclusion);
+return sceneColor.sub(vec4(occludedSun, 0)).max(0);
+```
+
+The scene color minus the part of the sunlight that didn't make it.
+
+<br />
+
+### Debug views
+
+Half of this system is invisible, so the debug views were as important as the code. All of them are in the Postprocessing folder of
+the debug panel, with a legend under the selector:
+
+- **Pages**: which clipmap level each surface uses, with page borders and missing pages in red
+- **Page heat**: how many frames ago each page was drawn, red for this frame through blue for old
+- **Shadow**: just the visibility
+- **Static depth** and **Dynamic depth**: what's stored in each pool for the page under each pixel
+- **Light shafts**: the in scattering on its own
+
+<br />
+
+### Light shafts
+
+`VSMLightShafts.ts`, from the previous chapter. It fits in this picture as one more consumer of `VSMSampler`: it calls
+`sampleSunVisibility` for points in the air instead of on surfaces, walks up the clipmap levels until a page exists, and runs as a
+single pass at an eighth of the resolution, with the previous frame reprojected and reused. The whole file is about 200 lines.
+
+<br />
+
+### Decisions, and what was tried
+
+| Decision                                                                          | Why                                                                             | Alternatives tried or considered                                                                                         |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Clipmap levels, 7, 128 by 128 pages                                               | Detail near the camera, coverage far, one scheme for everything                 | Cascades (tried years ago); a scrolling cache of shadow textures (first step, special cases everywhere)                  |
+| Pages of 128 by 128 texels                                                        | Small enough to only draw what's needed, big enough that page tables stay small | 256 texels in the first version                                                                                          |
+| Height instead of light distance                                                  | The sun is above the world, so height is the same order, and simpler            |                                                                                                                          |
+| 24 bit depth in a storage buffer                                                  | `atomicMin` needs integers in storage buffers                                   | Depth texture atlas with render passes (first version, then 16 bit to save memory)                                       |
+| Compute rasterizer                                                                | No per page viewport and scissor in one WebGPU draw; one path for all casters   | Render target atlas; about as fast with one moving caster, slower in a stress scene                                      |
+| Clusters of 64 triangles                                                          | Unit of culling against pages, one workgroup each                               | Whole meshes                                                                                                             |
+| Separate static and dynamic pools                                                 | Static pages are cached, moving casters would force redraws                     | One pool for everything (first version)                                                                                  |
+| Moving casters mark their pages on the GPU                                        | Shapes that only exist on the GPU can't report bounds to the CPU                | CPU bounds, GPU readback of bounds for the flag                                                                          |
+| Pool sizes 512 and 64                                                             | Measured needs in normal play, with a lot of room                               | 1,024 and 400                                                                                                            |
+| Request pass only when the view changes, check before write, one pixel per 2 by 2 | 0.8 ms to 0.25 ms                                                               | 4 by 4 tiles, end of frame, shared memory merge, level slots                                                             |
+| Direct sun in a separate target                                                   | Shadows remove sunlight only, ambient stays                                     | Darkening the final color                                                                                                |
+| Grass and flowers only receive                                                    | Blade shadows were noisy and expensive                                          | Per blade casting, a 2048 map just for grass, one blob per clump, screen space shadows (Days Gone, Ghost of Tsushima PC) |
+| Caster flag per slot                                                              | Grass skips filtering on empty pages, about 0.3 ms outside the map              | Skipping only the filter taps (0.15 ms)                                                                                  |
+
+<br />
+
+### Further reading
+
+Names to search for if you want to go deeper, roughly in the order they appear:
+
+- Lance Williams, "Casting curved shadows on curved surfaces", 1978: the original shadow map
+- Cascaded shadow maps, and Microsoft's "Common Techniques to Improve Shadow Depth Maps"
+- Tanner, Migdal and Jones, "The Clipmap: A Virtual Mipmap", 1998
+- Unreal Engine documentation, "Virtual Shadow Maps"
+- Blender's EEVEE Next shadow module developer documentation
+- Juan Pineda, "A Parallel Algorithm for Polygon Rasterization", 1988
+- Randima Fernando, "Percentage-Closer Soft Shadows", 2005
+- John Isidoro, "Shadow Mapping: GPU-based Tips and Techniques", GDC 2006
+- Jorge Jimenez, "Next Generation Post Processing in Call of Duty: Advanced Warfare", SIGGRAPH 2014
+- Bend Studio's screen space shadows, published with source code
+- Brian Karis, "High Quality Temporal Supersampling", SIGGRAPH 2014: the idea behind reusing previous frames
+- The Henyey-Greenstein phase function, 1941, for how haze scatters light

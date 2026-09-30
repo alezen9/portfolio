@@ -1,0 +1,399 @@
+## Under the hood
+
+The chapters above follow the story. This one is the manual: how the flag is actually built in Revo, file by file, in the order the
+work happens, with the reasons behind each choice and what I tried along the way.
+
+Every concept gets a plain picture first and the precise version after. If you know what a constraint solver is, skip the pictures.
+If you don't, skip the code on the first read and come back to it.
+
+<br />
+
+### The folder
+
+```text
+src/entities/landmarks/expedition33Flag/
+  Expedition33Flag.ts   the entity: staff, flag mesh, physics collider, compute task, distance gate, fixed time step
+  FlagCompute.ts        the GPU buffers and the simulation kernels
+  FlagMaterial.ts       the lit, double sided material that reads the simulated positions
+  config.ts             sizes, rates and all the tunable uniforms
+  debug.ts              the knobs in the debug panel
+```
+
+And how it's wired into the rest of Revo:
+
+```text
+RevoRealm ──(only with ?expedition33=true)──► Expedition33Flag
+                                                 ├── FlagCompute        three particle buffers + init and update kernels
+                                                 ├── ComputeTask        runs init once, update when asked
+                                                 ├── staff mesh         VSMReceiverStandardMaterial, static shadow caster
+                                                 ├── flag mesh          FlagMaterial, dynamic shadow caster with a positionNode
+                                                 ├── Rapier collider    a cylinder for the staff, so the ball bounces off it
+                                                 └── landmarks          registered with a name, an icon and its position
+
+eventBus "engine-render-update"            ──► onEngineUpdate: accumulate time, run the steps
+eventBus "engine-render-update-throttle-64x" ──► onGateUpdate: is the player within 80 m?
+```
+
+Nothing outside the folder knows the flag exists, apart from the one line in `RevoRealm` that creates it behind the feature flag.
+
+<br />
+
+### A frame, in order
+
+```text
+every 64th rendered frame   onGateUpdate: player closer than 80 m?          no: nothing below happens
+every rendered frame        onEngineUpdate:
+                              pendingSeconds += delta, capped at 1/30 s
+                              steps = floor(pendingSeconds / (1/960))
+                              pendingSeconds -= steps / 960
+                              upload steps, player position, player radius
+                              one compute dispatch: all steps, all particles
+then, in the same frame     the flag mesh draws, reading the new positions
+                            the shadow system rasterizes the flag's clusters from the same positions
+```
+
+At 120 FPS that's 8 steps per frame, at 60 FPS 16, and the flag behaves the same at both. The cap keeps a stall from turning into a
+burst of hundreds of steps.
+
+This is the classic **fixed time step** with an accumulator, the one from Glenn Fiedler's "Fix Your Timestep!". Picture a clock that
+only ticks in fixed amounts: however long the frame took, the simulation only ever moves forward in exact slices of 1/960 of a second,
+and whatever is left over waits for the next frame.
+
+<br />
+
+### The particles
+
+The flag is a grid of 25 by 17 points, 425 in total. Point `i` sits at `row * 25 + column`, row 0 at the top, column 0 at the staff.
+
+Three buffers of 425 `vec4` each:
+
+```text
+positions           where every point is now; also what the material and the shadows read
+previousPositions   where every point was one step ago
+predictedPositions  scratch space for the step in progress
+```
+
+```typescript
+// x -> column, y -> row, z -> widthRatio (0 staff, 1 free edge), w -> heightRatio (0 top, 1 bottom)
+const getGridCoordinates = Fn<[index: Node<"uint">], Node<"vec4">>(
+  ([index]) => {
+    const row = floor(float(index).div(config.POINTS_X));
+    const column = float(index).mod(config.POINTS_X);
+    const widthRatio = column.div(config.SEGMENTS_X);
+    const heightRatio = row.div(config.SEGMENTS_Y);
+    return vec4(column, row, widthRatio, heightRatio);
+  },
+);
+```
+
+The first column is **pinned**: every step, those points are simply put back on the staff. The staff leans 8 degrees toward the
+center of the map, so the anchor of each pinned point is the staff axis times its height along the staff.
+
+At startup, an init kernel lays the flag out flat, pointing downwind from the staff.
+
+<br />
+
+### One workgroup for the whole cloth
+
+The update is a single dispatch of a single workgroup of 256 threads, and the loop over the steps runs inside the shader:
+
+```typescript
+Loop({ start: 0, end: uniforms.uStepCount, type: "uint" }, () => {
+  Loop(OWNED_SLOTS, ({ i: slot }) => {
+    const index = getOwnedParticle(slot);
+    If(index.lessThan(config.COUNT), () => {
+      integrateParticle(
+        positions,
+        previousPositions,
+        predictedPositions,
+        index,
+      );
+    });
+  });
+  storageBarrier();
+
+  Loop(OWNED_SLOTS, ({ i: slot }) => {
+    const index = getOwnedParticle(slot);
+    If(index.lessThan(config.COUNT), () => {
+      solveParticle(predictedPositions, positions, index);
+    });
+  });
+  storageBarrier();
+});
+```
+
+Each of the 256 threads owns up to two particles, `threadIndex + slot * 256`. Ownership matters: two threads writing the same
+particle in the same phase would race.
+
+A barrier is a traffic light. Every thread stops there until all of them have arrived, so nobody starts fixing distances while
+someone is still moving particles. Barriers only work inside one workgroup, which is exactly why the whole cloth has to fit in one.
+
+Why not a dispatch per phase? In Three.js every `renderer.compute()` is its own submission to the GPU, and 16 submissions per frame for
+425 points is mostly overhead. One cloth per workgroup, with the whole frame inside a single kernel, is how NvCloth runs small
+cloths, and that's where the idea comes from.
+
+<br />
+
+### Phase one: moving every point
+
+`integrateParticle` is Verlet integration, with a few adjustments.
+
+Verlet, in a picture: to know where you'll be, look at where you are and where you were one step ago. You keep going the same way,
+plus whatever gravity and wind add.
+
+```typescript
+const damping = exp(uniforms.uDamping.mul(-STEP_SECONDS));
+const displacement = position.sub(previous).mul(damping).toVar();
+const displacementLength = displacement.length().max(EPSILON);
+const maxDisplacement = displacementLength.min(config.MAX_SPEED * STEP_SECONDS);
+displacement.mulAssign(maxDisplacement.div(displacementLength));
+
+const gravity = vec3(0, uniforms.uGravity.negate(), 0);
+const windAcceleration = getWindAcceleration(
+  positions,
+  index,
+  coordinates,
+  displacement.div(STEP_SECONDS),
+);
+const acceleration = gravity.add(windAcceleration);
+const predicted = position
+  .add(displacement)
+  .add(acceleration.mul(STEP_SECONDS * STEP_SECONDS));
+```
+
+- `position - previous` is the velocity times the step, without ever storing a velocity.
+- **Damping** is exponential, `exp(-damping * dt)`, which is exact for any step size. A linear `1 - damping * dt` only approximates
+  it, and would change behavior with the step size.
+- The **speed cap** is in metres per second, 18, so it means the same at any step rate.
+- Gravity is 9.81. It was 8 in July, most likely lowered by me at some point to hide stretching.
+
+The result goes into `predictedPositions`, and the current position into `previousPositions`. Pinned points get their anchor instead.
+
+<br />
+
+### Phase two: keeping the shape
+
+`solveParticle` is where the cloth stays cloth. Every point looks at 12 neighbours and pulls itself toward the right distance from
+each.
+
+Picture people standing in a grid:
+
+- holding hands with the person left, right, above and below: **structural** links, which keep the size
+- holding hands diagonally: **shear** links, which stop the grid from folding into diamonds
+- holding hands with the person two away, loosely: **bend** links, which resist sharp creases
+
+```typescript
+// column offset, row offset, rest length, weight: the structural ring, the
+// shear ring, then a weak two ring bending that resists sharp creases
+const NEIGHBORS = [
+  [1, 0, REST_X, 1],
+  [-1, 0, REST_X, 1],
+  [0, 1, REST_Y, 1],
+  [0, -1, REST_Y, 1],
+  [1, 1, REST_DIAGONAL, 1],
+  [-1, 1, REST_DIAGONAL, 1],
+  [1, -1, REST_DIAGONAL, 1],
+  [-1, -1, REST_DIAGONAL, 1],
+  [2, 0, REST_X * 2, BEND_WEIGHT],
+  [-2, 0, REST_X * 2, BEND_WEIGHT],
+  [0, 2, REST_Y * 2, BEND_WEIGHT],
+  [0, -2, REST_Y * 2, BEND_WEIGHT],
+];
+```
+
+That layout of three rings of springs is Xavier Provot's, from 1995, and almost every cloth simulation still uses it in some form.
+
+For each neighbour, the correction is the classic **distance constraint** from position based dynamics: move along the line between
+the two points by the amount the distance is off, half each.
+
+```typescript
+const toNeighbor = predicted.sub(neighbor);
+const distance = toNeighbor.length().max(EPSILON);
+const stretchRatio = restLength.sub(distance).div(distance);
+const pull = toNeighbor.mul(stretchRatio.mul(correctionShare));
+```
+
+Two details:
+
+- **Pinned neighbours.** A pinned point can't move, so its half of the correction would simply be lost. A point next to the staff takes
+  the whole correction instead of half.
+- **Jacobi, averaged.** Every point computes all its corrections from the same predicted positions, and applies their weighted
+  average. Picture everyone in a crowd deciding where to step based on where the others are now, then all stepping at once. It's
+  naturally parallel, but a point pulled by many neighbours would overshoot if it added them all up, so the sum is divided by the
+  total weight. The sequential version, Gauss-Seidel, converges faster but needs each correction to see the previous one, which a GPU
+  doesn't like. NvCloth splits constraints into independent colour groups to get closer to it; for 425 points, averaging was enough.
+
+```typescript
+const corrected = predicted.add(total.xyz.div(total.w.max(1)));
+```
+
+After the constraints, two more rules:
+
+**Tethers**, also called long range attachments (Kim, Chentanez and Müller, 2012). A long chain of points converges slowly: a
+correction at the free end needs many passes to reach the staff. So every point also gets a leash to its anchor on the staff, as long
+as its rest distance along the row plus 2 percent. It can't go further, however slow the chain is. The slack was 10 percent in July,
+which is why the flag stretched about 10 percent in wind.
+
+```typescript
+const reach = widthRatio.mul(config.FLAG_WIDTH * config.TETHER_SLACK);
+const clampedDistance = anchorDistance.min(reach);
+```
+
+**The ball.** Every point is pushed out of a sphere around the player, the player's radius plus a small padding. Simple, and enough for
+a ball rolling into a flag.
+
+The corrected position becomes the new `position`. Next step, `position - previous` includes the corrections, which is the Verlet
+trick that makes constraints and velocity work together without bookkeeping.
+
+<br />
+
+### Why one pass per step, and why 960 steps
+
+Position based dynamics (Müller, Heidelberger, Hennix and Ratcliff, 2006) normally runs many constraint passes per step. Small Steps in
+Physics Simulation (Macklin et al., 2019) showed that for the same work, many small steps with one pass each converge much better,
+because each step only has to fix the error that step introduced, which shrinks with the square of the step size. Many small nudges
+instead of one big shove.
+
+With one pass per step and constraints meant to be completely stiff, the extra compliance term of XPBD (Macklin, Müller and
+Chentanez, 2016) is always zero, so plain position based dynamics it is.
+
+On the replica, at the same 960 passes per second, 240 steps with 4 passes each left the worst edge at 18.6 percent of stretch, and
+960 steps with one pass each at 9.5 percent.
+
+<br />
+
+### The wind
+
+`getWindAcceleration` treats every point as a small plate in a stream of air, the model NvCloth uses.
+
+Put your hand out of a car window. Palm facing forward, the wind pushes it back: that's **drag**. Tilt it, and it also rises or falls:
+that's **lift**. Edge on, almost nothing.
+
+```typescript
+const relativeWind = windDirection.mul(windSpeed).sub(velocity);
+const relativeSpeed = relativeWind.length().max(EPSILON);
+const normal = getParticleNormal(positions, index);
+const facing = normal.dot(relativeWind).div(relativeSpeed);
+
+const dragStrength = facing.abs().mul(relativeSpeed).mul(uniforms.uDrag);
+const drag = relativeWind.mul(dragStrength);
+const windAlongNormal = relativeWind.mul(facing.div(relativeSpeed));
+const acrossWind = normal.sub(windAlongNormal);
+const relativeSpeedSquared = relativeSpeed.mul(relativeSpeed);
+const liftStrength = facing.mul(relativeSpeedSquared).mul(uniforms.uLift);
+const lift = acrossWind.mul(liftStrength);
+return drag.add(lift);
+```
+
+- The wind is relative to the point's own velocity, so a point already moving with the wind feels less of it.
+- `facing` is how much the cloth faces the wind at that point, from the same normal the lighting uses.
+- The wind speed comes from Revo's global wind system, times a **gust** factor read from the noise atlas. Each row reads its own band
+  of the noise, and the sample shifts along the width over time, so gusts travel across the flag instead of hitting it all at once.
+
+That replaced seven hand-tuned numbers and the sine waves with three that mean something: wind speed, drag and lift.
+
+<br />
+
+### Normals from neighbours
+
+The same function feeds the wind and the material:
+
+```typescript
+const left = positions.element(getParticleIndex(column.sub(1), row)).xyz;
+const right = positions.element(getParticleIndex(column.add(1), row)).xyz;
+const up = positions.element(getParticleIndex(column, row.sub(1))).xyz;
+const down = positions.element(getParticleIndex(column, row.add(1))).xyz;
+return down.sub(up).cross(right.sub(left)).normalize();
+```
+
+Two vectors lying on the cloth, crossed, give the direction sticking out of it. At the edges the index is clamped, so the missing
+neighbour is the point itself.
+
+<br />
+
+### The material
+
+`FlagMaterial` extends Revo's `VSMReceiverLambertMaterial`, so it's lit and receives shadows like the terrain.
+
+```typescript
+this.positionNode = compute.positions.element(vertexIndex).xyz;
+```
+
+That line is the whole connection between simulation and rendering. The mesh is a `PlaneGeometry` with the same 24 by 16 segments,
+and its vertices come in the same order as the particles, so vertex `i` is particle `i`. The CPU never touches a vertex.
+
+- The normal comes from `getParticleNormal`, passed to the fragment shader as a varying and flipped with `faceDirection` for the back
+  face. Three flips the geometry's own normal for back faces automatically, but not a custom one.
+- The design texture is multiplied by a diffuse scale of 8, because lit shading divides the sun's diffuse contribution by π, and the
+  flag looked much darker than the unlit version.
+- Anything clearly brighter than the black cloth, a threshold of 0.25, is the gold design, and it's also emissive, so it keeps glowing
+  in shadow.
+
+<br />
+
+### The shadow
+
+The flag registers as a dynamic caster with a `positionNode`:
+
+```typescript
+const particlePosition = getParticleAtPlanePosition(
+  this.compute.positions,
+  positionLocal,
+);
+graphics.vsmPass.registerCaster(flag, {
+  type: "dynamic",
+  positionNode: particlePosition.add(vec3(this.origin)),
+});
+```
+
+The shadow rasterizer reads the flat rest plane, and `getParticleAtPlanePosition` turns each rest vertex back into its column and row,
+and returns that particle's position. The shadow system evaluates that node inside its own compute shader, so the flag's clusters are
+rasterized at their simulated shape. It bounds each cluster from all its vertices, not its rest corners, and marks its own pages on
+the GPU. The shadow article explains that side in detail.
+
+The mesh's bounding box is set by hand to everything the cloth can reach, so three's frustum culling never hides it while it swings
+outside its rest shape.
+
+<br />
+
+### The distance gate
+
+The simulation only runs when the ball is closer than 80 metres, checked every 64 frames. Further away the flag stays wherever it
+was, still drawn and still casting its shadow. At that distance a 5.4 metre flag is a few dozen pixels, and freezing it saves the
+simulation's 0.065 ms.
+
+<br />
+
+### Decisions, and what was tried
+
+| Decision                               | Why                                                          | Alternatives                                                               |
+| -------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Simulate, don't bake                   | It has to react to the ball and the wind                     | Blender cloth bake, sine waves in the vertex shader                        |
+| Grid of 25 by 17                       | Enough folds for a 5.4 m flag, cheap                         | More points, finer folds (cheap now, the shadow cost doesn't depend on it) |
+| Verlet with a fixed time step          | Same behavior at every frame rate                            | Variable step: the July flag hung 1.8 m lower at 30 FPS than at 120        |
+| 960 steps per second, one pass each    | Small Steps: better convergence for the same work            | 240 steps with 4 passes, 480 with 1                                        |
+| PBD, no XPBD                           | With one pass and stiff constraints the XPBD term is zero    | XPBD in the parked August rewrite                                          |
+| Jacobi, averaged                       | Parallel, simple, good enough at 425 points                  | Graph coloring like NvCloth                                                |
+| One workgroup, steps inside the kernel | One submission per frame instead of 16                       | A dispatch per phase                                                       |
+| Tethers at 2 percent                   | Stops stretching near the staff                              | 10 percent in July                                                         |
+| No self collision                      | 60 percent of the old cost for folds that are rarely visible | Kept in July, spatial hashing as a future option                           |
+| Aerodynamic drag and lift              | Motion that comes from the physics, three meaningful knobs   | A constant push plus sine waves                                            |
+| Lit, double sided Lambert              | Folds become visible; diffuse is plenty for matte cloth      | Unlit, as in July                                                          |
+| Shadow shape from the GPU positions    | The cloth only exists on the GPU                             | CPU bounds, GPU readback of bounds                                         |
+| Distance gate at 80 m                  | The motion isn't visible from further away                   | Always simulating                                                          |
+
+<br />
+
+### Further reading
+
+- Thomas Jakobsen, "Advanced Character Physics", GDC 2001: Verlet and constraint relaxation for games
+- Xavier Provot, "Deformation Constraints in a Mass-Spring Model to Describe Rigid Cloth Behavior", 1995
+- David Baraff and Andrew Witkin, "Large Steps in Cloth Simulation", SIGGRAPH 1998
+- Matthias Müller et al., "Position Based Dynamics", 2006
+- Miles Macklin, Matthias Müller and Nuttapong Chentanez, "XPBD: Position-Based Simulation of Compliant Constrained Dynamics", 2016
+- Miles Macklin et al., "Small Steps in Physics Simulation", 2019
+- Tae-Yong Kim, Nuttapong Chentanez and Matthias Müller, "Long Range Attachments", 2012
+- Matthias Müller's Ten Minute Physics, the cloth and self collision episodes
+- NVIDIA NvCloth, for one cloth per workgroup and the wind model
+- Glenn Fiedler, "Fix Your Timestep!"
+- The Three.js WebGPU compute cloth example
