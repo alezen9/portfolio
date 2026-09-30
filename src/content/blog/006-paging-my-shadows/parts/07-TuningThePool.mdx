@@ -1,0 +1,56 @@
+### Tuning the pool
+
+A gentle scene hides a lot, so at some point I also built a stress rig that filled the world with casters of every kind: static ones,
+things moved from the CPU and things deformed on the GPU. I did that before most of the improvements in this article, so its numbers
+don't say much about Revo today. It did catch a real bug though: a `BatchedMesh` was drawing its whole packed geometry for every
+instance, so objects happily cast each other's shapes. Seeing a sphere cast a cube shaped shadow is a special kind of confusing.
+
+My favourite bug from that time didn't need the rig at all. Past the edge of the map there's a large flat terrain plane that
+follows the player, so there's always ground under your feet. A flat plane can't cast a shadow on anything, but I had registered it
+as a static caster. So every time it moved, the cache dutifully invalidated every page it touched, which was basically all of them,
+every frame. In a scripted walk on my M2 Pro it went from 9.84 ms to 7.15 ms of GPU time just by not registering it. The system was
+doing exactly what I asked it to do :)
+
+Sizing the pools was simpler. I had given moving casters 400 pages. In normal play the player used somewhere between 5 and
+15, so I cut the pool to 64, which took its memory from 25 MiB down to 4 MiB. The static pool stayed at 512 pages.
+
+<br />
+
+### The MacBook Air
+
+After merging all of this I tried Revo on a MacBook Air M1. It mostly held 60 fps, but lagged a bit in open grass fields. On my M2
+Pro the same field took about 5.4 ms of GPU time standing still and 6.6 ms as soon as I moved, even when I only rotated the camera.
+Freezing the shadow system with a debug switch made the difference disappear.
+
+I was wrong twice before I was right:
+
+- **It wasn't the redraws.** The page heat view lit up as soon as I walked, but lowering the shadow resolution cut redraws from
+  about 2,000 to about 100 per second and the GPU time didn't move. They were first-time draws of new detail pages, and cheap.
+- **The monitoring panel wasn't telling the truth.** It reported 19 ms of render time on a 5.4 ms frame. Apple GPUs overlap
+  consecutive render passes, so each pass's timer also counts time spent next to the others. Compute passes don't have that
+  problem, so I split the shadow work into named compute passes and timed each one on its own.
+
+That pointed at the page request pass from step 1, **0.8 ms** every frame the view changed. Thousands of pixels were writing the
+same few bits at once, and GPUs really don't like many threads writing to one address, so reading the bit first and only writing
+when it's still clear took it to **0.5 ms**. What was left was simply reading millions of pixels, and reading one pixel per 2 x 2
+block took it to **0.25 ms**.
+
+I refused to believe nobody had solved this better, so I went looking. Unreal and Blender both scan the depth buffer every single
+frame. Revo only does it when the view changes, and on a quarter of the pixels. What's left while moving is that scan and the first
+draw of pages the camera never needed before, which is simply the price of the view changing. After everything that went into this
+system, that felt like a good peak to stop on, even if there's probably a higher one somewhere.
+
+Then I tried the Air again, and it flies. No more stutter in the fields :D
+
+<br />
+
+> A bonus from those days: the "Pages" debug view had not been rendering anything for a while, and I never noticed because a debug
+> view that shows nothing looks a lot like a debug view you haven't opened yet. The shader didn't compile. A `select` in TSL gets
+> cached the first time it's used, and a later use that needed a different type got the cached variable without the conversion, so
+> the shader ended up multiplying an unsigned integer by `0.37`. Replacing that `select` with a plain `mix` fixed it.
+
+<br />
+
+I don't have one tidy number for the whole system, and I'd rather not pretend I do. Measurements moved between sessions with the
+machine's temperature and whatever else was running, so the numbers above are the ones I compared back to back, in the same
+session, against a single change.

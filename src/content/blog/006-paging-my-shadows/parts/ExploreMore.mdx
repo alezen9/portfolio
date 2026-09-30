@@ -1,0 +1,49 @@
+import ExternalLink from "@components/blog/ExternalLink.astro";
+import Layout from "@components/blog/Layout.astro";
+
+### Explore more
+
+A few resources that helped me figure out the pieces:
+
+{/* todo: add the YouTube videos that helped with the visual explanations */}
+
+<Layout gap={1}>
+  <ExternalLink
+    icon="article"
+    href="https://dev.epicgames.com/documentation/en-us/unreal-engine/virtual-shadow-maps-in-unreal-engine"
+  >
+    Virtual Shadow Maps in Unreal Engine - Epic Games
+  </ExternalLink>
+
+<ExternalLink
+  icon="article"
+  href="https://developer.blender.org/docs/features/eevee/modules/shadow/"
+>
+  Virtual Shadow Maps - Blender Developer Documentation
+</ExternalLink>
+
+<ExternalLink
+  icon="article"
+  href="https://ktstephano.github.io/rendering/stratusgfx/svsm"
+>
+  Sparse Virtual Shadow Maps - J Stephano
+</ExternalLink>
+
+<ExternalLink
+  icon="article"
+  href="https://threejs.org/docs/pages/CSMShadowNode.html"
+>
+  CSMShadowNode - Three.js
+</ExternalLink>
+
+<ExternalLink
+  icon="article"
+  href="https://developer.download.nvidia.com/shaderlibrary/docs/shadow_PCSS.pdf"
+>
+  Percentage-Closer Soft Shadows - NVIDIA
+</ExternalLink>
+
+  <ExternalLink icon="article" href="https://www.bendstudio.com/blog/inside-bend-screen-space-shadows/">
+    Inside Bend: Screen Space Shadows - Bend Studio
+  </ExternalLink>
+</Layout>

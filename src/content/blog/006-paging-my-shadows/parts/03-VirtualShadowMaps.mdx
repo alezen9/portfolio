@@ -1,0 +1,119 @@
+import Layout from "@components/blog/Layout.astro";
+import pages from "../assets/pages.webp?url";
+
+## Ten steps beyond: virtual shadow maps
+
+While reading about how bigger engines handle this, I ended up in Unreal's
+[virtual shadow maps documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/virtual-shadow-maps-in-unreal-engine).
+
+It's still a shadow map at its core: depth stored from the light, compared later with the visible surface. The "virtual" part
+changes how much of that map has to exist at any given time.
+
+Picture a gigantic shadow map, so big that nobody could ever allocate it. Now cut it into small square tiles called **pages**. Out
+of all those pages, only the ones some visible surface actually needs get real memory, in a fixed pool of slots. A **page table**
+remembers which slot currently holds which page.
+
+So the virtual map is just an address space. It says where a texel would live if memory were free. The pool is where the real
+depth values are. And a **page request** is a visible surface saying "I need this piece of the map now, please".
+
+<br />
+
+### What is a page, really?
+
+This is the bit that took me the longest, so I want to spend a minute on it.
+
+I first pictured pages as little squares painted on the ground. That picture is wrong, and it makes the rest of the system very
+confusing. Go back to the car on the hill and the valley. If a page is a square on the valley floor, where does the car go? It's on
+a different patch of ground, higher up, maybe even off screen.
+
+A page is a square in the **sun's view**. Think of it as a bundle of parallel sun rays passing through that square.
+
+The valley requests the page because one of those rays ends on a visible piece of valley. The car has to be drawn into that page
+because it crosses some of those same rays first, before they reach the valley.
+
+```text
+camera sees a point on the valley
+    -> it asks for page P of the sun's map
+    -> page table: P lives in slot 27 of the pool
+
+the car is off screen, but it crosses the rays of P
+    -> its depth gets written into slot 27
+
+the valley point reads slot 27
+    -> the car is closer to the sun, so the valley is in shadow
+```
+
+{/* illustration S3: side view, same car and valley as S1. One square in the sun's view extruded into a column of parallel rays (label "page P"). The car crosses the column high up, the valley floor sits at its bottom where the camera looks. Next to it, the page table as a small list with "P -> slot 27" and the pool as a row of slots with 27 highlighted. */}
+
+Once I had this picture, everything else started falling into place. The camera decides which pages are needed, without caring
+about casters. The casters get drawn into whatever needed page they cross, without caring whether the camera sees them.
+
+It also made one thing obvious that I had not thought about at all: pages don't fix the usual shadow map problems. Bias, acne, soft
+edges, offscreen casters, they are all still there. Paging only decides where memory and work go.
+
+<br />
+
+### How big is big?
+
+Revo uses **clipmap levels**, a set of nested virtual maps centred on the camera, each one twice as wide as the previous
+one, so four times the area. A point on screen picks its level from its distance to the camera: close points ask the fine levels for pages, far points ask
+the coarse ones.
+
+{/* illustration S4, the most important one: top down, the camera in the centre and four nested squares around it, labelled level 0 (64 m), level 1 (128 m), level 2 (256 m), level 3 (512 m), plus "... up to level 6, 4 km". Every square drawn with the same grid of pages, so pages get bigger going outward. A point near the camera and a point far away, each with an arrow to the level it picks. */}
+
+In numbers, at the time of writing:
+
+- 7 levels, each one 16,384 texels wide, cut into pages of 128 x 128 texels
+- the finest level covers 64 metres around the camera, about 4 millimetres per texel
+- the coarsest covers 4 kilometres, about 25 centimetres per texel
+- a pool of 512 pages for static objects and 64 for moving ones
+
+If those seven levels were real textures with 32-bit depth, they would need about 7 GiB. The static pool is 32 MiB and the moving
+one 4 MiB. Nobody would ever build the naive version of course, but it shows why the address space can be generous while the real
+memory stays small.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={pages}
+      alt="Debug view of Revo with visible surfaces colored by clipmap level and white page borders"
+    />
+    <figcaption>
+      An earlier debug view: colors are the levels picked by visible surfaces,
+      white lines are page borders
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+This is different from cascades in a subtle but important way. Cascades are consecutive slices of the camera view. Clipmap levels
+overlap: the same spot on the ground exists in all of them at different resolutions, and it only uses the one that fits its
+distance.
+
+When the player walks forward, the fine level follows and new fine pages are needed ahead. The coarse levels barely change, because
+each of their pages covers so much ground. And any page that was already drawn and is still needed stays in its slot. Static
+shadows don't get redrawn just because time passed, only when the sun or the object moves.
+
+That last part is exactly what I wanted. The bake became a cache.
+
+<br />
+
+> Right in the middle of all this I was also playing _Ghost of Yōtei_, and walking through the snow I noticed distant shadows looking
+> soft and low resolution, then getting sharper as I approached. I have no idea which technique the game uses. It was like buying a
+> car you had never noticed before and suddenly seeing it everywhere :)
+
+<br />
+
+A quick recap of the three approaches, plus baking, since that's where I came from:
+
+| Approach            | Idea                                                         | Good at                                         | Pays with                               |
+| ------------------- | ------------------------------------------------------------ | ----------------------------------------------- | --------------------------------------- |
+| Baked               | Shadows precomputed into textures                            | Almost free at runtime, soft and pretty         | Static, every change is a rebake        |
+| Shadow map          | Depth from the light, compared per pixel                     | Simple, dynamic, handles off screen casters     | One resolution for everything           |
+| Cascades            | One map per distance slice of the view                       | Detail near, coverage far                       | Several full renders, seams and shimmer |
+| Virtual shadow maps | One huge map in pages, only needed pages are kept and cached | Detail where it's needed, cached static shadows | A lot of moving parts                   |
+
+That last cell is an understatement, as I was about to find out.

@@ -1,0 +1,49 @@
+import Layout from "@components/blog/Layout.astro";
+import baselineWind from "../assets/baseline-wind-event.jpg?url";
+
+## Expedition July
+
+The first version landed in July, a little after midnight.
+
+Now that all the pieces have names, here's what it did. Every frame a compute shader moved the points with Verlet, using gravity, a
+constant push along the wind and some sine waves on top to make it flutter, then ran five passes of Jacobi relaxation to keep
+neighbouring points at the right distance from each other, with tethers holding it to the staff. The ball could push into it, and there was even some self collision.
+
+It worked. It waved, it reacted to the wind, it looked like a flag.
+
+Eight minutes later I committed again, this time hiding it. Not because it was broken, but because I wanted to share it properly,
+after polishing it and writing about it. I just posted a short video on X to tease it a bit.
+
+{/* todo: link the X teaser video if it's still up */}
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={baselineWind}
+      alt="The first version of the flag, flat black with glowing gold edges, streaming in the wind"
+    />
+    <figcaption>
+      The July version in a wind event. Flat, unlit and a bit too much like a
+      board
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+A month later I tried to improve it, and that went... less well.
+
+The rewrite swapped the solver for a more advanced one, added capsule collisions against the ball's path, aerodynamic drag, three
+quality tiers that switched with distance, interpolation between simulation states, a custom lit material and more. It grew to
+roughly 1,100 lines and nine storage buffers.
+
+I honestly can't remember exactly why I stopped. Probably a mix of it not behaving the way I expected and it getting too bloated and
+complicated to reason about. It stayed on a side branch under a very descriptive commit message: `tmp`.
+
+Looking at it now, most of those ideas are individually sound. The problem was all of them at once. When I came back to the flag this
+month, I made one rule for myself: every change has to earn its place with a number, measured on its own, before the next one starts.
+
+In the game, every expedition that doesn't make it leaves its journals behind for those who come after. The July flag and the `tmp`
+branch were mine.

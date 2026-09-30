@@ -1,0 +1,51 @@
+## Closing thoughts
+
+I can move the sun now and watch every shadow follow it. I can drop a new object anywhere in the scene and it shadows the ground,
+the grass and whatever else is around, itself included. For a static object that's one line:
+
+```typescript
+graphics.vsmPass.registerCaster(mesh);
+```
+
+Moving things register as dynamic, and objects whose shape only exists on the GPU can pass the same deformation they use for
+rendering. Custom materials still need to write their direct sunlight, so it's not literally zero setup. It's a whole lot less than
+bake, export, pack, compress and wire every time I change my mind though.
+
+{/* media: short clip of the sun moving across the scene, same camera as the intro if possible */}
+
+<br />
+
+It doesn't come for free. The two pools hold 36 MiB of depth, moving shadows are redrawn every frame, a sun change rebuilds the
+static pages and the final resolve runs over the whole screen. If the pool ever runs out, a shadow goes missing. The sun can't go too
+low. And the grass still doesn't cast. I'm very comfortable with that trade for Revo, and I know exactly where to look when something
+breaks, which after two versions of this system is worth a lot to me.
+
+<br />
+
+What I'm happiest about is that I didn't give up this time.
+
+When I was working on the [grass culling](/blog/trimming-my-grass-shader/), I stopped on the prefix sum version. Here, there were
+more than a few moments where going back to baking would have been the reasonable thing to do. I kept going, and it works, and it
+works wonderfully. It even makes me want to go back and give that prefix sum another try someday.
+
+I also wanted to write all of this down while the detours were still fresh. It took me a while to understand why a visible surface
+asks for a page, why an object off screen can fill it, and why that still leaves plenty of ways to get the wrong picture. If you are
+staring at a similar shadow problem, I hope going through the ordinary map, the cascades and then the pages gives you a way in. I
+certainly needed one.
+
+<br />
+
+Meanwhile, on top of the hill, a certain flag is waiting for its turn. It caused more trouble to this shadow system than anything
+else in the world, which is exactly why it deserves an article of its own ;)
+
+<br />
+<br />
+<br />
+
+<blockquote data-type="frame">
+As always, everything described here lives in the Revo codebase. The shadow system has its own folder now. It's not meant as a
+reference implementation, but it might be useful to see how the pieces connect in a real project.
+
+[VSM folder](https://github.com/alezen9/revo-realms/tree/main/src/systems/vsm) (may be subject to changes)
+
+</blockquote>

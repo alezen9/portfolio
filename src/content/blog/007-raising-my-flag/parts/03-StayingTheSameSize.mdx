@@ -1,0 +1,49 @@
+## Staying the same size
+
+There are roughly three families of approaches here.
+
+**Springs.** Connect neighbouring points with springs, add up the forces, integrate. The classic layout from Xavier Provot's 1995
+paper is still used everywhere, mine included: springs to the direct neighbours, across the diagonals, and two points apart to resist
+bending. The problem is that cloth barely stretches, so the springs have to be very stiff, and very stiff springs need very small
+steps or they explode.
+
+**Implicit solvers.** Baraff and Witkin's 1998 "Large Steps in Cloth Simulation" made steps of any size stable by solving a big system
+of equations every step. That became the standard for film. For a game, and for a single flag, it's a lot.
+
+**Constraints.** Jakobsen's second idea. Instead of forces, you state what must be true, "these two points are 22 centimetres apart",
+and move them until it is:
+
+```typescript
+const delta = second - first;
+const distance = length(delta);
+const correction = delta * ((distance - rest) / distance) * 0.5;
+first += correction;
+second -= correction;
+```
+
+Fixing one pair breaks its neighbours a little, so you repeat over all pairs a few times. That's called relaxation, and with Verlet
+carrying the remaining error into the next frame, it converges surprisingly well.
+
+Müller and his colleagues generalized this in 2006 as [Position Based Dynamics](https://matthias-research.github.io/pages/publications/posBasedDyn.pdf),
+which is what most games use today in one form or another. Ten years later **XPBD** fixed its biggest weakness, stiffness that
+changed with the number of passes and the step size.
+
+And then there's a 2019 paper, [Small Steps in Physics Simulation](https://mmacklin.com/smallsteps.pdf), that turned out to be the
+single most important thing I read for this flag. Hold that thought, it gets its own chapter.
+
+<br />
+
+{/* illustration F3: three small frames left to right. 1: two points linked, the link drawn longer than its rest length (dashed rest length above it). 2: each point moved half of the error toward the other, which pulls a third point's link slightly out of length. 3: after a few passes, all links at rest length. */}
+
+### Keeping it from stretching
+
+Even with a good solver, a long chain of points hanging from one edge converges slowly. A correction at the free end needs many
+passes to travel all the way to the pole.
+
+The fix is called **long range attachments**, or tethers: every free point gets an extra rule saying it can never be further from its
+attachment point than its rest distance along the cloth. For a flag pinned along the pole, that's simply the pinned point in the same
+row, times the column. My July flag had this already, with 10% of slack. Keep that 10% in mind as well.
+
+<br />
+
+{/* illustration F5: one row of points hanging from the pinned point on the staff. Around the pinned point, dashed circles with radius equal to each point's rest distance along the row. The free end sits on or inside its circle and can't leave it. */}

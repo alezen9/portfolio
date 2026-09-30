@@ -1,0 +1,77 @@
+import Layout from "@components/blog/Layout.astro";
+import sceneIdle from "../assets/scene-idle.webp?url";
+
+If you scroll through [Revo](https://revo-realms.aleksandargjoreski.dev/)'s git history you will find one commit message that keeps
+coming back for about a year: `update shadowmap`.
+
+Every single one of them is the same little ritual. Change something in Blender, bake the shadows onto the terrain, export a PNG,
+pack it together with the other textures, compress it to KTX2, load it in the project and make sure whatever needed that shadow was
+reading the right texture.
+
+If the object had to shadow itself, like the Goku statue, that was another pair of shoes. It needed its own bake on its own
+texture, at a resolution high enough not to look blocky, and then the whole export, pack and convert dance started again.
+
+I had a few scripts to automate the packing and converting, so none of it was hard. It was just long, and it was waiting for me
+every single time I touched the scene.
+
+It never strictly stopped me from adding things or moving them around. It did make me hesitate though. I would look at a rock,
+think it would look better a couple of metres to the left, remember what moving it meant, and leave it exactly where it was.
+
+Changing the light direction or its color was even worse, because that meant rebaking everything. And baked shadows are static by
+definition, so anything that moved needed its own solution anyway.
+
+For a project I use as a sandbox to experiment freely, that is a funny constraint to accept :)
+
+<br />
+
+It didn't start with baking. Like a lot of people who learned Three.js through [Three.js Journey](https://threejs-journey.com/), I
+began with the built-in shadow map: a directional light, `castShadow`, `receiveShadow` and a shadow camera following the player
+around.
+
+It is a great way to start. At some point though it starts feeling limiting, especially when performance is non-negotiable and the
+world keeps getting bigger. With a larger area and a camera the player can rotate freely, I was either losing quality or paying too
+much for it.
+
+I also tried cascaded shadow maps early on. I honestly can't remember the details, only that performance was not great and that I
+most likely misconfigured it, because I was using it without really understanding what it was doing.
+
+So I went back to baking, with a tiny shadow map just for the player. Later I got rid of even that and gave the player an analytical
+shadow instead. It's a sphere, after all, and the math for a sphere is friendly.
+
+That setup survived for a long time, until a few weeks ago I got properly fed up with it.
+
+Since the start I've been going for a cozy, golden hour kind of mood, and Revo is slowly growing into a world with a lot more
+vegetation and life in it. I use it to see how far I can push both how it looks and how fast it runs. Baked shadows were cheap, but
+every new thing meant another bake. I wanted to be able to move the sun or add a caster without planning a texture workflow around
+it first.
+
+<br />
+
+This time I wanted to actually understand shadows. How they work in the most basic, classic setup, how the industry kept optimizing
+the problem over the years and what the big engines do today. The answer to that last question was something called virtual
+shadow maps, a term I had never heard before.
+
+Most of the learning happened in extra long conversations with AI, going back and forth until a concept finally made sense, plus
+YouTube videos whenever I needed someone to draw the thing for me.
+
+Understanding it conceptually was not trivial, but I eventually got there. Implementing it was a whole different story, and I ended
+up building it twice.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={sceneIdle}
+      alt="Revo's hill with the Goku statue, grass and a path in warm sunlight"
+    />
+    <figcaption>Revo while the shadow work was still in progress</figcaption>
+  </figure>
+</Layout>
+
+{/* media: a current still or short clip with the new shadows, ideally the sun moving */}
+
+<br />
+
+The chapters follow the same path I took: the classic shadow map first, then cascades, then virtual shadow maps and how they work in
+Revo today.

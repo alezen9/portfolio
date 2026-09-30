@@ -1,0 +1,31 @@
+## Everyone at once
+
+Relaxation is naturally sequential: every correction uses the result of the previous one. A GPU wants to move every point at once.
+
+The simplest parallel version, called Jacobi, computes all corrections from the same old positions and applies them together. Points
+pulled by many neighbours overshoot, so you divide each point's total correction by the number of constraints acting on it. My July
+flag already did this.
+
+The fancier option is graph coloring: split the constraints into groups where no two share a point, then solve group by group. NVIDIA's
+[NvCloth](https://github.com/NVIDIAGameWorks/NvCloth) does that. It also has a lovely trick for small cloths: one cloth per GPU
+workgroup, with the whole frame running inside a single kernel. Remember that one too.
+
+<br />
+
+{/* illustration F4: one point with four neighbours pulling it. Left: corrections applied one after another, the point overshoots past where it should be. Right: the four corrections added up and divided by four, the point lands in the right place. Labels "one by one" and "averaged". */}
+
+<br />
+
+Here's how the options stack up for a flag like mine:
+
+| Approach                                | Cost                             | Reacts to the world | Stability            |
+| --------------------------------------- | -------------------------------- | ------------------- | -------------------- |
+| Sine waves in the vertex shader         | Almost free                      | No                  | Always               |
+| Baked animation from Blender or Houdini | Almost free, plus texture memory | No                  | Always               |
+| Springs, explicit                       | Cheap per step, needs many steps | Yes                 | Stiff means unstable |
+| Implicit solver                         | Heavy                            | Yes                 | Great                |
+| Verlet and constraints (my July flag)   | Cheap                            | Yes                 | Good                 |
+| Position based, fixed step, small steps | Cheap                            | Yes                 | Good                 |
+
+Sine waves and baked animations are how a lot of games ship flags, and they look great. They just can't react to a ball rolling into
+them, which was the whole point for me.

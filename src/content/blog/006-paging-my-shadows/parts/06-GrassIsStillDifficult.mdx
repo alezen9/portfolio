@@ -1,0 +1,71 @@
+import Layout from "@components/blog/Layout.astro";
+import grassEarlier from "../assets/grass-shaded-earlier.png?url";
+
+### Grass is still difficult
+
+Grass was one of the main reasons I wanted real shadows in the first place. I wanted a hill or a tree to shade the grass growing on
+it, not just the terrain underneath. That part works now, and it looks lovely.
+
+I also wanted every blade to cast its own little shadow. That part is still open.
+
+Before the paged system I tried a separate 2048 map just for the grass. Over the area it covered, each texel was roughly 8 to 11
+centimetres, so a thin blade either missed the map entirely or became a dark dot, and the wind made the dots crawl around.
+
+With virtual pages I had millimetres of detail up close, so I tried putting the blades into the moving pages. And they did cast! The
+result was a field of sharp, noisy speckles that got worse with every gust. Higher resolution doesn't automatically mean a nicer
+picture.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={grassEarlier}
+      alt="An earlier experiment with every grass blade casting, full of noisy dark speckles"
+    />
+    <figcaption>
+      Every blade casting its own shadow. Technically correct, visually a mess
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+It wasn't cheap either. In one test on my M2 Pro with the camera standing still, the whole frame took 5.04 ms on the GPU without grass casting
+and 7.16 ms with it. A performance pass brought that down to 6.04 ms, still a lot for something that looked worse. One blob shadow
+per clump instead of per blade cost 5.69 ms and looked exactly like what it was, a field of blobs.
+
+<br />
+
+### What the big studios do
+
+I got curious about how games with a lot of grass deal with this, and the answer seems to be: mostly they don't draw every blade into
+the shadow map either.
+
+Bend Studio shipped _Days Gone_ with **screen space shadows** for the sun, marching through the depth buffer toward the light to
+catch small details the shadow map misses, and they later
+[published the code](https://www.bendstudio.com/blog/inside-bend-screen-space-shadows/) with a talk. The PC version of _Ghost of
+Tsushima_ also has a separate screen space shadows setting described as adding foliage shadows that the shadow maps miss.
+
+So I tried exactly that. It cost about 0.8 ms, and the result was mush: soft dark smudges that didn't read as blade shadows at all.
+That one got removed too.
+
+<br />
+
+### Where it landed
+
+For now grass and flowers **receive** shadows but don't cast their own.
+
+They are also **soft receivers**. Instead of the page level their distance would normally pick, they read coarser levels, dithered
+between two neighbours, so the shadow of a hill or a tree falls across the blades as a smooth gradient instead of breaking into
+sharp fragments. The ground underneath gets a softened treatment too.
+
+The pine canopy ended up with the same treatment much later. Its needles are thin, noisy and alpha tested, and up close they were
+asking for pages all over the pool. Reading coarser levels fixed both the noise and the page count, and honestly it looks even
+better than before.
+
+It leaves some contact detail on the table, but it keeps the part of the screen I stare at the most calm and clean. I still want
+proper blade shadows someday. I just haven't found a version that looks calm in motion and is worth its cost.
+
+It reminded me of the [grass culling](/blog/trimming-my-grass-shader/) story. Understanding a technique and liking the image it
+produces are two very different things.

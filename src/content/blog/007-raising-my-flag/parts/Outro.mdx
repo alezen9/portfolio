@@ -1,0 +1,44 @@
+## Closing thoughts
+
+The flag that went up in July and hid eight minutes later is a very different flag now.
+
+It behaves the same at any frame rate, it doesn't stretch like rubber anymore, it's lit, it catches the wind like actual cloth and it
+casts a shadow that follows every fold. The simulation costs about 0.065 ms per frame and the shadow 0.2 to 0.3 ms while it's on
+screen, and it's all a bit shorter and simpler than the rewrite I parked in August.
+
+The biggest lesson for me wasn't a technique though. It was measuring before believing my eyes. The frame rate problem was invisible on
+my laptop, and without that little replica I would still think the July flag was fine.
+
+<br />
+
+There's plenty I didn't do:
+
+- self collision done properly, with a spatial hash instead of checking every point against every other
+- a proper bending model based on the angle between triangles, instead of distance constraints two points apart
+- more points for finer folds, which is now cheap for the simulation, while the shadow cost doesn't depend on it
+- the woven fabric normal map I have sitting on my desktop, for close-ups
+- and the newer solvers, like vertex block descent, which pay off with thousands of points, not 425
+
+Each one is a nice rabbit hole for another day.
+
+<br />
+
+And the flag is still hidden. It's behind a feature flag now though, so if you're curious you can already peek at it by adding
+`?expedition33=true` to [Revo](https://revo-realms.aleksandargjoreski.dev/?expedition33=true)'s URL. It's on top of a hill,
+you can't miss it. Maybe this article is the unhiding.
+
+For those who come after ;)
+
+{/* todo: tease the different purpose you want cloth for later in the world */}
+
+<br />
+<br />
+<br />
+
+<blockquote data-type="frame">
+Everything described here lives in the Revo codebase, in the flag's own folder. It's not meant as a reference implementation, but it
+might be useful to see how the pieces fit together in a real project.
+
+[Flag folder](https://github.com/alezen9/revo-realms/tree/main/src/entities/landmarks/expedition33Flag) (may be subject to changes)
+
+</blockquote>

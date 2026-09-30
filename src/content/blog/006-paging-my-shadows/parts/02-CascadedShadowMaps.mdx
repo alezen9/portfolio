@@ -1,0 +1,43 @@
+## One step beyond: cascaded shadow maps
+
+The next stop was the one I had already tried and failed with: CSM, **cascaded shadow maps**. This time I wanted to understand it
+before judging it.
+
+The idea is to split the camera's view by distance. The ground close to the camera belongs to a near slice, the middle distance to
+a second one, the far hills to a third. Each slice gets its own shadow map, fitted around the part of the view it covers.
+
+```text
+distance from camera:   | near      | middle    | far       |
+shadow map:             | map A     | map B     | map C     |
+ground it covers:       | small     | bigger    | biggest   |
+detail per metre:       | finest    | less      | least     |
+```
+
+{/* illustration S2: top down. The camera frustum as a triangle cut into three slices, near, middle and far. Around each slice a square shadow map (A, B, C), each one bigger than the previous, drawn with the same texel grid count so the texels grow with the square. */}
+
+The near map covers a small area, so it gets a lot of texels per metre exactly where you look the most. The far map covers much
+more ground with bigger texels, which is fine because you can't see fine detail that far anyway. When a point needs its shadow, its
+distance from the camera picks the map.
+
+It's a very sensible answer to the resolution problem, and it's what a lot of games shipped with for years.
+
+<br />
+
+It has its own quirks though. Where two slices meet, the two maps have different texel sizes, so a shadow crossing the boundary can
+visibly change quality or show a seam. You can blend between them, but that means sampling both near the boundary. A map fitted too
+tightly to the view can also crawl and shimmer as the camera moves, and stabilizing it usually means giving up some of that tight
+fit.
+
+And the car from the previous chapter is still there. A cascade fitted to what the camera sees still needs every caster that can
+throw a shadow into it, visible or not.
+
+The part that bothered me the most is simpler: every cascade is a complete shadow map, re-rendered as the camera moves. The far one
+spends a lot of texels on parts of its view nobody is looking at.
+
+Three.js has both a [CSM addon for WebGL](https://threejs.org/docs/pages/CSM.html) and a
+[CSMShadowNode for WebGPU](https://threejs.org/docs/pages/CSMShadowNode.html). Looking back at my first attempt, they give you the
+machinery, but choosing the splits, the bias and the caster setup is still up to you. I most likely got at least one of those wrong
+back then, which makes that old experiment a pretty bad argument against cascades.
+
+By the time I got here my question had changed anyway. It wasn't "how many maps can I afford" anymore, it was "how much of each map
+do I actually need?"

@@ -1,0 +1,54 @@
+import Layout from "@components/blog/Layout.astro";
+import shadowWind from "../assets/step3-shadow-wind.jpg?url";
+
+## A shadow that won't sit still
+
+By the time I came back to the flag, Revo had a brand new shadow system, which I wrote about in
+[The Book of Shadows](/blog/paging-my-shadows/). A waving flag with no shadow on a sunny hill looked plain wrong, and in theory
+casting one is a single call:
+
+```typescript
+graphics.vsmPass.registerCaster(flag, {
+  type: "dynamic",
+  positionNode: particlePosition.add(vec3(this.origin)),
+});
+```
+
+`dynamic` means its shadow gets redrawn every frame. The flag's actual mesh is just a flat placeholder plane, because the real shape
+only exists in a GPU buffer, so the `positionNode` tells the shadow system where every vertex really is.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={shadowWind}
+      alt="The flag's shadow stretched across the grass during a wind event"
+    />
+    <figcaption>
+      The flag's shadow on the grass during a wind event. Debug panel still
+      open, sorry
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+The hard part was a different question: which shadow pages does the flag touch this frame? The shadow system answered it with
+bounding boxes, which is easy for anything rigid and kept being wrong for cloth. First the box was the placeholder plane at the base
+of the pole, so the shadow vanished whenever the cloth swung out of it. Then every small cluster of triangles was bounded by moving
+the corners of its box at rest, which ignores whatever the cloth does in between. The new wind bows a row by up to 25 centimetres,
+easily enough to cross a page border, so pieces of shadow flickered in and out as the waves travelled across the flag.
+
+{/* illustration F10: a page grid seen from the sun. One row of cloth bowing between its two end points. Left: the box built from the end points, the bulge sticking out of it and the pages it misses shaded red. Right: the box built from every vertex, covering the bulge and all its pages. */}
+
+The fix went into the shadow system: every cluster of every moving object now bounds itself from its real vertices and marks the
+pages it covers directly on the GPU, in the same frame it gets drawn. The CPU doesn't need to know where the flag is anymore. The flag
+lost its bounds code, about 108 lines disappeared in total, and it now needs around 20 pages instead of 25 to 28. I love when a fix
+makes the code smaller :)
+
+It's not free though. A static shadow page is drawn once and cached, while a moving caster's pages are redrawn every frame, 128 x
+128 texels each. The flag touches around 20 to 24 of them, about 390,000 texels every frame, against about 49,000 for the ball. That's
+about 0.2 to 0.3 ms while it's on screen close up, more than the cloth simulation itself.
+
+A long static shadow is basically free. A big waving one is not.

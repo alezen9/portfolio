@@ -1,0 +1,53 @@
+### From a bake to a cache
+
+I didn't go from Blender bakes straight to the system I have now. It took a few detours.
+
+The first step was much more modest: a cache of ordinary directional shadow textures that scrolled with the player, which the
+terrain and the grass sampled, plus two small cascades for moving things. Moving an object or the sun just rebuilt the cache. After
+a year of exporting and packing textures by hand, that alone already felt like magic.
+
+It also left me with different shadows for different receivers, and anything that needed both, like the top of the statue's
+pedestal, kept finding a connection I had forgotten. I had traded the bake ritual for a collection of special cases.
+
+<br />
+
+### The first version
+
+So I started on pages. The first version had one goal: make it work.
+
+And it did, eventually. September 20th was the first time a paged shadow showed up on screen, and I was ridiculously happy about
+it. Then I kept adding things: a static page cache, the pine canopy, the grass, the flowers. Each one fixed something and each one
+added a little patch on top of the previous ones.
+
+That's also when things started going wrong. Pages flickered like crazy. Getting the quality right without the cost going wild felt
+like a balancing act I was losing. Shadows showed up where they shouldn't, didn't show up where they should, and cache invalidation
+kept not doing what it was supposed to do. There's a reason it's on that famous list of the hardest things in programming, together
+with naming things and off-by-one errors :)
+
+At some point I seriously considered going back to baking.
+
+What kept me going was a bit more research, which led me to clipmaps. I wasn't using them yet, and once I understood how nested
+levels around the camera would take care of a lot of what I was fighting, going back felt like quitting one step before it got
+good.
+
+<br />
+
+### Starting over
+
+The second version started from scratch.
+
+This time I knew how the pieces were supposed to connect, so I wrote the plan first and thought about the architecture instead of
+growing it one patch at a time. Clipmap levels around the camera, casters split into small clusters of triangles, and the page
+depths filled by a compute shader instead of the regular raster pipeline (more on that in a moment).
+
+From being fed up to having virtual shadow maps working properly took about two and a half weeks of implementation, on top of the
+reading I did before.
+
+Not everything was smooth in the second round either. My favourite bug from this one: some shadows appeared out of nowhere near
+moving objects, as if there were invisible casters walking around. The timings looked fine and the code looked fine. I only found it
+by reading the WGSL that TSL generated from my code, where a value shared between two branches had been cached into a variable that
+only one branch ever assigned. Everywhere else it read zero, which meant zero bias and black patches.
+
+Lesson learned: after restructuring shader code, look at the image, not just at the numbers.
+
+The rest of the article is how that second version works today.

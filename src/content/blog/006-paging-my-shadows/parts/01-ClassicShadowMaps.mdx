@@ -1,0 +1,71 @@
+## Classic shadow maps
+
+I had used shadow maps for more than a year without ever really looking inside one, so this is where I started.
+
+The idea is surprisingly simple. Render the scene once from the light's point of view, but instead of colors you store distances:
+for every pixel of that render, how far the light travelled before hitting something. Then render the scene normally from the
+camera, and for every visible point ask one question: was something closer to the light along the same ray?
+
+If yes, that point is in shadow. That's it, that's the whole trick.
+
+<br />
+
+The example that helped me the most: a car parked on a hill above a valley. The camera looks at the valley floor and the car is
+just outside the picture. Its shadow still falls into the valley.
+
+The camera render alone can't know that, because the car isn't in it. The render from the sun can.
+
+```text
+one ray of sunlight, seen from the sun:
+
+sun  ->  car on the hill  ->  valley floor
+         stored distance      distance of the point I am shading
+         (closer)             (farther)
+
+the camera sees the valley, not the car
+the comparison says something blocked the sun
+```
+
+{/* illustration S1: side view. Sun top left with parallel rays going down to the right. A hill on the left with a car on it, a valley floor on the right. The camera frustum looks only at the valley, the car is outside it. One ray highlighted: it hits the car first (label "stored depth"), continues and reaches point P on the valley (label "P's depth"). P marked as shadowed. */}
+
+For a sun, all the rays are parallel, so the light's view is orthographic. Nothing shrinks with distance like it does through the
+camera. Every texel of the map remembers the first surface its ray met. In one place that is the car, next to it the hillside,
+somewhere else the valley floor.
+
+When the camera later draws the valley, each visible point gets projected into that map and compared with what's stored there. If
+the stored surface is closer to the sun, the point is in shadow.
+
+<br />
+
+There is one detail in there that ended up mattering a lot later: the camera decides which surfaces I want to shade, not which
+objects can cast onto them. If I only drew the objects the camera can see into the shadow map, the car would vanish from the light's
+view and its shadow would vanish from the valley.
+
+So the shadow pass needs its own idea of what matters. Keep that car in mind, it comes back :)
+
+<br />
+
+### Where it starts hurting
+
+A texture full of distances has a few well known problems.
+
+The first one is **shadow acne**. A surface can end up comparing against a slightly different version of its own depth and decide
+it is shadowing itself, which shows up as ugly dark stripes where everything should be lit. The fix is a small **bias** that pushes
+the comparison a bit, but push too much and the shadow detaches from the object that casts it. That is the "Peter Panning" look,
+where things seem to float a little above the ground.
+
+The second one is jagged edges. A single comparison gives you a hard yes or no, so the edge of a shadow is as blocky as the texels
+of the map. The usual fix is to do several comparisons around the point and average the results. The important part is averaging
+the comparisons, not the depths, because averaging a car's depth with the valley's depth invents a surface that doesn't exist.
+
+The third one, and the one that really matters in a world like Revo, is resolution.
+
+A 4096 x 4096 map covering about 512 metres gives each texel roughly 12.5 centimetres of ground. That's fine for a distant hillside
+and hopeless for the contact shadow under the player. Doubling the resolution quadruples the memory and still only halves the texel
+size. Keep going until grass blades and small props look right and you are paying for every empty or distant corner of the map too.
+
+You can fit the map tightly around the player and get great nearby shadows, but then the valley further away falls outside of it.
+Or you cover the whole world and everything nearby gets blurry and blocky.
+
+That was pretty much the exact trade I had been fighting with Three.js's built-in shadows. What I needed was a way to spend
+resolution where it would actually be seen.

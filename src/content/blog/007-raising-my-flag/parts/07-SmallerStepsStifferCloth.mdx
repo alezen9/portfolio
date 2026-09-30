@@ -1,0 +1,91 @@
+## Smaller steps, stiffer cloth
+
+Here's the question the [Small Steps](https://mmacklin.com/smallsteps.pdf) paper asks. For the same amount of work, is it better to
+take one step with many relaxation passes, or many small steps with one pass each?
+
+The answer is: as many small steps as your budget allows, with a single pass each. Their cloth figure shows it nicely, thirty passes
+in one step look visibly stretchy, thirty steps with one pass each cost about the same and look much stiffer.
+
+The reason is surprisingly simple. Within one step, gravity and wind move a point by roughly `acceleration * dt * dt`. Halve the step
+and each step only has a quarter of the error to fix.
+
+{/* illustration F7: left, one long arrow from a point (one big step), with a wide error band around its tip. Right, the same distance covered by four short arrows (small steps), each with a tiny error band. Labels "one step, error grows with dt x dt" and "four steps, a quarter of the error each". */}
+
+I tried it on the replica, always with the same total of 960 relaxation passes per second:
+
+| Setup                               | Worst edge, calm |
+| ----------------------------------- | ---------------- |
+| 240 steps per second, 4 passes each | 18.6%            |
+| 480 steps per second, 1 pass each   | 19.2%            |
+| 960 steps per second, 1 pass each   | 9.5%             |
+
+Four passes at 240 steps per second are worth about the same as a single pass at 480. So I went with 960 steps per second, one pass
+each, which means 8 steps per frame at 120 FPS.
+
+A nice side effect: with a single pass per step and constraints that should not stretch at all, the extra bookkeeping XPBD adds is
+always zero. That's in the paper too. So plain position based dynamics it is, no extra buffers.
+
+<br />
+
+### Eight steps, one dispatch
+
+That raised a practical problem. Each step has two phases, moving the points and fixing the distances, and in Three.js every
+`renderer.compute()` call is its own submission to the GPU. Eight steps would mean sixteen tiny submissions every frame, for 425
+points.
+
+This is where NvCloth's trick from earlier comes in: run the whole cloth inside a single workgroup. One dispatch, 256 threads, each
+thread owns up to two points, and the loop over the steps lives inside the shader, with a barrier between the phases so every thread
+sees the positions the others just wrote:
+
+```typescript
+Loop({ start: 0, end: uniforms.uStepCount, type: "uint" }, () => {
+  Loop(OWNED_SLOTS, ({ i: slot }) => {
+    const index = getOwnedParticle(slot);
+    If(index.lessThan(config.COUNT), () => {
+      integrateParticle(
+        positions,
+        previousPositions,
+        predictedPositions,
+        index,
+      );
+    });
+  });
+  storageBarrier();
+
+  Loop(OWNED_SLOTS, ({ i: slot }) => {
+    const index = getOwnedParticle(slot);
+    If(index.lessThan(config.COUNT), () => {
+      solveParticle(predictedPositions, positions, index);
+    });
+  });
+  storageBarrier();
+});
+```
+
+On the CPU side the flag just accumulates the frame time, works out how many fixed steps fit into it and sends that number as a
+uniform. It also caps the catch-up at 1/30 of a second, so a long stall doesn't turn into a huge burst of steps.
+
+The GPU time went from about 0.09 ms to about 0.05 ms per frame, while doing 8 steps instead of the old 5 passes. To be fair, most of
+that saving comes from something I removed, more on that in a second. The part I cared about is that eight steps in a single dispatch
+turned out to be cheap.
+
+<br />
+
+### The small stuff
+
+A few smaller fixes came along with it:
+
+- a point next to the pole now takes the whole correction, since the pinned point can't move. Before, both sides moved half, so half
+  of every correction near the pole was simply lost
+- tether slack went from 10% to 2%
+- damping became exponential, which is exact for any step size, instead of the linear approximation
+- gravity went back to 9.81, and the speed cap is now in metres per second instead of per step
+
+And one thing went away: **self collision**. It was about 60% of the old GPU cost, and in the replica it resolved between 8 and 12
+overlapping pairs of points in calm and none at all in wind. A flag in the wind almost never folds onto itself, and when it hangs
+limp the folds are hidden in the grass anyway.
+
+<br />
+
+After all of that, the calm flag stretched 0.5% on average at every frame rate, the worst edge went from 25.7% to 13.2% and the
+worst stretch in wind from 18% to 2.4%.

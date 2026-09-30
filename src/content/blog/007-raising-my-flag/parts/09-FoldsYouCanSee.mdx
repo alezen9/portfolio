@@ -1,0 +1,63 @@
+import Layout from "@components/blog/Layout.astro";
+import litCalm from "../assets/step3-lit-calm.jpg?url";
+
+## Folds you can see
+
+After all of that, the funny part is that on screen the flag looked almost the same as before. The July flag used an unlit
+material, a black texture with the gold design on top, and black cloth with no lighting has no folds. Every wave and ripple the
+simulation produced was invisible, apart from the silhouette moving around.
+
+I had been measuring stretch percentages for days on a flag that, on screen, basically looked like a board :)
+
+<br />
+
+Lighting it needed a normal for every point, and the grid already has everything for that. The normal at a point is the cross
+product of the vectors to its neighbours, left to right and top to bottom:
+
+```typescript
+const left = positions.element(getParticleIndex(column.sub(1), row)).xyz;
+const right = positions.element(getParticleIndex(column.add(1), row)).xyz;
+const up = positions.element(getParticleIndex(column, row.sub(1))).xyz;
+const down = positions.element(getParticleIndex(column, row.add(1))).xyz;
+return down.sub(up).cross(right.sub(left)).normalize();
+```
+
+{/* illustration F9: a patch of the cloth grid, slightly curved. One point with its left, right, up and down neighbours marked. Two arrows, left to right and up to down, and their cross product as a third arrow pointing out of the cloth, labelled "normal". */}
+
+Four reads per vertex, 425 vertices, it doesn't even show up in the timings.
+
+A flag is seen from both sides, so the material is double sided and the normal gets flipped on the back face. One small gotcha there:
+Three.js flips the geometry's own normal for back faces automatically, but not a custom normal, so that flip has to be done by hand
+with `faceDirection`.
+
+The gold design stays emissive, so shading and shadows never dull it. It's the part of the flag that should always glow.
+
+<br />
+
+One thing caught me off guard. The cloth texture is very dark, and once the flag was lit it looked much darker than before. Unlit, the
+texture was shown directly at twice its brightness. Lit, the sun's contribution is divided by π, like in any physically based
+diffuse model, which made the cloth about a fifth as bright. Bumping the cloth's brightness from 2 to 8 brought it back close to what
+it used to look like, but now with the sun's warm tint and real folds.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={litCalm}
+      alt="The lit flag hanging in calm weather, with visible folds in the dark cloth"
+    />
+    <figcaption>
+      Lit for the first time, folds included. Taken with the debug panel open
+    </figcaption>
+  </figure>
+</Layout>
+
+{/* media: before and after, July's unlit flag against the lit one, same camera */}
+
+<br />
+
+The material is the cheapest lit one Three.js has, Lambert, the same kind the player uses. It's diffuse only, which is plenty for
+matte cloth, and it's also a shadow receiver in Revo, so it gets shaded by the pole and anything else around it for free.
+
+Receiving shadows was the easy part. Casting one was a different story.

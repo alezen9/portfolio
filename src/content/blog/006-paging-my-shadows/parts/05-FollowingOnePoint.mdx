@@ -1,0 +1,196 @@
+import Layout from "@components/blog/Layout.astro";
+import fixedDepth from "../assets/fixed-depth.webp?url";
+import directSun from "../assets/direct-sun.webp?url";
+import shadowOnly from "../assets/shadow.webp?url";
+import pageHeat from "../assets/page-heat.webp?url";
+
+### Following one point through Revo
+
+The easiest way I found to explain the whole thing is to follow a single pixel. Say the camera sees a point on the valley floor that
+should be darkened by our off screen car. Four things have to happen for that pixel to end up in shadow.
+
+{/* illustration S5: four boxes left to right with arrows. 1 "request": screen pixels -> bits in a page bitset. 2 "slot": page table -> a slot in the pool. 3 "draw": caster clusters (the car) -> depth into that slot. 4 "compare": the valley pixel reads the slot -> in shadow. Reuse the car and valley icons from S1. */}
+
+<br />
+
+#### 1. The visible point asks for a page
+
+Revo renders the main scene first. Together with the color, it keeps the depth, the part of the light that comes directly from the
+sun (more on that in step 4) and a small softness value used by grass and pine needles.
+
+Then a compute pass walks the screen. For a pixel, it rebuilds the world position from the depth, picks a clipmap level from the
+distance to the camera, projects the point into the sun's view and works out which page it falls into.
+
+Every page has one bit in a big bitset. Requesting a page means setting its bit. Thousands of pixels want the same few pages, so
+before writing, the pass checks whether the bit is already set:
+
+```typescript
+const key = getPageKey(level, pageCoordinate);
+const word = requestBits.element(key.div(32));
+const bit = uint(1).shiftLeft(key.mod(32)).toVar();
+const isInWindow = isPageInWindow(pageCoordinate, windowCenter);
+const isBitClear = atomicLoad(word).bitAnd(bit).equal(0);
+const isNewRequest = isInWindow.and(isBitClear);
+If(isNewRequest, () => {
+  atomicOr(word, bit);
+});
+```
+
+The request also covers a margin of 3 texels around the point. The soft shadow filter in step 4 samples around the point, and a
+sample landing on a page nobody asked for would make a broken edge.
+
+Starting from what the camera saw is what keeps this cheap. The depth buffer already says which surfaces are visible. Starting from
+the casters instead would mean guessing which receivers they might affect.
+
+Two small things make a big difference here. The pass only runs when the view actually changes, a move of more than 2 millimetres or
+a turn of more than 0.0005 radians compared to the last requested view, so standing still costs nothing. And it only reads one pixel
+out of every 2 x 2 block. That one is a measured trade: it halved the cost of the pass, and the price is that something thinner than
+two pixels, like a far branch against the sky, can miss its page and show up unshadowed. I haven't noticed it in practice. The story
+of how I got there is in the last chapter.
+
+<br />
+
+#### 2. The request needs a real slot
+
+A second pass goes through the requested bits.
+
+If the page is already in the pool and still valid, it keeps its slot and its depth, no work at all. If it is missing, it needs a
+slot and a fresh depth render. Missing pages take empty slots first, then slots of pages nobody requested this frame. When space is
+tight, finer levels go first, because close detail is what you notice.
+
+The page table has a trap though. The clipmap windows move with the camera and reuse their table entries. Imagine a window 128 pages
+wide and two pages at x = 12 and x = 140. They land on the same table entry, but they are different places in the world. When the
+camera has moved far enough, the old slot must not pass as the new page just because the address matches. So every slot also
+stores a tag made from the page coordinates, and a lookup only counts if the tag matches too.
+
+{/* illustration S6, optional: a window 128 pages wide drawn as a strip, pages x = 12 and x = 140 both pointing to the same table entry, the entry storing a tag, and only the page whose tag matches getting through. */}
+
+What happens when the pool is full? Nothing clever, in this version. The page doesn't get a slot and that shadow is simply missing.
+In practice the static pool stays under its limit, but it's a real limit and the debug views make it visible.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={pageHeat}
+      alt="Debug view coloring pages by how recently they were drawn"
+    />
+    <figcaption>
+      An earlier version of the heat view, which colors every page by how
+      recently it was drawn
+    </figcaption>
+  </figure>
+</Layout>
+
+{/* media: current Pages and Page heat views from the same camera, standing still and walking */}
+
+<br />
+
+#### 3. The off screen car fills it
+
+The valley asked for the page, but it said nothing about what should be written into it. Now it's the casters' turn.
+
+Every caster is split into small **clusters** of 64 triangles, and each cluster gets a bounding box in the sun's view. For every
+newly allocated page, the clusters whose box overlaps it become work items: "draw cluster 12 into page 305". The car is in there
+even though the camera can't see it, because only the sun's view matters in this step.
+
+Then a compute shader rasterizes those triangles into the page, one texel at a time. Several triangles can cover the same texel and
+GPU threads finish in any order, so each texel keeps the closest value with an atomic min:
+
+```typescript
+const depthIndex = pageBase.add(y.mul(VSM_PAGE_TEXELS)).add(x);
+const storedDepth = uint(texelDepth.mul(DEPTH_SCALE));
+atomicMin(depth.element(depthIndex), storedDepth);
+```
+
+Doing this in a compute shader instead of the normal raster pipeline gave me one path for every kind of caster: static meshes,
+things the CPU moves around and things whose shape only exists on the GPU.
+
+What gets stored is actually a height rather than a distance. With the sun above the world, the higher point along a ray is the one
+it meets first, which is all the comparison needs.
+
+Static and moving casters live in separate pools, because they change at a very different pace:
+
+- a static page is drawn once and stays in the cache until the sun moves or an object in it moves. When an object moves, the pages
+  under both its old and new position get redrawn, otherwise its old shadow would stay behind like a ghost
+- a moving caster's pages are redrawn every frame. Every one of its clusters marks the pages it covers this frame, directly on the
+  GPU, so the player, anything moved from the CPU and things deformed on the GPU all work the same way
+
+That last part exists because of a cloth flag that broke the first version of it, but that's a story for another article ;)
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={fixedDepth}
+      alt="Debug view showing the depth stored in static shadow pages"
+    />
+    <figcaption>
+      What static pages store: for every texel, what did the sun's ray meet
+      first
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+#### 4. The valley compares and receives the result
+
+Back to our pixel. It projects itself into the sun's view once more, follows the page table to the slot and compares its height with
+what's stored there. If the car was met first, the valley is blocked. Static and moving pages are sampled separately and their
+results multiplied.
+
+A single comparison is a hard yes or no, which looks jagged, so the final shadow is built from several comparisons around the
+point. How far apart they are depends on how far the blocker is. Close to the object that casts it, a shadow stays tight, further
+away it gets softer. The system first searches around the point for blockers to estimate that distance, then spreads a handful of
+rotated samples accordingly, similar in spirit to
+[percentage closer soft shadows](https://developer.download.nvidia.com/shaderlibrary/docs/shadow_PCSS.pdf). When the penumbra is
+tiny it falls back to a cheap 3 x 3 filter instead.
+
+The shadow also doesn't just darken the final image. Remember the direct sun from step 1? Every material that receives shadows writes the
+part of its light that comes from the sun into a separate target, and the shadow only removes that part. The ambient light stays, so things in
+shadow keep their shape instead of turning into flat dark blobs.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={directSun}
+      alt="Debug view showing only the direct sunlight in Revo"
+    />
+    <figcaption>
+      The direct sunlight on its own, the only part the shadows are allowed to
+      remove
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+Grass made this last step a bit harder. With 4x MSAA, one pixel at the edge of a blade can hold both grass and the ground behind
+it, so trusting a single depth put the shadow on the wrong surface as dark speckles. The soft path now shades both surfaces and
+mixes them by coverage.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={shadowOnly}
+      alt="Debug view showing only shadow visibility, white lit and black shadowed"
+    />
+    <figcaption>
+      Just the visibility: the statue, the ball and a few leaves casting on
+      everything else
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+On the code side, `VSMPass` orders the work, `VSMPages` handles requests and slots, `VSMDepthPool` fills the pages and `VSMSampler`
+does the comparing and filtering. When a shadow goes missing, it's always one of those connections: the receiver never asked for the
+page, the caster never reached it, or the final lookup found nothing valid.

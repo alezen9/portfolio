@@ -1,0 +1,46 @@
+## Catching the wind
+
+The July wind was a push. A force along the wind direction, the same for every point of the flag, plus some sine waves on top to make
+it flutter. Seven hand-tuned numbers in total, and none of them meant anything physical.
+
+It also behaves oddly if you think about it. A flag turned edge-on to the wind gets pushed exactly as hard as one facing it, and once
+it's fully streaming there's no reason for it to keep waving, which is why the sine waves were there in the first place.
+
+Real wind doesn't push cloth, it flows around it. NvCloth models each little piece of cloth as a small plate in a stream of air, and
+the idea is easy to picture. A piece facing the wind catches all of it. A piece edge-on catches almost nothing. A tilted one gets
+pushed sideways too, like a hand out of a car window.
+
+{/* illustration F8: three small plates in the same horizontal wind stream (arrows from the left). 1: facing the wind, a big drag arrow. 2: edge-on, almost no arrow. 3: tilted, a drag arrow along the wind plus a lift arrow pointing sideways out of the plate. Labels "all of it", "almost nothing", "drag and lift". */}
+
+For every point, in every step:
+
+```text
+u       = wind velocity - point velocity
+facing  = normal . u / |u|
+drag    = u * |facing| * |u| * dragCoefficient
+lift    = (normal - direction of u * facing) * facing * |u|^2 * liftCoefficient
+```
+
+**Drag** pushes along the relative wind, scaled by how much the cloth faces it. **Lift** pushes across it. The normal is the same one
+I was already computing for the lighting, so it came almost for free.
+
+This is also where the waving comes from, without any sine waves: any small ripple tilts some parts of the cloth, which then catch the
+wind differently, which makes new ripples. The existing wind noise now varies the wind speed across the flag instead of scaling a
+push, and that's what gives it gusts.
+
+<br />
+
+The seven magic numbers became three knobs that actually mean something: wind speed, drag and lift. The drag value of 3 even lands
+close to the physical one for a light fabric in air, which was a nice surprise.
+
+It didn't cost anything measurable either, the whole simulation ended up at about 0.065 ms.
+
+<br />
+
+I'll be honest though: if you stand still in a steady wind and look at the flag, the difference with the old version is subtle. It
+shows when the wind changes direction, when the flag turns relative to it, and in how the free edge curls and moves on its own
+instead of following a pattern.
+
+For me that was worth it. The knobs mean something now, and nothing about the motion is scripted anymore.
+
+{/* media: the flag in a wind event from the side, where the free edge curling is visible */}

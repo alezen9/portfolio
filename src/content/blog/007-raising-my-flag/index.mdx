@@ -1,0 +1,75 @@
+---
+title: "For Those Who Come After"
+subtitle: "Simulating cloth for an Expedition 33 flag"
+description: "How cloth is simulated, explained through an Expedition 33 flag in Revo built with Three.js and WebGPU compute shaders: Verlet, distance constraints, small steps, aerodynamic wind and a shadow that would not sit still."
+pubDate: "2026-09-30"
+state: "Draft"
+tags:
+  - "Three.js"
+  - "TSL"
+  - "WebGPU"
+  - "Cloth simulation"
+  - "Position based dynamics"
+  - "Verlet integration"
+  - "Compute shaders"
+  - "Expedition 33"
+---
+
+import PostHeader from "@components/blog/PostHeader.svelte";
+import Intro from "./parts/Intro.mdx";
+import AFlagMadeOfPoints from "./parts/01-AFlagMadeOfPoints.mdx";
+import WhereAPointGoesNext from "./parts/02-WhereAPointGoesNext.mdx";
+import StayingTheSameSize from "./parts/03-StayingTheSameSize.mdx";
+import EveryoneAtOnce from "./parts/04-EveryoneAtOnce.mdx";
+import ExpeditionJuly from "./parts/05-ExpeditionJuly.mdx";
+import FourFrameRatesFourFlags from "./parts/06-FourFrameRatesFourFlags.mdx";
+import SmallerStepsStifferCloth from "./parts/07-SmallerStepsStifferCloth.mdx";
+import CatchingTheWind from "./parts/08-CatchingTheWind.mdx";
+import FoldsYouCanSee from "./parts/09-FoldsYouCanSee.mdx";
+import AShadowThatWontSitStill from "./parts/10-AShadowThatWontSitStill.mdx";
+import Outro from "./parts/Outro.mdx";
+import ExploreMore from "./parts/ExploreMore.mdx";
+
+{/* prettier-ignore */}
+<PostHeader client:load="svelte" pubDate={new Date(frontmatter.pubDate)}>
+# For Those Who Come After
+</PostHeader>
+
+<Intro />
+<br />
+<br />
+<br />
+---
+<AFlagMadeOfPoints />
+<br />
+<br />
+<WhereAPointGoesNext />
+<br />
+<br />
+<StayingTheSameSize />
+<br />
+<br />
+<EveryoneAtOnce />
+<br />
+<br />
+<ExpeditionJuly />
+<br />
+<br />
+<FourFrameRatesFourFlags />
+<br />
+<br />
+<SmallerStepsStifferCloth />
+<br />
+<br />
+<CatchingTheWind />
+<br />
+<br />
+<FoldsYouCanSee />
+<br />
+<br />
+<AShadowThatWontSitStill />
+<br />
+<br />
+<Outro />
+<br />
+<ExploreMore />

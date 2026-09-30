@@ -1,0 +1,45 @@
+import ExternalLink from "@components/blog/ExternalLink.astro";
+import Layout from "@components/blog/Layout.astro";
+
+### Explore more
+
+A few resources that shaped this flag:
+
+<Layout gap={1}>
+  <ExternalLink icon="article" href="https://matthias-research.github.io/pages/tenMinutePhysics/14-cloth.pdf">
+    Ten Minute Physics 14: Cloth Simulation - Matthias Müller
+  </ExternalLink>
+
+<ExternalLink
+  icon="article"
+  href="https://matthias-research.github.io/pages/tenMinutePhysics/15-selfCollision.pdf"
+>
+  Ten Minute Physics 15: Self Collision - Matthias Müller
+</ExternalLink>
+
+<ExternalLink
+  icon="article"
+  href="https://www.cs.cmu.edu/afs/cs/academic/class/15462-s13/www/lec_slides/Jakobsen.pdf"
+>
+  Advanced Character Physics - Thomas Jakobsen
+</ExternalLink>
+
+<ExternalLink
+  icon="article"
+  href="https://matthias-research.github.io/pages/publications/posBasedDyn.pdf"
+>
+  Position Based Dynamics - Müller, Heidelberger, Hennix, Ratcliff
+</ExternalLink>
+
+<ExternalLink icon="article" href="https://mmacklin.com/smallsteps.pdf">
+  Small Steps in Physics Simulation - Macklin et al.
+</ExternalLink>
+
+<ExternalLink icon="article" href="https://github.com/NVIDIAGameWorks/NvCloth">
+  NvCloth - NVIDIA GameWorks
+</ExternalLink>
+
+  <ExternalLink icon="article" href="https://github.com/mrdoob/three.js/blob/r186/examples/webgpu_compute_cloth.html">
+    WebGPU compute cloth example - Three.js
+  </ExternalLink>
+</Layout>

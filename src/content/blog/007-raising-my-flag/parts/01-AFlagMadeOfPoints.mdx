@@ -1,0 +1,28 @@
+## A flag made of points
+
+Before my flags, the basics. When I came back to the flag I wanted to understand cloth properly, from the ground up, the same way I
+had just done with shadows.
+
+The best starting point I found was Matthias Müller's
+[Ten Minute Physics tutorial on cloth](https://matthias-research.github.io/pages/tenMinutePhysics/14-cloth.pdf), which opens with a sentence that
+throws away half of what you'd expect: _cloth only bends_. Real fabric barely stretches, usually somewhere between 0 and 5%, and
+gravity is rarely strong enough to make that visible. What you see when a flag moves is a sheet that keeps its size and folds.
+
+So on screen, a flag is mostly two things: something that keeps its size while it folds, and something pushing it around, like
+gravity, wind or a ball. Every technique below is a different way of getting those two things, at a different price.
+
+<br />
+
+<br />
+
+A computer can't move a continuous sheet, so the sheet becomes points, and for a rectangle like a flag, a regular grid is the
+obvious choice. Each point has a position, and the rendered mesh is the very same grid, so the vertex shader can read point `i` for
+vertex `i` and the CPU never touches a single vertex.
+
+Mine is 25 x 17 points, 425 in total, stretched over 5.4 by 3.3 metres, with the first column pinned to a staff that leans slightly
+toward the centre of the map. More points give finer folds, but cost more and, as I would learn later, are harder to keep from
+stretching. 425 is quite small, for reference the official Three.js cloth example uses 961.
+
+<br />
+
+{/* illustration F1: the 25 x 17 grid of points, left column pinned to the staff (pinned points drawn differently). From one highlighted point in the middle, three kinds of links in three colours: right and down neighbours (keep the size), the two diagonals (resist shearing), and the points two apart right and down (resist bending). A small legend with the three names. */}

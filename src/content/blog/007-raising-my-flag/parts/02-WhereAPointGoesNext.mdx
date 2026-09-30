@@ -1,0 +1,22 @@
+## Where a point goes next
+
+The textbook way to move something is to keep a velocity, add acceleration to it and add it to the position. It's simple, and it
+falls apart quickly with anything stiff, like cloth, unless the steps are tiny.
+
+The trick almost everyone uses for cloth in games comes from Thomas Jakobsen's
+[Advanced Character Physics](https://www.cs.cmu.edu/afs/cs/academic/class/15462-s13/www/lec_slides/Jakobsen.pdf), a GDC 2001 paper
+written for the ragdolls, cloth and plants of _Hitman: Codename 47_. It's called **Verlet** integration, and instead of a velocity it
+keeps the previous position:
+
+```typescript
+const next = position + (position - previous) + acceleration * dt * dt;
+previous = position;
+position = next;
+```
+
+`position - previous` is how far the point moved in the last step, a velocity in disguise. The beautiful part comes next: if you move
+a point to fix something, its velocity changes automatically, with no extra bookkeeping. That makes the next idea very easy.
+
+<br />
+
+{/* illustration F2: three dots on a curve, labelled previous, current, next. The arrow from previous to current is copied and placed starting at current, with a small downward gravity arrow added at its tip, landing on next. Caption idea: "the velocity is just where you were last time". */}
