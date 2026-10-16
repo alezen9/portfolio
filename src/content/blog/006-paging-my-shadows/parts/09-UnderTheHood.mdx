@@ -24,20 +24,20 @@ src/systems/vsm/
   VSMDynamicLayer.ts      the per-frame layer for moving casters, built on a second, smaller pool
   VSMSampler.ts           everything a receiver does to get its shadow: lookup, compare, filter
   VSMReceiverMaterials.ts materials that split their direct sunlight into a separate target
-  VSMLightShafts.ts       light shafts, the bonus from the previous chapter
+  VSMVolumetricLight.ts   light shafts, the bonus from the previous chapter
 ```
 
 And the wiring, from the outside in:
 
 ```text
-Game ──► Graphics ──► FramePipeline ──► ScenePass ─► VSMPass ─► WaterPass ─► VSMLightShafts ─► HDR ─► Bloom ─► Tone mapping
+Game ──► Graphics ──► FramePipeline ──► ScenePass ─► VSMPass ─► WaterPass ─► VSMVolumetricLight ─► HDR ─► Bloom ─► Tone mapping
                                           │            │
                                           │            ├── VSMContext (shared state, caster registry)
                                           │            ├── VSMPages (requests, residency)
                                           │            ├── VSMDepthPool "static" (512 slots)
                                           │            ├── VSMDynamicLayer ── VSMDepthPool "dynamic" (64 slots)
                                           │            ├── VSMSampler (reads both pools)
-                                          │            └── VSMLightShafts (reads through the sampler)
+                                          │            └── VSMVolumetricLight (reads through the sampler)
                                           │
                                           └── materials: VSMReceiverLambertMaterial / VSMReceiverStandardMaterial
                                               write "directSun" and "softShadow" next to the color
@@ -67,7 +67,7 @@ This is what happens between two frames, from the top:
       all of c to f go to the GPU as one list of compute dispatches
 3.  shadow resolve               every pixel looks up its page, compares, filters, removes blocked sunlight
 4.  WaterPass                    the lake, sampling the shadowed scene for refraction
-5.  VSMLightShafts               one small pass at 1/8 resolution
+5.  VSMVolumetricLight           one small pass at 1/8 resolution
 6.  HDR, bloom, tone mapping
 ```
 
@@ -548,13 +548,13 @@ the debug panel, with a legend under the selector:
 - **Page heat**: how many frames ago each page was drawn, red for this frame through blue for old
 - **Shadow**: just the visibility
 - **Static depth** and **Dynamic depth**: what's stored in each pool for the page under each pixel
-- **Light shafts**: the in scattering on its own
+- **Volumetric light**: the in scattering on its own
 
 <br />
 
-### Light shafts
+### Volumetric light
 
-`VSMLightShafts.ts`, from the previous chapter. It fits in this picture as one more consumer of `VSMSampler`: it calls
+`VSMVolumetricLight.ts`, from the previous chapter. It fits in this picture as one more consumer of `VSMSampler`: it calls
 `sampleSunVisibility` for points in the air instead of on surfaces, walks up the clipmap levels until a page exists, and runs as a
 single pass at an eighth of the resolution, with the previous frame reprojected and reused. The whole file is about 200 lines.
 
