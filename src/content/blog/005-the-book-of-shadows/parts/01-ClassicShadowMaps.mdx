@@ -1,0 +1,192 @@
+import Layout from "@components/blog/Layout.astro";
+import classicShadowSunViewNoted from "../assets/classic-shadow-sun-view-noted.webp?url";
+import classicShadowDepthNoted from "../assets/classic-shadow-depth-noted.webp?url";
+import classicShadowScene from "../assets/classic-shadow-scene.webp?url";
+import hardEdge from "../assets/hard-edge.webp?url";
+import softEdge from "../assets/soft-edge.webp?url";
+import peterPanning720p from "../assets/peter-panning720p.mp4?url";
+import peterPanningPoster from "../assets/posters/peter-panning.webp?url";
+
+## 1. Classic shadow maps
+
+In a classic Three.js scene, getting shadows is mostly a matter of flipping a few switches: enable `shadowMap` on the renderer,
+let the light cast them, set `castShadow` on the meshes that should cast a shadow and `receiveShadow` on the ones it should land on.
+That's pretty much it.
+
+What happens behind the scenes is fairly simple, at least conceptually, and honestly pretty fascinating:
+
+1. Render the casters from the light's point of view, keeping only the depth: how far the light travelled before hitting
+   something.
+2. Render the scene from the main camera as usual.
+3. Project each point on screen into the light's view, to find where it lands on the depth map and how far it is from the light
+   (its `z`), then compare: if it's farther than the depth stored there, something got in the way and it's in shadow, otherwise
+   it's lit.
+
+To ground it with a real example, here's what happens when the player in Revo stands in the shadow of a tree. Step 1 renders the
+scene from the sun's point of view, and that depth looks something like this:
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={classicShadowSunViewNoted}
+      alt="Grayscale depth of pine trees seen from the sun, with an arrow pointing at the tree hiding the player"
+    />
+    <figcaption>
+      Depth from the sun's point of view, darker is closer to the sun
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+Notice the player isn't even there: from the sun, the canopy covers them completely, so the only thing stored above them is its
+depth.
+
+Then the scene gets rendered as usual from the main camera. Every point on screen is projected into the light's view, its `z` is
+compared with the depth stored there, and that's what produces the final frame:
+
+<br />
+
+<Layout columns={2} gap={2}>
+  <figure>
+    <img
+      src={classicShadowDepthNoted}
+      alt="Sun depth looked up from every point on screen, the tree's darker shape covering the circled player"
+    />
+    <figcaption>
+      The sun's depth, looked up from every point on screen
+    </figcaption>
+  </figure>
+  <figure>
+    <img
+      src={classicShadowScene}
+      alt="The ball-shaped player sitting in a pine tree's shadow on a dirt path"
+    />
+    <figcaption>The tree blocks the sun, so the player is in shadow</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+==The image on the left is what each point compares itself against==: for every pixel, the sun's depth stored at the spot it lands
+on. It's not the camera's depth, and it's not each point's own distance from the sun either, it's what the map says the sun hit
+first along that ray. In the tree's shadow, the first thing the sun hits is the canopy, so every point on the player reads the
+canopy's depth instead, which is closer to the sun than the player itself. That's why the tree's darker shape lands exactly where
+its shadow is in the final frame. Out in the open, on the other hand, nothing stands between the grass and the sun, so the depth
+stored there belongs to the grass itself: same value, nothing in the way, so it stays lit.
+
+> All the screenshots in this chapter come from Revo, which already runs on the virtual shadow maps I'll get to later, but these
+> concepts are the same as with a classic shadow map.
+
+<br />
+
+In a shader, that third step is only a few lines. A simplified version in TSL, close to what the built-in Three.js shadows do for
+you, looks something like this:
+
+```typescript
+const lightClip = lightViewProjection.mul(vec4(positionWorld, 1));
+const shadowUv = vec2(
+  lightClip.x.mul(0.5).add(0.5),
+  lightClip.y.mul(-0.5).add(0.5),
+);
+const receiverDepth = lightClip.z;
+const storedDepth = texture(shadowMap, shadowUv).r;
+const isLit = receiverDepth.lessThanEqual(storedDepth.add(bias));
+```
+
+Move the point into the light's view, read what's stored there, compare. That's the whole trick :) The `bias` is a small tolerance
+on that comparison, and it's there because of shadow acne.
+
+### Shadow acne and Peter Panning
+
+**Shadow acne** comes from the map's resolution. Each texel of the map stores a single depth for a small patch of surface, so
+points inside that patch compare themselves against a value that's slightly off from their own, and some of them end up thinking
+they're shadowing themselves. That's where those ugly dark stripes come from. The bias forgives that small difference, but push it
+too far and the shadow detaches from whatever casts it, so things look like they're floating. That one goes by "Peter Panning" :)
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      loading="lazy"
+      src={peterPanning720p}
+      aria-label="Depth bias sliding from Peter Panning to shadow acne"
+      poster={peterPanningPoster}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "1154 / 720" }}
+    ></video>
+    <figcaption>Depth bias from Peter Panning to shadow acne</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+### Filtering techniques
+
+> The sun is the easy case: its rays are parallel, so one orthographic map does the job. A spot light needs a perspective map
+> shaped like its cone, and a point light needs six, one per cube face.<br />
+> Real lights also have a size, which is what makes shadows sharp near the contact point and softer further away. A shadow map
+> treats the light as a single point, so that softness always has to be faked.
+
+<br />
+
+Faking it is what shadow filtering is about. A single comparison is a hard yes or no, so on its own every shadow ends with a
+razor-sharp edge, and a blocky one too once texels get big. The usual fix is **PCF** (percentage-closer filtering): compare a few
+neighbours too and average the results. The results, not the depths, because averaging the canopy's depth with the grass' depth
+would invent a surface that isn't really there. Revo uses PCSS from the list below: it widens the blur the further away the caster
+is, which is why the shadow stays sharp at the contact point.
+
+<br />
+
+<Layout columns={2} gap={2}>
+  <figure>
+    <img
+      src={hardEdge}
+      alt="Campfire scene with hard, sharp shadow edges from a single comparison per pixel"
+    />
+    <figcaption>Basic: one comparison, hard edges</figcaption>
+  </figure>
+  <figure>
+    <img
+      src={softEdge}
+      alt="The same campfire scene with filtered shadows, sharp near each caster and softer further away"
+    />
+    <figcaption>PCSS: sharp near the caster, softer further away</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+> There are quite a few ways to sample a shadow map, perhaps the most common ones are:
+>
+> - **Basic** &rarr; one comparison per pixel. Fastest, with hard edges, blocky at low resolution.
+> - **PCF** (percentage-closer filtering) &rarr; several comparisons around the point, averaged. GPUs even have a comparison
+>   sampler that blends four of them in a single fetch, so a small PCF comes almost for free.
+> - **PCSS** (percentage-closer soft shadows) &rarr; PCF with a blur that widens the further away the blocker is, faking the soft
+>   light from the note above.
+> - **VSM** (variance shadow maps) &rarr; stores depth and depth squared, so the map itself can be blurred. Cheap soft edges, but
+>   light can bleed through where shadows overlap.
+>
+> This VSM has nothing to do with the one this article is about. Same acronym, completely different thing :)
+
+<br />
+
+### Size vs quality
+
+What really limits a single shadow map though is scale, and that one I already knew very well. A shadow map grows with the square
+of its resolution, so a 4096 x 4096 map at 32 bits is 64 MiB, at 8192 it's already 256 MiB, and that's for a single light. On top
+of that, every caster gets drawn a second time into it, every frame if anything moves.
+
+And whatever resolution you pick gets spread over the whole area the map covers. A 4096 map over about 512 metres gives each texel
+roughly 12.5 centimetres of ground, which is fine for a distant hill and pretty hopeless right under the player. So either you fit
+the map tightly around the player and lose the hills, or you cover the whole world and everything nearby gets blurry and blocky.
+
+That's exactly the trade I kept losing with the built-in shadows: one map can be wide or sharp, never both. What I needed was a
+way to spend resolution only where it would actually be seen.
