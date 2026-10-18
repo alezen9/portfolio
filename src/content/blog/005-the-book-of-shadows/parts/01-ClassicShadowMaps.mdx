@@ -83,7 +83,7 @@ stored there belongs to the grass itself: same value, nothing in the way, so it 
 <br />
 
 In a shader, that third step is only a few lines. A simplified version in TSL, close to what the built-in Three.js shadows do for
-you, looks something like this:
+you, looks something like this for the sun, where the orthographic projection means there's no perspective divide to worry about:
 
 ```typescript
 const lightClip = lightViewProjection.mul(vec4(positionWorld, 1));
@@ -140,8 +140,9 @@ too far and the shadow detaches from whatever casts it, so things look like they
 Faking it is what shadow filtering is about. A single comparison is a hard yes or no, so on its own every shadow ends with a
 razor-sharp edge, and a blocky one too once texels get big. The usual fix is **PCF** (percentage-closer filtering): compare a few
 neighbours too and average the results. The results, not the depths, because averaging the canopy's depth with the grass' depth
-would invent a surface that isn't really there. Revo uses PCSS from the list below: it widens the blur the further away the caster
-is, which is why the shadow stays sharp at the contact point.
+would invent a surface that isn't really there. That smooths the edge, but doesn't account for the distance between the caster and
+the receiver. Revo uses PCSS from the list below: it widens the filter as that distance grows, which is why the shadow stays sharp
+at the contact point.
 
 <br />
 
@@ -169,8 +170,8 @@ is, which is why the shadow stays sharp at the contact point.
 > - **Basic** &rarr; one comparison per pixel. Fastest, with hard edges, blocky at low resolution.
 > - **PCF** (percentage-closer filtering) &rarr; several comparisons around the point, averaged. GPUs even have a comparison
 >   sampler that blends four of them in a single fetch, so a small PCF comes almost for free.
-> - **PCSS** (percentage-closer soft shadows) &rarr; PCF with a blur that widens the further away the blocker is, faking the soft
->   light from the note above.
+> - **PCSS** (percentage-closer soft shadows) &rarr; finds the blockers first, then widens the PCF filter the further they are
+>   from the receiver, faking the soft light from the note above.
 > - **VSM** (variance shadow maps) &rarr; stores depth and depth squared, so the map itself can be blurred. Cheap soft edges, but
 >   light can bleed through where shadows overlap.
 >
@@ -182,7 +183,8 @@ is, which is why the shadow stays sharp at the contact point.
 
 What really limits a single shadow map though is scale, and that one I already knew very well. A shadow map grows with the square
 of its resolution, so a 4096 x 4096 map at 32 bits is 64 MiB, at 8192 it's already 256 MiB, and that's for a single light. On top
-of that, every caster gets drawn a second time into it, every frame if anything moves.
+of that, every caster inside the shadow camera gets drawn a second time into it, every frame by default, whether anything moved or
+not.
 
 And whatever resolution you pick gets spread over the whole area the map covers. A 4096 map over about 512 metres gives each texel
 roughly 12.5 centimetres of ground, which is fine for a distant hill and pretty hopeless right under the player. So either you fit
