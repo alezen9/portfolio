@@ -10,7 +10,9 @@ import peterPanningPoster from "../assets/posters/peter-panning.webp?url";
 ## 1. Classic shadow maps
 
 In a classic Three.js scene, getting shadows is mostly a matter of flipping a few switches: enable `shadowMap` on the renderer,
-let the light cast them, set `castShadow` on the meshes that should cast a shadow and `receiveShadow` on the ones it should land on.
+let the light cast them, set `castShadow` on the meshes that should cast a shadow and `receiveShadow` on the ones it should land
+on.
+
 That's pretty much it.
 
 What happens behind the scenes is fairly simple, at least conceptually, and honestly pretty fascinating:
@@ -72,10 +74,14 @@ compared with the depth stored there, and that's what produces the final frame:
 
 ==The image on the left is what each point compares itself against==: for every pixel, the sun's depth stored at the spot it lands
 on. It's not the camera's depth, and it's not each point's own distance from the sun either, it's what the map says the sun hit
-first along that ray. In the tree's shadow, the first thing the sun hits is the canopy, so every point on the player reads the
-canopy's depth instead, which is closer to the sun than the player itself. That's why the tree's darker shape lands exactly where
-its shadow is in the final frame. Out in the open, on the other hand, nothing stands between the grass and the sun, so the depth
-stored there belongs to the grass itself: same value, nothing in the way, so it stays lit.
+first along that ray.
+
+In the tree's shadow, the first thing the sun hits is the canopy, so every point on the player reads the canopy's depth instead,
+which is closer to the sun than the player itself. That's why the tree's darker shape lands exactly where its shadow is in the
+final frame.
+
+Out in the open, on the other hand, nothing stands between the grass and the sun, so the depth stored there belongs to the grass
+itself: same value, nothing in the way, so it stays lit.
 
 > All the screenshots in this chapter come from Revo, which already runs on the virtual shadow maps I'll get to later, but these
 > concepts are the same as with a classic shadow map.
@@ -103,8 +109,10 @@ on that comparison, and it's there because of shadow acne.
 
 **Shadow acne** comes from the map's resolution. Each texel of the map stores a single depth for a small patch of surface, so
 points inside that patch compare themselves against a value that's slightly off from their own, and some of them end up thinking
-they're shadowing themselves. That's where those ugly dark stripes come from. The bias forgives that small difference, but push it
-too far and the shadow detaches from whatever casts it, so things look like they're floating. That one goes by "Peter Panning" :)
+they're shadowing themselves. That's where those ugly dark stripes come from.
+
+The bias forgives that small difference, but push it too far and the shadow detaches from whatever casts it, so things look like
+they're floating. That one goes by "Peter Panning" :)
 
 <br />
 
@@ -138,11 +146,13 @@ too far and the shadow detaches from whatever casts it, so things look like they
 <br />
 
 Faking it is what shadow filtering is about. A single comparison is a hard yes or no, so on its own every shadow ends with a
-razor-sharp edge, and a blocky one too once texels get big. The usual fix is **PCF** (percentage-closer filtering): compare a few
-neighbours too and average the results. The results, not the depths, because averaging the canopy's depth with the grass' depth
-would invent a surface that isn't really there. That smooths the edge, but doesn't account for the distance between the caster and
-the receiver. Revo uses PCSS from the list below: it widens the filter as that distance grows, which is why the shadow stays sharp
-at the contact point.
+razor-sharp edge, and a blocky one too once texels get big.
+
+The usual fix is **PCF** (percentage-closer filtering): compare a few neighbours too and average the results. The results, not the
+depths, because averaging the canopy's depth with the grass' depth would invent a surface that isn't really there.
+
+That smooths the edge, but doesn't account for the distance between the caster and the receiver. Revo uses PCSS from the list
+below: it widens the filter as that distance grows, which is why the shadow stays sharp at the contact point.
 
 <br />
 
@@ -182,13 +192,17 @@ at the contact point.
 ### Size vs quality
 
 What really limits a single shadow map though is scale, and that one I already knew very well. A shadow map grows with the square
-of its resolution, so a 4096 x 4096 map at 32 bits is 64 MiB, at 8192 it's already 256 MiB, and that's for a single light. On top
-of that, every caster inside the shadow camera gets drawn a second time into it, every frame by default, whether anything moved or
-not.
+of its resolution, so a 4096 x 4096 map at 32 bits is 64 MiB, at 8192 it's already 256 MiB, and that's for a single light.
+
+On top of that, every caster inside the shadow camera gets drawn a second time into it, every frame by default, whether anything
+moved or not.
 
 And whatever resolution you pick gets spread over the whole area the map covers. A 4096 map over about 512 metres gives each texel
-roughly 12.5 centimetres of ground, which is fine for a distant hill and pretty hopeless right under the player. So either you fit
-the map tightly around the player and lose the hills, or you cover the whole world and everything nearby gets blurry and blocky.
+roughly 12.5 centimetres of ground, which is fine for a distant hill and pretty hopeless right under the player.
 
-That's exactly the trade I kept losing with the built-in shadows: one map can be wide or sharp, never both. What I needed was a
-way to spend resolution only where it would actually be seen.
+So either you fit the map tightly around the player and lose the hills, or you cover the whole world and everything nearby gets
+blurry and blocky.
+
+That's exactly the trade I kept losing with the built-in shadows: one map can be wide or sharp, never both.
+
+The next technique builds right on top of this problem, and tries to spend resolution only where it would actually be seen.
