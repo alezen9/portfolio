@@ -11,14 +11,14 @@ And if an object had to shadow itself, like the Goku statue for example, it need
 dance started again.
 
 None of it was hard on its own, and over time I even wrote a few scripts to take care of the packing and converting. It was just a
-long process that made me hesitant to add or change things. I would look at a rock, think it would look better a couple of metres
+long process that made me hesitant to add or change things. I would look at a tree, think it would look better a couple of metres
 to the left, remember what moving it meant, and leave it exactly where it was.
 
 Additionally, apart from the player, there was essentially no plan for anything that moved, so I kept putting off adding dynamic
 objects altogether. For a project I use as a sandbox, that was a constraint I was willing to accept, and for a long time I was happy
 to live with it.
 
-Perhaps it was time to finally switch gears :)
+Time to finally switch gears, I guess :)
 
 <br />
 
@@ -35,13 +35,13 @@ Perhaps it was time to finally switch gears :)
       playsInline
       style={{ aspectRatio: "1150 / 720" }}
     ></video>
-    <figcaption>You spin me right round...</figcaption>
+    <figcaption>Kagemane no Jutsu</figcaption>
   </figure>
 </Layout>
 
 <br />
 
-Like many other beginners, I too started with the built-in shadow map: a directional light, `castShadow`, `receiveShadow` and a
+Like many other, I too started with the built-in shadow map: a directional light, `castShadow`, `receiveShadow` and a
 shadow camera following the player around. It's a great way to start, but as the world got bigger and the camera could rotate
 freely, I found myself either losing quality or paying way too much for it, so baked shadows crept in pretty early on.
 
@@ -49,7 +49,7 @@ Along the way I also gave cascaded shadow maps a try, but I didn't manage to mak
 issue on my end, so back to baking it was, with a tiny shadow map just for the player. Later I got rid of even that and gave the
 player an analytical shadow in post instead. It's a sphere after all, so the math was fairly straightforward.
 
-Still, shadows stayed somewhere at the back of my head for a long time, and back in September I finally decided to open that
+Still, shadows stayed somewhere at the back of my head for a long time, and a couple of months ago I finally decided to open that
 Pandora's box with a simple question: how do huge open worlds or big engines like Unreal deal with this?
 
 I wanted to learn how shadows actually work, understand the internals and the techniques behind them, and then build
@@ -58,7 +58,7 @@ same thing over and over again. Crucially, it had to have very small overhead fr
 
 Turns out cascades were just the middle step.
 
-There was an even more advanced technique called ==virtual shadow mapping==, and it looked just complex enough to get me hooked,
+There was an even more advanced technique called **virtual shadow mapping**, and it looked just complex enough to get me hooked,
 so I jumped straight into it.
 
 That's pretty much how this whole thing started :)

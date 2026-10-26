@@ -1,7 +1,7 @@
 ---
 title: "The Book of Shadows"
 subtitle: "From baked textures to virtual shadow maps in Revo"
-description: "Why I stopped baking shadows in Blender, what I learned about shadow maps, cascades and virtual pages, and how I built virtual shadow maps into Revo with Three.js and WebGPU, light shafts included."
+description: "Why I stopped baking shadows in Blender, what I learned about shadow maps, cascades and virtual pages, and how I built virtual shadow maps into Revo with Three.js and WebGPU, volumetric light included."
 pubDate: "2026-09-27"
 state: "Draft"
 tags:
@@ -13,13 +13,15 @@ tags:
   - "Shadow mapping"
   - "Compute shaders"
   - "Clipmaps"
-  - "Light shafts"
+  - "Volumetric light"
 ---
 
 import PostHeader from "@components/blog/PostHeader.svelte";
 import Intro from "./parts/Intro.mdx";
 import ClassicShadowMaps from "./parts/01-ClassicShadowMaps.mdx";
 import CascadedShadowMaps from "./parts/02-CascadedShadowMaps.mdx";
+import VirtualShadowMaps from "./parts/03-VirtualShadowMaps.mdx";
+import ExploreMore from "./parts/ExploreMore.mdx";
 
 {/* prettier-ignore */}
 <PostHeader client:load="svelte" pubDate={new Date(frontmatter.pubDate)}>
@@ -37,3 +39,13 @@ import CascadedShadowMaps from "./parts/02-CascadedShadowMaps.mdx";
 <br />
 ---
 <CascadedShadowMaps />
+<br />
+<br />
+<br />
+---
+<VirtualShadowMaps />
+<br />
+<br />
+<br />
+---
+<ExploreMore />
