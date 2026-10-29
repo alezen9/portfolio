@@ -2,23 +2,25 @@ import Layout from "@components/blog/Layout.astro";
 import sceneShadowsHero720p from "../assets/scene-shadows-hero720p.mp4?url";
 import sceneShadowsHeroPoster from "../assets/posters/scene-shadows-hero.webp?url";
 
-For over a year, pretty much since [Revo](https://revo-realms.aleksandargjoreski.dev/)'s world had more in it than just the
-player, every static shadow went through the same little ritual: change something in Blender, bake the shadows onto the terrain,
-export them, pack them together with the other terrain textures, compress everything to KTX2, load it in the project and sample
-the right texture in each object that needed it...quite the process.
+_- Sono stanco capo. -_
 
-And if an object had to shadow itself, like the Goku statue for example, it needed its own bake on its own texture, and the whole
-dance started again.
+It's been almost 2 years since I created the repo and started working on what has become my dearest project,
+[Revo](https://revo-realms.aleksandargjoreski.dev/).
 
-None of it was hard on its own, and over time I even wrote a few scripts to take care of the packing and converting. It was just a
-long process that made me hesitant to add or change things. I would look at a tree, think it would look better a couple of metres
-to the left, remember what moving it meant, and leave it exactly where it was.
+Pretty much since it had more in it than just a rolling ball, changing the light's colour or position, or moving anything static
+in the scene, meant going back to Blender to bake the shadows onto the terrain again.
 
-Additionally, apart from the player, there was essentially no plan for anything that moved, so I kept putting off adding dynamic
-objects altogether. For a project I use as a sandbox, that was a constraint I was willing to accept, and for a long time I was happy
-to live with it.
+Then export, pack with the other textures, compress everything to KTX2, load it back into the project and finally sample it in
+each object's shader to (incorrectly) darken its colour...quite the circus.
 
-Time to finally switch gears, I guess :)
+And if an object had to shadow itself, like the Goku statue for example, it needed its own bake on its own texture and the
+whole dance started again.
+
+Eventually I wrote a few scripts to save some time on the packing and converting part, but even with those, the process was just
+long enough that I found myself avoiding changes.
+
+Lighting is such a big part of how a scene feels. I wanted to be able to play with it freely, so a couple of months ago I got
+fed up and went down yet another rabbit hole, which led to this:
 
 <br />
 
@@ -41,28 +43,24 @@ Time to finally switch gears, I guess :)
 
 <br />
 
-Like many other, I too started with the built-in shadow map: a directional light, `castShadow`, `receiveShadow` and a
-shadow camera following the player around. It's a great way to start, but as the world got bigger and the camera could rotate
-freely, I found myself either losing quality or paying way too much for it, so baked shadows crept in pretty early on.
+Before settling on baking, I had tried the built-in shadow map: a directional light, `castShadow`, `receiveShadow` and a shadow
+camera following the player around. As the world got bigger and the camera could rotate freely, I kept losing quality or
+paying way too much for it, so baked shadows crept in pretty early on.
 
-Along the way I also gave cascaded shadow maps a try, but I didn't manage to make them work well, most likely because of a skill
-issue on my end, so back to baking it was, with a tiny shadow map just for the player. Later I got rid of even that and gave the
-player an analytical shadow in post instead. It's a sphere after all, so the math was fairly straightforward.
+I also remember giving cascaded shadow maps a try, but I never managed to get them working well, most likely a skill issue on my
+end, so back to baking it was.
 
-Still, shadows stayed somewhere at the back of my head for a long time, and a couple of months ago I finally decided to open that
-Pandora's box with a simple question: how do huge open worlds or big engines like Unreal deal with this?
+For a while, the player was the only thing with a real-time shadow and fairly recently I replaced even that with an analytical one
+in post. It's a sphere, after all, so the math was fairly straightforward.
 
-I wanted to learn how shadows actually work, understand the internals and the techniques behind them, and then build
-something that fits my project and holds up as the world grows. Dynamic shadows included, but most importantly no more baking the
-same thing over and over again. Crucially, it had to have very small overhead from day one, not something to fix later.
+So I kept putting things off. Adding or moving something static meant another bake, and for anything that moved I still hadn't
+figured out what to do with its shadow.
 
-Turns out cascades were just the middle step.
+This time I started by looking into how classic shadow maps actually work behind the scenes. I'd been using them since the
+beginning, but my idea of what was inside that texture was...pretty far off.
 
-There was an even more advanced technique called **virtual shadow mapping**, and it looked just complex enough to get me hooked,
-so I jumped straight into it.
+From there I kept digging into the limits of each approach and how other techniques got around them. That took me through
+cascades and eventually to **virtual shadow maps**, which I hadn't even known about when I started.
 
-That's pretty much how this whole thing started :)
-
-To actually understand it though, I had to go back to the basics first, and this article takes that same road: from the plain
-shadow map I had been using since the beginning without ever looking inside, through the cascades that got the better of me, to
-the tailored version of virtual shadow maps running in Revo today.
+All I wanted was to stop thinking about shadows every time I moved something in the scene. And here I am, yet again, trying to put
+the journey into words :)
