@@ -212,8 +212,7 @@ around 6 centimetres of ground, fine for a distant tree but pretty blocky right 
 around the player, but then I'd completely lose the shadows further out.
 
 A bigger texture gets expensive quickly. At 32 bits per texel, 4096 &times; 4096 is 64 MiB, and 8192 is already 256 MiB,
-for a single light. Also, every time the map updates, the casters inside its camera have to be drawn into it again, and with
-automatic updates enabled, that happens every frame.
+for a single light. Also, every time the map updates, the casters inside its camera have to be drawn into it again.
 
 So for a while I used a hybrid approach: everything but the player was static, so it got baked, which let me shrink the
 real-time map to a tiny 64 by 64 over just 2 by 2 metres around the player (yep, the ball is a whole metre across, it just

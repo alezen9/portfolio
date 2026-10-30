@@ -1,6 +1,7 @@
 import Layout from "@components/blog/Layout.astro";
 import csmFrustumSlices from "../assets/csm-frustum-slices.svg?url";
 import csmMaps from "../assets/csm-maps.svg?url";
+import lightMargin from "../assets/light-margin.svg?url";
 
 ## 2. Cascaded shadow maps
 
@@ -10,6 +11,7 @@ Right in front of the camera, a single shadow texel can cover dozens of pixels, 
 away, that same texel shrinks to a pixel or less, and nobody would notice if it was ten times bigger.
 
 So instead of one map stretched over everything, the view gets cut into a few slices by distance, and each slice gets its own map.
+
 The first one covers just the few metres in front of the camera, the next one a bit more, and the last one everything far away,
 all at the same resolution but with a very different amount of ground per texel.
 
@@ -27,8 +29,9 @@ and I didn't want to bend the project just to showcase cascades.
 Picking the right cascade in the shader is the easy part: take the pixel's depth from the camera, find the slice it falls in,
 and run the same comparison from the previous chapter against that slice's map.
 
-The interesting part is deciding where to cut. Let's take as an example a camera that sees from half a metre up to 150 metres,
-split into three cascades with a 2048 map each.
+Deciding where to cut takes a bit more thought. For example a camera that sees from half a metre up to 150 metres, split into
+three cascades with a 2048 map each. It's not Revo's camera, by the way: the range is the same, but I kept the view much narrower
+so it better fits the drawings, that's all.
 
 There are a few common ways to place the cuts:
 
@@ -76,22 +79,19 @@ camera turns:
 
 <br />
 
-Compare that with a single 4096 map holding the whole 150 metres, which gives about 3.8 centimetres per texel everywhere. Three
-2048 maps add up to only three quarters of its texels, so they take 48 MiB instead of 64, and yet the near slice is three times
-sharper and the middle one twice as sharp, with only the far one a bit worse, where nobody notices.
+For that same view, a single 4096 map would give about 3.8 centimetres per texel everywhere. The three 2048 maps together take
+48 MiB instead of 64, and still the near slice gets about three times the detail and the middle one almost twice as much. Only
+the far slice loses a bit, right where the shadows are smallest on screen anyway.
 
 Noice :)
 
-The drawings keep the frustum narrow to fit the page, so there each slice's longest diagonal runs mostly along its length. A real
-perspective camera usually spreads much wider, so each slice ends up wider than it is long, and then it's mostly the width that
-decides how much ground its square has to cover.
+My drawings here do cheat a little, but the idea remains the same: each map still has to hold its whole slice, whatever shape it is.
 
-The maps are also drawn from above, while the real ones are rendered from the sun and line up with its direction, and the ruler
-starts at 0 instead of half a metre, just to keep the numbers round.
+With the frustum this narrow, its longest diagonals run mostly along its length, while a real camera spreads much wider and the
+width ends up deciding the size. They're also drawn from above, while the real maps face the sun (see drawing below), and the
+ruler starts at 0 instead of half a metre to keep it readable.
 
-Either way the idea stays the same: each map is a square big enough to hold its whole slice.
-
-### Following the camera
+### Shimmering, seams and off-screen casters
 
 These maps now follow the camera around though, and that brings a few problems of its own.
 
@@ -100,10 +100,9 @@ texel away from where it was, so the edges get rasterized slightly differently e
 The fix is to move the map only in whole texel steps, so the texel grid stays put and the edges with it. Three.js does that by
 snapping each cascade's centre to its texel size.
 
-Turning the camera causes the same crawling in a different way. The slice turns with the camera, so a box fitted tightly around
-it would change size every frame, and the texels with it. That's why each cascade is sized by the slice's longest diagonal, as in
-the example above, and keeps that size whichever way the camera turns. A bit of resolution goes to waste in the corners, but it holds
-still.
+Turning needs care too. A box fitted tightly around a slice would change size as the slice turns relative to the sun, and the
+texel size would change with it. That's the reason for those longest diagonals earlier: the square keeps the same size through
+the whole turn, at the cost of some unused space in its corners.
 
 Then there are the seams, since the ground right at a cut suddenly switches to bigger texels, from about 2 to 5.1 centimetres at
 60 metres in the example above, and that jump can show up as a line on the ground following the camera around, not exactly subtle.
@@ -115,22 +114,56 @@ orthographic camera, and a camera has to be placed somewhere. It only draws what
 standing further toward the sun than the camera itself never makes it into the map, even when its shadow falls right in view.
 
 With a single shadow map, that place is the `DirectionalLight`'s own position: its shadow camera sits there, looks at the light's
-target, and draws from 0.5 to 500 units ahead by default. Cascades place their own light cameras instead, one per slice, each
-centred on its slice as the sun sees it and right at the slice's edge closest to the sun. A camera that close would miss any caster
-just off screen, like a tall tree between the sun and the ground in view, so Three.js pulls every cascade's light camera toward the
-sun by the same `lightMargin`, 200 units by default, which should be plenty for most scenes.
+target, and draws from 0.5 to 500 units ahead by default. Cascades place their own light cameras instead, one per slice.
 
-### Drawing it all again
+Seen from the side, each one is the faded line touching its slice, centred on it across the sunlight and placed right at its
+corner closest to the sun, the dot, so the whole slice sits in front of it.
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={lightMargin}
+      alt="Side view of the three slices and their light cameras, faded at each slice's corner closest to the sun and solid once pulled back toward the sun by the light margin, with a tree behind the camera"
+    />
+    <figcaption>
+      Each slice's light camera, before and after the light margin
+    </figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+That's enough to hold the slice, but not the tree. It stands behind the camera, out of view, yet its shadow still reaches into the
+near slice, and it sits further toward the sun than that slice's faded camera, so the camera would never draw it.
+
+Three.js solves this by pullint every cascade's light camera back toward the sun by the same `lightMargin`, 200 is the default
+and should be plenty for most scenes but it is customizable.
+
+With that, the tree sits in front of the near slice's camera and makes it into its map.
+
+Unity seems to have taken a different approach to this problem: it keeps its light camera tight and flattens any caster
+behind it onto the near plane, which it calls shadow pancaking.
+
+It does sound appealing, but by then virtual shadow maps had already caught my attention, so... priorities. The name alone is
+intriguing enough to tickle me from time to time though, so I might get back to it someday, just out of sheer curiosity to see
+what they're cooking (pun intended).
+
+### Redrawing every frame
 
 Even when they hold still, cascades pay the same price as the single map, just several times over. Each cascade is its own render
 from the sun, and every caster that overlaps it gets drawn into it, so a tree sitting right at a cut ends up in both of them. With
 `autoUpdate` on by default, that happens every single frame, whether anything moved or not.
 
-And in Revo, almost nothing that casts a shadow moves. The trees, the rocks, the statues and the campfire stay right where they
-are, and the sun doesn't move unless I move it. Redrawing all of them every frame, sometimes into more than one cascade, just to get
-the exact same depth back is a lot of work for nothing.
+In Revo, almost nothing that casts a shadow moves. The trees, the rocks that I don't have yet but plan to add, the statue and the
+campfire stay right where they are, and the sun doesn't move unless I move it. Redrawing all of them every frame, sometimes into
+more than one cascade, just to get the exact same depth back is a lot of work for nothing.
 
-One trick is to refresh the far cascades less often, but the static stuff still gets redrawn from scratch, just not every frame.
+At least work is prdictable and stays the same across frames :)
+
+One trick could be to refresh the far cascades less often, but the static stuff still gets redrawn from scratch, just not every
+frame.
 
 What I actually wanted was the opposite: draw the static stuff once and keep it, redraw only what changed, and instead of deciding
 where the detail goes by distance, let the screen ask for exactly the parts of the map it needs.
