@@ -29,9 +29,9 @@ and I didn't want to bend the project just to showcase cascades.
 Picking the right cascade in the shader is the easy part: take the pixel's depth from the camera, find the slice it falls in,
 and run the same comparison from the previous chapter against that slice's map.
 
-Deciding where to cut takes a bit more thought. For example a camera that sees from half a metre up to 150 metres, split into
-three cascades with a 2048 map each. It's not Revo's camera, by the way: the range is the same, but I kept the view much narrower
-so it better fits the drawings, that's all.
+Deciding where to cut takes a bit more thought. Take, for example, a camera that sees from half a metre up to 150 metres, split
+into three cascades with a 2048 map each. It's not Revo's camera, by the way: the range is the same, but I kept the view much
+narrower so it better fits the drawings, that's all.
 
 There are a few common ways to place the cuts:
 
@@ -138,8 +138,8 @@ corner closest to the sun, the dot, so the whole slice sits in front of it.
 That's enough to hold the slice, but not the tree. It stands behind the camera, out of view, yet its shadow still reaches into the
 near slice, and it sits further toward the sun than that slice's faded camera, so the camera would never draw it.
 
-Three.js solves this by pullint every cascade's light camera back toward the sun by the same `lightMargin`, 200 is the default
-and should be plenty for most scenes but it is customizable.
+Three.js solves this by pulling every cascade's light camera back toward the sun by the same `lightMargin`. 200 is the default,
+which should be plenty for most scenes, but it's customizable.
 
 With that, the tree sits in front of the near slice's camera and makes it into its map.
 
@@ -160,7 +160,7 @@ In Revo, almost nothing that casts a shadow moves. The trees, the rocks that I d
 campfire stay right where they are, and the sun doesn't move unless I move it. Redrawing all of them every frame, sometimes into
 more than one cascade, just to get the exact same depth back is a lot of work for nothing.
 
-At least work is prdictable and stays the same across frames :)
+At least work is predictable and stays the same across frames :)
 
 One trick could be to refresh the far cascades less often, but the static stuff still gets redrawn from scratch, just not every
 frame.
