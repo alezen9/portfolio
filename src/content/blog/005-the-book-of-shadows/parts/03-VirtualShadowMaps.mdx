@@ -28,6 +28,9 @@ import rasterBoxesAfter from "../assets/raster-boxes-after.webp?url";
 import rasterStaticDepth from "../assets/raster-static-depth.webp?url";
 import thanosMemeVideo from "../assets/thanos-ill-do-it-myself.mp4?url";
 import thanosMemePoster from "../assets/posters/thanos-ill-do-it-myself.webp?url";
+import draxMeme from "../assets/drax-meme.webp?url";
+import imNotASmartManMemeVideo from "../assets/im-not-a-smart-man.mp4?url";
+import imNotASmartManMemePoster from "../assets/posters/im-not-a-smart-man.webp?url";
 
 ## 3. Virtual shadow maps
 
@@ -737,64 +740,125 @@ over.
 
 Here it's even simpler than usual, no colours, no lighting, just a distance per texel. That's it.
 
-The complexity is that I wanted all of it on the GPU, only for the pages that just got a slot, and nothing at all when there
-aren't any, and the usual way made that quite hard.
-
 The usual way is a **render pass**, the GPU's normal way of drawing: the CPU tells it what to draw, and the hardware turns it into
 pixels.
 
-And of course I started from there, with a render pass from the sun into one big texture divided into 128 &times; 128 tiles, an
-atlas effectively, one tile for every slot. It worked, but the more issues I faced and the more I dug in, the more WebGPU stood in
-the way (and the more frustrated I got).
+The starting point is therefore a render pass that draws the casters as the sun sees them into one big texture atlas, divided into
+128 &times; 128 tiles, one for every slot, and all it needed to store was how far the closest caster was from the sun at every
+texel, essentially the depth.
 
-The usual trick to draw lots of things at once is **instancing**: a single draw call, one "draw this" order sent from the CPU,
-asking the GPU to draw the same triangles with the same material many times over. Each of those times is an instance, and every
-instance knows its own number, so it can land somewhere else. The grass in Revo is drawn exactly like that, one blade repeated
-over and over.
+The naive way would be a draw call for every caster in every page it lands in: the statue into page 454, the statue again into
+page 455, a pine into 454 as well, and so on, each one a separate order the CPU has to send.
 
-I always took "the same triangles" as the same shape, and never even questioned it until this point. So at first every caster got
-a draw call of its own, since the statue and a pine are different shapes. What would solve that is **multi draw indirect**, a
-single call running a whole list of different draws written in GPU memory. That was the first wall: WebGPU doesn't support it.
+With a few casters that's fine, but with a whole forest the count explodes. The common way around it is a **multi draw indirect**,
+one single call that runs a whole list of different draws stored in GPU memory.
 
-It turns out that for the GPU, "the same triangles" really just means the same number of corners. Where each corner ends up is up
-to the vertex shader, so as long as every instance gets the same amount, they can be any corners at all. That's where **clusters**
-come in. Every caster got split into small clusters of 64 triangles, and the ones with fewer got padded with triangles of zero
-area, which cover nothing, so every cluster has exactly 192 corners.
+This is where I hit the first wall, because WebGPU doesn't support it.
 
-All those corners got copied into one big buffer, once at startup, while the normal render keeps its own original meshes. The draw
-itself became just 192 empty corners, and every instance fetches the real ones of its cluster from that buffer and moves them to
-where its caster stands. That's called **programmable vertex pulling**: the GPU only knows "192 corners, N instances", and what
-those corners actually are comes from memory.
+Thankfully it can be done in just a couple of draw calls no matter how many casters there are, within reason, of course, and
+it all starts with a question I never even thought to ask: English or Spanish?
 
-Each instance was a job, like "cluster 12 into page 454". The GPU built that list itself, by checking every cluster's box against
-every new page, and wrote how many jobs there were as the number of instances. That's an **indirect** draw: the CPU sends the
-order once, without ever knowing how many instances it'll be. So in the end, all the opaque casters went in a single draw call.
+<br />
 
-The alpha tested ones, like the pine canopy, still got a draw each. They also check their texture's opacity, so the gaps in the
-canopy stay gaps, and each of them brings its own texture.
+<Layout class="lg-small">
+  <figure>
+    <img
+      src={draxMeme}
+      alt="Drax from Guardians of the Galaxy standing perfectly still on the ship, quietly eating a snack from a bag"
+    />
+    <figcaption>
+      I've mastered the ability of standing so incredibly still...
+    </figcaption>
+  </figure>
+</Layout>
 
-Every instance then drew its cluster into the atlas, with a material that only writes depth. The tricky part is that a render pass
-spreads its view across the whole texture, while a page only owns one small tile of it. Page 454, for example, sits in slot 17, so
-it belongs in tile 17 of the atlas and nowhere else. So the vertex shader worked out where each corner sits on its page, and moved
-it to the same spot on that page's tile: a corner in the middle of page 454 landed in the middle of tile 17.
+<br />
 
-A triangle can stick out of its page though, and then it sticks out of its tile too, right into the neighbouring ones, which
-belong to other pages. So the fragment shader checked every pixel, and threw it away if it fell outside its own tile.
+Also, but more importantly, the real question here: what gives a caster its shape? Is it the material or is it the geometry?
 
-And that's the second wall. WebGPU can't give a single draw a **viewport per page**, a viewport being the rectangle a draw is
-allowed to land in, which would have cut every triangle at its tile's edges for free. Without it, every pixel sticking out still
-got worked out, only to be thrown away right after. Wasted work, and when I tried finer levels, the big triangles of the pine
-canopy spilled over so many tiles that frame time spiked and everything lagged like crazy.
+For the statue, or the bark of a pine, it's the geometry. The triangles are the shape and that's it, simple. The pine canopy is
+another story: its triangles are only a rough outline, and the needles come from the material, which runs an **alpha test** and
+throws away every pixel its texture marks as see-through. A different story, but one with a good ending, and so far these two
+buckets have been enough for everything I've thrown at them.
 
-And the third wall was that WebGPU can't **skip a render pass** based on something only the GPU knows, like how many pages just
-got a slot. The CPU could only find out by reading it back, a frame late and with a costly round trip between CPU and GPU. So the
-pass ran every time the camera moved, and it loaded and stored its whole target, 48 MB of depth, even when there was nothing new
-to draw... talk about wasted work.
+Divide et impera. The dividing has only just started, but first, the part that honestly blew my mind.
 
-Clusters got me past the first wall, but the other two I couldn't get around with a render pass, so I switched to a **compute
-shader** and rasterized the triangles by hand. A compute shader is a GPU program that isn't tied to drawing at all, it just runs
-maths on data in GPU memory. It doesn't need the CPU to tell it what to draw: everything it needs is already on the GPU, and the
-work stays there too.
+I use **instancing** for the grass: one draw call, one "draw this" order from the CPU, and the GPU draws the same geometry with the
+same material as many times as I ask, while each copy, an instance, gets its own spot, size and sway. A single blade, over a
+million times.
+
+In my case, the same material was the easy part, every opaque caster could share one that just writes depth.
+
+The same geometry was a bit tricky, because to me it meant the same shape, so a statue and a pine could never be copies of each
+other. And that's exactly where I was dead wrong: the same geometry doesn't mean the same shape, just the same number of vertices,
+and where each vertex ends up is the vertex shader's business.
+
+I had the proof in front of me the whole time, every blade swaying, bending and turning its own way, and still I had to read it
+spelled out to see it. Something so simple...
+
+<br />
+
+<Layout class="lg-small">
+  <figure>
+    <video
+      loading="lazy"
+      src={imNotASmartManMemeVideo}
+      poster={imNotASmartManMemePoster}
+      type="video/mp4"
+      autoplay
+      loop
+      muted
+      playsInline
+      style={{ aspectRatio: "960 / 408" }}
+    ></video>
+    <figcaption>It's always a nice roller coaster :)</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+So, how did I give a statue and a pine the same number of vertices exactly? I didn't, at least not in the literal sense. I cut them
+into **clusters**, also called meshlets, small patches of 64 neighbouring triangles, and any group that came out with fewer got
+padded with triangles of zero area, which cover nothing.
+
+This way, every cluster had exactly 192 vertices, so every cluster was a copy of the same thing, and each vertex simply went where
+its own caster would have put it anyway.
+
+All those vertices got copied into one big buffer, only once at startup, and the draw itself just asked the GPU for a number of
+copies of 192 vertices. In the vertex shader, the instance index told me which cluster to draw into which page, and the vertex
+index which of its 192 vertices, so the right position could be pulled straight from that buffer.
+
+This is usually referred to as **programmable vertex pulling**, since the vertex shader isn't handed its vertices but
+fetches them from memory by itself.
+
+The GPU even wrote that number of copies itself, after checking which clusters touched which new pages, so the CPU sent the order
+once without ever knowing how many there would be. That's an **indirect** draw, and with it every opaque caster went in a single
+draw call.
+
+In the atlas, each page owned one small tile, while a draw normally fills the whole texture. So after projecting each vertex onto
+its page, the vertex shader scaled and shifted it so the page landed on the correct tile.
+
+Triangles near the edge of a page often reached past it, and that part ended up in a neighbouring tile.
+
+A draw also only writes inside its **viewport**, a rectangle that covers the whole texture by default but can be set to any part
+of it. Hardware cuts off whatever falls outside before it ever turns into pixels, so with a viewport per tile the spilling
+would have been handled for free.
+
+Metal, Vulkan, D3D and OpenGL have **viewport arrays** for exactly this, a list of viewports in a single draw where each
+triangle picks its own. WebGPU doesn't. It does allow a different viewport for every draw, but a draw per page would have taken
+me straight back to the "too many draw calls" obstacle.
+
+So I worked around this one by throwing work away. The triangles got rasterized whole, and the fragment shader discarded every
+pixel outside its tile, so it wouldn't overwrite another page's depth. It worked, but at a price, and it showed as soon as I got
+near the pines, where the pages get finer: the big canopy triangles spilled over so many tiles, all those pixels computed just to
+be discarded, that everything lagged like crazy. I was already holding my nose at that point.
+
+The third wall I simply wasn't able to get around was about **skipping a render pass** based on something only the GPU knows, like
+how many pages just got a slot. WebGPU doesn't have support for this either, and the only way out was for the CPU to read it back, a
+frame late and with another costly round trip. So I didn't, and the pass ran every time the camera moved, loading and storing its
+whole target, 48 MB of depth, even with nothing new to draw... talk about wasted work.
+
+That was enough render pass for me. I switched to a **compute shader** and rasterized the triangles by hand.
 
 <br />
 
@@ -803,7 +867,7 @@ work stays there too.
     <video
       loading="lazy"
       src={thanosMemeVideo}
-      aria-label="Revo with the shadow intensity going from 0 to 1, the sides turned away from the sun are dark from the start and the cast shadows fade in on top"
+      aria-label="Thanos sliding on the golden Infinity Gauntlet and saying “Fine, I'll do it myself”"
       poster={thanosMemePoster}
       type="video/mp4"
       autoplay
@@ -812,16 +876,14 @@ work stays there too.
       playsInline
       style={{ aspectRatio: "640 / 270" }}
     ></video>
-    <figcaption>
-      Shadow intensity from 0 to 1, shadows only take away the sun they block
-    </figcaption>
+    <figcaption>Snap!</figcaption>
   </figure>
 </Layout>
 
 <br />
 
-Each piece of work only ever writes the texels of its own page, so nothing spills over anymore. And since the GPU builds that list
-of work itself, an empty list simply means nothing to do, no 48 MB to load and store.
+Every cluster now gets drawn straight into the texels of its own page, so nothing spills over anymore. And since the GPU works out
+what to draw by itself, nothing new simply means nothing to do, no 48 MB to load and store.
 
 Unreal does the same, at least partly. Nanite rasterizes its small triangles in compute too and leaves the big ones to the hardware,
 and its docs say plainly that geometry without Nanite is much more expensive to draw into pages. Revo has no Nanite, so compute
@@ -866,24 +928,24 @@ all three weights are positive, and the whole test becomes "is the smallest one 
 Those same weights blend the depth. If that sounds familiar, it's the same thing the GPU does when a value from the vertex shader,
 the program that runs for every corner, arrives in the fragment shader, blended across the triangle.
 
-That's one triangle. For a whole page, the same steps just need their ingredients ready on the GPU.
+That's one triangle. For a whole page, the GPU first needs every triangle that could land in it, and that's where the big buffer
+comes in.
 
-What's already on the GPU:
+Every caster's vertices\* get copied into it only once at startup, still in each caster's own space, while the normal render keeps
+its own original meshes. Next to it sits a much smaller buffer with one matrix per caster, the usual position, rotation and scale,
+so a caster moving only means updating its matrix, never the positions. And since a pine is a pine, every pine shares the same
+clusters in that buffer, each with its own matrix.
 
-- **The new pages** &rarr; the list of pages that just got a slot, written by the request pass.
-- **The casters' corners** &rarr; every corner of every caster, all in one shared buffer, uploaded once.
-- **Where the casters stand** &rarr; their world matrices, updated whenever something moves.
-- **The sun** &rarr; its direction, to project everything into its view.
+> \*Including the shared ones. Normally a mesh keeps each vertex only once and its triangles point at it through an index, so a
+> vertex shared by six triangles is stored just once. My clusters don't do that, every triangle keeps its own three vertices, so
+> that same vertex gets written six times, spread across two clusters if it sits on their border. It costs a bit more memory, but
+> every copy is the exact same position going through the exact same maths, so neighbouring triangles still meet perfectly, no
+> cracks.
 
-What has to come out of it: the heights for every texel of every new page. That takes three steps.
-
-First, the new pages get wiped clean, every texel back to 1, so nothing from whatever they held before survives.
-
-Then the GPU works out what to draw where. Testing every triangle of every caster against every page would be far too much, so
-the casters get split into small **clusters** of 64 triangles first, each with a box around it. At first I just took the
-triangles in the order the model came with, and the clusters ended up scattered all over the statue, with big boxes piled on top
-of each other. Now they're built with [meshoptimizer](https://github.com/zeux/meshoptimizer), which keeps neighbouring triangles
-together, so their boxes stay small.
+The splitting into clusters happens on the way into that buffer. At first I just took the triangles 64 at a time, in the order the
+model came with, and the clusters ended up scattered all over the statue, with big boxes piled on top of each other. Now they're
+built with [meshoptimizer](https://github.com/zeux/meshoptimizer), which keeps neighbouring triangles together, so their boxes
+stay small.
 
 <br />
 
@@ -906,23 +968,27 @@ together, so their boxes stay small.
 
 <br />
 
-Every cluster's box gets turned into a box in the sun's view, and for every new page the GPU lists the clusters whose box overlaps
-it. A page only pulls in the clusters that actually touch it, instead of whole meshes, and every entry in that list is a small job,
-like "draw cluster 12 into page 454".
+Smaller boxes touch fewer pages, so fewer clusters end up drawn into pages they barely cover. Still, the switch wasn't data driven.
+In Revo the numbers didn't move at all, since static pages rarely get redrawn, it's just a proven way of building clusters.
 
-So smaller boxes mean fewer jobs. Still, the switch wasn't data driven. In Revo the numbers didn't move at all, since static pages
-rarely get redrawn, it's just a proven way of building clusters.
+With the buffer ready, every new page goes through three passes.
 
-Then each job gets drawn by a small team of 64 threads, tiny workers that run the same code side by side, one per triangle of the
-cluster. Every thread projects the three corners of
-its triangle into the sun's view, which gives each corner two coordinates across the page plus its depth, and writes them into
-memory the whole team can see. Once everyone is done, and they really do have to wait for each other, the team goes through the
+First, its texels get wiped clean, every one back to 1, so nothing from whatever the slot held before survives.
+
+Then every cluster runs the corners of its box through its caster's matrix into the sun's view, and checks the result against
+every new page. Each page it overlaps adds one entry to a list, like "cluster 12 into page 454", and that list is all the last pass
+needs.
+
+Finally, each entry gets drawn by a small team of 64 threads, tiny workers that run the same code side by side, one per triangle of
+the cluster. Every thread pulls the three vertices of its triangle from the big buffer, moves them with its caster's matrix and
+projects them into the sun's view, which gives each one two coordinates across the page plus its depth, and writes them into memory
+the whole team can see. Once everyone is done, and they really do have to wait for each other, the team goes through the
 triangles together, one at a time, splitting the texels each triangle could cover between them, a bit like 64 people painting the
 same wall:
 
 ```typescript
-// simplified, one team of 64 threads per job
-// every thread projects the corners of its own triangle into shared memory
+// simplified, one team of 64 threads per entry
+// every thread projects the vertices of its own triangle into shared memory
 If(localId.x.lessThan(work.triangleCount), () => {
   projectTriangle(work, localId.x);
 });
@@ -965,13 +1031,15 @@ With thousands of threads painting at the same time, two of them can land on the
 there first. So the write is an **atomic min**, an operation the GPU guarantees won't get mixed up halfway, and it simply keeps
 the smaller value, the one closer to the sun, whoever comes first.
 
-Alpha tested casters like the pine canopy also check the texture's opacity at that spot before writing, so the gaps in the canopy
-stay gaps.
+Alpha tested casters like the pine canopy don't need their texture here anymore. Their opacity gets baked once at startup into a
+small mask, one bit per spot, solid or see-through, and before writing, a texel just checks that bit. The gaps stay gaps, and the
+canopy sits in the same list as everything else. That only works because the canopy's opacity depends on nothing but where you are
+on its texture, which happens to be the case for foliage.
 
 What gets stored is actually a height rather than a distance. The sun's rays are parallel and come from above, so along each one
 the higher point is always the one the sun meets first, and that's all the comparison needs.
 
-And that's it. Once every job is done, each texel holds whatever is closest to the sun along its ray, which is exactly what a
+And that's it. Once every entry is drawn, each texel holds whatever is closest to the sun along its ray, which is exactly what a
 shadow map is.
 
 <br />
