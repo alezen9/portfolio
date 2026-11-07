@@ -1,0 +1,28 @@
+---
+import type { ImageMetadata } from "astro";
+
+type Props = {
+  src: string;
+  poster: ImageMetadata;
+  aspectRatio?: string;
+  "aria-label"?: string;
+};
+
+const {
+  src,
+  poster,
+  aspectRatio = `${poster.width} / ${poster.height}`,
+  "aria-label": label,
+} = Astro.props;
+---
+
+<video
+  {src}
+  poster={poster.src}
+  aria-label={label}
+  style={{ aspectRatio }}
+  {...{ loading: "lazy" }}
+  autoplay
+  loop
+  muted
+  playsinline></video>

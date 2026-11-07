@@ -6,14 +6,17 @@
   type Props = { children: Snippet } & Pick<BlogPost, "pubDate">;
 
   let props: Props = $props();
-  let readTime: number = $state(-1);
+  let readTime = $state("");
 
   const getReadingTime = () => {
     const text = document.getElementById("article")?.textContent ?? "";
     const wpm = 225;
     const words = text.trim().split(/\s+/).length;
     const time = Math.ceil(words / wpm);
-    return time;
+    const hours = Math.floor(time / 60);
+    const minutes = time % 60;
+    if (!hours) return `${minutes}min`;
+    return minutes ? `${hours}h ${minutes}min` : `${hours}h`;
   };
 
   onMount(() => {
@@ -25,8 +28,8 @@
   {@render props.children()}
   <div>
     <p>
-      {#if readTime > -1}
-        <span transition:fade>{readTime}min read</span>
+      {#if readTime}
+        <span transition:fade>{readTime} read</span>
       {/if}
     </p>
     <p>

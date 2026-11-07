@@ -1,18 +1,19 @@
+import FigureImage from "@components/blog/FigureImage.astro";
 import Layout from "@components/blog/Layout.astro";
-import csmFrustumSlices from "../assets/csm-frustum-slices.svg?url";
-import csmMaps from "../assets/csm-maps.svg?url";
-import lightMargin from "../assets/light-margin.svg?url";
+import csmFrustumSlices from "../assets/csm-frustum-slices.svg";
+import csmMaps from "../assets/csm-maps.svg";
+import lightMargin from "../assets/light-margin.svg";
 
 ## 2. Cascaded shadow maps
 
 Cascades start from a pretty simple observation: not every part of the screen needs the same amount of detail.
 
-Right in front of the camera, a single shadow texel can cover dozens of pixels, so it'd better be tiny. A hundred metres
+Right in front of the camera, a single shadow texel can cover dozens of pixels, so it'd better be tiny. A hundred meters
 away, that same texel shrinks to a pixel or less, and nobody would notice if it was ten times bigger.
 
 So instead of one map stretched over everything, the view gets cut into a few slices by distance, and each slice gets its own map.
 
-The first one covers just the few metres in front of the camera, the next one a bit more, and the last one everything far away,
+The first one covers just the few meters in front of the camera, the next one a bit more, and the last one everything far away,
 all at the same resolution but with a very different amount of ground per texel.
 
 It's what the big public engines have been shipping for years. Unity calls them shadow cascades, Godot splits the view in four by
@@ -26,27 +27,29 @@ I still wanted it in here, since cascades are the step between a single shadow m
 wouldn't be complete without them. It's also why this chapter comes without screenshots: Revo already runs on virtual shadow maps,
 and I didn't want to bend the project just to showcase cascades.
 
+<br />
+
 Picking the right cascade in the shader is the easy part: take the pixel's depth from the camera, find the slice it falls in,
 and run the same comparison from the previous chapter against that slice's map.
 
-Deciding where to cut takes a bit more thought. Take, for example, a camera that sees from half a metre up to 150 metres, split
+Deciding where to cut takes a bit more thought. Take, for example, a camera that sees from half a meter up to 150 meters, split
 into three cascades with a 2048 map each. It's not Revo's camera, by the way: the range is the same, but I kept the view much
 narrower so it better fits the drawings, that's all.
 
 There are a few common ways to place the cuts:
 
-- **Uniform** &rarr; slices of equal length, so the first one would run all the way to 50 metres and lose its detail.
-- **Logarithmic** &rarr; each slice longer than the previous one by a fixed factor, so the first one would end at about 3 metres
+- **Uniform** &rarr; slices of equal length, so the first one would run all the way to 50 meters and lose its detail.
+- **Logarithmic** &rarr; each slice longer than the previous one by a fixed factor, so the first one would end at about 3 meters
   and the last one gets huge.
-- **Practical** &rarr; halfway between the two, the Three.js default, which cuts at about 25 and 60 metres.
+- **Practical** &rarr; halfway between the two, the Three.js default, which cuts at about 25 and 60 meters.
 
 <br />
 
 <Layout class="lg-small">
   <figure>
-    <img
+    <FigureImage
       src={csmFrustumSlices}
-      alt="Top-down camera frustum split into three slices at 25, 60 and 150 metres, tree shadows getting blockier further away"
+      alt="Top-down camera frustum split into three slices at 25, 60 and 150 meters, tree shadows getting blockier further away"
     />
     <figcaption>
       The view cut into three slices, bigger texels the further it goes
@@ -59,17 +62,17 @@ There are a few common ways to place the cuts:
 With the practical cuts, each slice gets a square map as wide as its longest diagonal, so the slice fits in it whichever way the
 camera turns:
 
-- **0.5 to 25 m** &rarr; a map of about 26 by 26 metres, roughly 1.3 centimetres per texel.
-- **25 to 60 m** &rarr; about 41 by 41 metres, roughly 2 centimetres per texel.
-- **60 to 150 m** &rarr; about 104 by 104 metres, around 5.1 centimetres per texel.
+- **0.5 to 25 m** &rarr; a map of about 26 by 26 meters, roughly 1.3 centimeters per texel.
+- **25 to 60 m** &rarr; about 41 by 41 meters, roughly 2 centimeters per texel.
+- **60 to 150 m** &rarr; about 104 by 104 meters, around 5.1 centimeters per texel.
 
 <br />
 
 <Layout class="lg-small">
   <figure>
-    <img
+    <FigureImage
       src={csmMaps}
-      alt="The three slices, each inside its own square shadow map of 26, 41 and 104 metres, with the longest diagonal of each slice marked"
+      alt="The three slices, each inside its own square shadow map of 26, 41 and 104 meters, with the longest diagonal of each slice marked"
     />
     <figcaption>
       Each slice inside its own square map, as wide as its longest diagonal
@@ -79,7 +82,7 @@ camera turns:
 
 <br />
 
-For that same view, a single 4096 map would give about 3.8 centimetres per texel everywhere. The three 2048 maps together take
+For that same view, a single 4096 map would give about 3.8 centimeters per texel everywhere. The three 2048 maps together take
 48 MiB instead of 64, and still the near slice gets about three times the detail and the middle one almost twice as much. Only
 the far slice loses a bit, right where the shadows are smallest on screen anyway.
 
@@ -89,7 +92,7 @@ My drawings here do cheat a little, but the idea remains the same: each map stil
 
 With the frustum this narrow, its longest diagonals run mostly along its length, while a real camera spreads much wider and the
 width ends up deciding the size. They're also drawn from above, while the real maps face the sun (see drawing below), and the
-ruler starts at 0 instead of half a metre to keep it readable.
+ruler starts at 0 instead of half a meter to keep it readable.
 
 ### Shimmering, seams and off-screen casters
 
@@ -98,14 +101,14 @@ These maps now follow the camera around though, and that brings a few problems o
 The first one is shimmering, and it's easy to picture. Whenever the camera moves, the map moves with it and lands a fraction of a
 texel away from where it was, so the edges get rasterized slightly differently every frame and shadows start crawling as you walk.
 The fix is to move the map only in whole texel steps, so the texel grid stays put and the edges with it. Three.js does that by
-snapping each cascade's centre to its texel size.
+snapping each cascade's center to its texel size.
 
 Turning needs care too. A box fitted tightly around a slice would change size as the slice turns relative to the sun, and the
 texel size would change with it. That's the reason for those longest diagonals earlier: the square keeps the same size through
 the whole turn, at the cost of some unused space in its corners.
 
-Then there are the seams, since the ground right at a cut suddenly switches to bigger texels, from about 2 to 5.1 centimetres at
-60 metres in the example above, and that jump can show up as a line on the ground following the camera around, not exactly subtle.
+Then there are the seams, since the ground right at a cut suddenly switches to bigger texels, from about 2 to 5.1 centimeters at
+60 meters in the example above, and that jump can show up as a line on the ground following the camera around, not exactly subtle.
 `CSMShadowNode` has an optional `fade` that blends the two cascades across a small margin to hide it. That same jump matters for
 the bias from the previous chapter too, since bigger texels need a bigger tolerance, so Three.js scales it up for each cascade.
 
@@ -116,14 +119,14 @@ standing further toward the sun than the camera itself never makes it into the m
 With a single shadow map, that place is the `DirectionalLight`'s own position: its shadow camera sits there, looks at the light's
 target, and draws from 0.5 to 500 units ahead by default. Cascades place their own light cameras instead, one per slice.
 
-Seen from the side, each one is the faded line touching its slice, centred on it across the sunlight and placed right at its
+Seen from the side, each one is the faded line touching its slice, centered on it across the sunlight and placed right at its
 corner closest to the sun, the dot, so the whole slice sits in front of it.
 
 <br />
 
 <Layout class="lg-small">
   <figure>
-    <img
+    <FigureImage
       src={lightMargin}
       alt="Side view of the three slices and their light cameras, faded at each slice's corner closest to the sun and solid once pulled back toward the sun by the light margin, with a tree behind the camera"
     />
@@ -164,6 +167,8 @@ At least work is predictable and stays the same across frames :)
 
 One trick could be to refresh the far cascades less often, but the static stuff still gets redrawn from scratch, just not every
 frame.
+
+<br />
 
 What I actually wanted was the opposite: draw the static stuff once and keep it, redraw only what changed, and instead of deciding
 where the detail goes by distance, let the screen ask for exactly the parts of the map it needs.

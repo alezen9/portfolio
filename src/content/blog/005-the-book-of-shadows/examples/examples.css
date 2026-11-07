@@ -1,0 +1,169 @@
+.texel-example {
+  --first: color-mix(in oklab, var(--accent-torii) 65%, currentColor);
+  --second: color-mix(in oklab, #477d9c 72%, currentColor);
+  --third: color-mix(in oklab, #a67c34 62%, currentColor);
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.texel-grid {
+  position: relative;
+  mask-image:
+    linear-gradient(to right, transparent, black 6%, black 94%, transparent),
+    linear-gradient(to bottom, transparent, black 11%, black 89%, transparent);
+  mask-composite: intersect;
+  user-select: none;
+
+  & .drawing {
+    pointer-events: none;
+  }
+
+  & .drawing svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  & .center {
+    opacity: 0.18;
+  }
+
+  & .center.is-covered {
+    opacity: 0.64;
+  }
+
+  & .texel {
+    fill-opacity: 0.24;
+    stroke-opacity: 0.12;
+    opacity: 0;
+    transition: opacity 100ms ease-out;
+  }
+
+  & .texel.is-covered {
+    opacity: 1;
+  }
+
+  & .area {
+    opacity: 0.72;
+  }
+
+  & .area.is-negative {
+    opacity: 0.38;
+  }
+
+  & .triangle {
+    --pluton-geometry-stroke-width: 2;
+    stroke-opacity: 0.8;
+  }
+
+  & .grid-lines {
+    --pluton-geometry-stroke-width: 1.5;
+    stroke-opacity: 0.14;
+  }
+
+  & .pluton-root {
+    --pluton-dim-color: currentColor;
+    --pluton-dim-stroke-width: 3.25;
+    --pluton-dim-text-color: currentColor;
+    --pluton-dim-font-size: 24px;
+    --pluton-dim-font-family: var(--font-sans);
+  }
+
+  & .pluton-root .pluton-geometry-path,
+  & .pluton-root .pluton-dim-stroke {
+    shape-rendering: geometricPrecision;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  & .edge-arrow {
+    --pluton-dim-color: var(--third);
+  }
+
+  & .point-arrow {
+    stroke-dasharray: 3 7;
+  }
+
+  & .arrow-head {
+    stroke-dasharray: none;
+  }
+
+  & :is(.edge-sign, .vertex-label) {
+    dominant-baseline: central;
+    font-weight: 500;
+  }
+
+  & .vertex-label {
+    --pluton-dim-font-size: 16px;
+  }
+
+  & .handle {
+    position: absolute;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border: 0;
+    border-radius: 50%;
+    padding: 0;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  & .handle:focus-visible {
+    outline: 1px solid color-mix(in oklab, currentColor 50%, transparent);
+    outline-offset: -1px;
+  }
+
+  &.is-dragging,
+  &.is-dragging .handle {
+    cursor: grabbing;
+  }
+
+  & .probe {
+    --pluton-geometry-stroke-width: 1.5;
+  }
+
+  & .vertex-dot {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: scale 120ms ease-out;
+  }
+
+  @media (hover: hover) {
+    &:has(.handle[data-handle="0"]:hover) .vertex-0,
+    &:has(.handle[data-handle="1"]:hover) .vertex-1,
+    &:has(.handle[data-handle="2"]:hover) .vertex-2 {
+      scale: 1.3;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & :is(.texel, .vertex-dot) {
+      transition: none;
+    }
+  }
+}
+
+.texel-weights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em 1.25em;
+  margin: 0;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+
+  & .texel-weight {
+    display: inline-grid;
+    grid-template-columns: auto 5ch auto;
+    align-items: center;
+    justify-items: end;
+    gap: 0.35em;
+    white-space: nowrap;
+  }
+
+  & .hatch-key {
+    width: 14px;
+    height: 14px;
+    opacity: 0.82;
+  }
+}

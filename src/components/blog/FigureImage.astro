@@ -1,0 +1,13 @@
+---
+import type { ImageMetadata } from "astro";
+
+type Props = {
+  src: ImageMetadata;
+  alt: string;
+};
+
+const { src: image, alt } = Astro.props;
+const { src, width, height } = image;
+---
+
+<img {src} {alt} {width} {height} loading="lazy" />

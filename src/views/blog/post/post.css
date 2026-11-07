@@ -12,6 +12,8 @@ figure {
 figure > img,
 figure > video {
   width: 100%;
+  height: auto;
+  background: color-mix(in oklab, currentColor 8%, var(--background-color));
   border-radius: var(--border-radius);
   overflow: hidden;
   pointer-events: none;

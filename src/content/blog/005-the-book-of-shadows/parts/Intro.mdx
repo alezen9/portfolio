@@ -1,17 +1,18 @@
+import FigureVideo from "@components/blog/FigureVideo.astro";
 import Layout from "@components/blog/Layout.astro";
 import sceneShadowsHero720p from "../assets/scene-shadows-hero720p.mp4?url";
-import sceneShadowsHeroPoster from "../assets/posters/scene-shadows-hero.webp?url";
+import sceneShadowsHeroPoster from "../assets/posters/scene-shadows-hero.webp";
 
 _- Sono stanco capo. -_
 
 It's been almost 2 years since I created the repo and started working on what has become my dearest project,
 [Revo](https://revo-realms.aleksandargjoreski.dev/).
 
-Pretty much since it had more in it than just a rolling ball, changing the light's colour or position, or moving anything static
+Pretty much since it had more in it than just a rolling ball, changing the light's color or position, or moving anything static
 in the scene, meant going back to Blender to bake the shadows onto the terrain again.
 
 Then export, pack with the other textures, compress everything to KTX2, load it back into the project and finally sample it in
-each object's shader to (incorrectly) darken its colour...quite the circus.
+each object's shader to (incorrectly) darken its color...quite the circus.
 
 And if an object had to shadow itself, like the Goku statue for example, it needed its own bake on its own texture and the
 whole dance started again.
@@ -26,17 +27,7 @@ fed up and went down yet another rabbit hole, which led to this:
 
 <Layout class="lg-small">
   <figure>
-    <video
-      loading="lazy"
-      src={sceneShadowsHero720p}
-      poster={sceneShadowsHeroPoster}
-      type="video/mp4"
-      autoplay
-      loop
-      muted
-      playsInline
-      style={{ aspectRatio: "1150 / 720" }}
-    ></video>
+    <FigureVideo src={sceneShadowsHero720p} poster={sceneShadowsHeroPoster} />
     <figcaption>Kagemane no Jutsu</figcaption>
   </figure>
 </Layout>
@@ -55,6 +46,8 @@ in post. It's a sphere, after all, so the math was fairly straightforward.
 
 So I kept putting things off. Adding or moving something static meant another bake, and for anything that moved I still hadn't
 figured out what to do with its shadow.
+
+<br />
 
 This time I started by looking into how classic shadow maps actually work behind the scenes. I'd been using them since the
 beginning, but my idea of what was inside that texture was...pretty far off.
