@@ -18,7 +18,7 @@ from above.
 I hadn't thought much further than that, and Three.js hadn't really given me a reason to. Enable `shadowMap` on the renderer,
 let the light cast shadows, set `castShadow` and `receiveShadow` on the right meshes, and there you go.
 
-The shadow map is indeed a texture yes, but what it actually holds is **depth**, seen from the light.
+The shadow map is indeed a texture, yes, but what it actually holds is **depth**, seen from the light.
 
 That was the first thing I had to get my head around. The texture records how far the light gets before hitting something, and
 the scene uses that information to work out whether the light can reach each point we're looking at.

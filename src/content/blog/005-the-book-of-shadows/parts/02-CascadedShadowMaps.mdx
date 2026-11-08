@@ -150,7 +150,7 @@ Unity seems to have taken a different approach to this problem: it keeps its lig
 behind it onto the near plane, which it calls shadow pancaking.
 
 It does sound appealing, but by then virtual shadow maps had already caught my attention, so... priorities. The name alone is
-intriguing enough to tickle me from time to time though, so I might get back to it someday, just out of sheer curiosity to see
+intriguing enough to tickle me from time to time, so I might get back to it someday, just out of sheer curiosity to see
 what they're cooking (pun intended).
 
 ### Redrawing every frame
@@ -163,7 +163,7 @@ In Revo, almost nothing that casts a shadow moves. The trees, the rocks that I d
 campfire stay right where they are, and the sun doesn't move unless I move it. Redrawing all of them every frame, sometimes into
 more than one cascade, just to get the exact same depth back is a lot of work for nothing.
 
-At least work is predictable and stays the same across frames :)
+At least the work is predictable and stays the same across frames :)
 
 One trick could be to refresh the far cascades less often, but the static stuff still gets redrawn from scratch, just not every
 frame.

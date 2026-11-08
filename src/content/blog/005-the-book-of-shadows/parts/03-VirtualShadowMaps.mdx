@@ -138,16 +138,16 @@ Honestly, I didn't spend much time tuning how many levels there are. I tried a c
 on. Unreal goes with 17 by default, the widest one reaching about 40 kilometers, but Revo is a lot smaller than that.
 
 As for cost, the levels themselves are almost free. Requested pages all go into the same fixed block of memory, whatever level
-they come from, and if that ever runs out, some shadows simply won't show up. It's always the far ones that go first though, where
-I'd barely notice, so I can live with that.
+they come from, and if that ever runs out, some shadows simply won't show up. It's always the far ones that go first, where I'd
+barely notice, so I can live with that.
 
 What the levels do change is how many pages get asked for. A finer level 0 would make everything close to the camera ask for 4
 times as many pages, more to draw and that memory filling up faster, for details I wouldn't even notice. Fewer levels at the far end
 would push distant ground onto finer pages than it needs, same problem. And more levels at the far end would cost next to nothing,
 since nothing would ever ask for them past level 6.
 
-Looking at it again while writing this, the far end of the view reads level 5, and level 6 is for things that ask for blurrier shadows on purpose, like grass
-far away and my very basic volumetric light, so 7 is about where it stops paying off for me.
+Looking at it again while writing this, the far end of the view reads level 5, and level 6 is for things that ask for blurrier
+shadows on purpose, like grass far away, so 7 is about where it stops paying off for me.
 
 <br />
 
@@ -195,10 +195,10 @@ In Revo, that looks like this:
 - **7 levels** &rarr; 16,384 &times; 16,384 texels each, about 1 GiB per level at 4 bytes per texel.
 - **The pool** &rarr; 512 pages, about 32 MiB, far less than 7 GiB.
 
-The size of the pool is up to me, and this one I actually spent a bit more time on.
+The size of the pool is up to me, and this one I actually spent more time on.
 
 Most of the time the camera asks for somewhere around 200 to 300 pages, but running fast through the map can push it past 600 on
-some frames. I also wanted a power of 2, for no real reason other than it feeling more organized that way, so 1024 felt a bit
+some frames. I also wanted a power of 2, for no real reason other than it feeling more organized that way, so 1024 felt
 wasteful and 512 ended up being a decent compromise.
 
 <br />
@@ -248,7 +248,9 @@ that column, so it gets drawn into the same page, and its shadow makes it onto t
 <br />
 
 So in the end, the camera decides which pages are needed, and the casters only care about which pages they cross. That's why the
-off-screen tree isn't a special case anymore, and there's no light margin to tune like with cascades. It's just how the whole thing works.
+off-screen tree isn't a special case anymore, and there's no light margin to tune like with cascades.
+
+It's just how the whole thing works.
 
 Unfortunately, paging doesn't fix the usual shadow map problems. Each pixel still runs the same depth comparison as before, so
 acne and Peter Panning can still show up and soft edges still need filtering. What paging changes is only which parts of the map
@@ -267,7 +269,7 @@ Layers are arbitrary of course, but I went with the two classic ones: one for st
 Both go through pretty much the same pipeline and just follow different rules about when their pages need drawing again.
 Easier said than done, but it worked out in the end.
 
-The API allows me to register casters in specific layers and also supports gpu positioning, alpha testing and more:
+The API allows me to register casters in specific layers and also supports GPU positioning, alpha testing and more:
 
 ```typescript
 // registers a mesh as static caster, simple and straightforward
@@ -293,7 +295,7 @@ graphics.vsmPass.registerCaster(flag, {
 
 A static page lives in the 512 slot pool from earlier, gets drawn once and stays in its slot for as long as it's needed. Moving
 around only draws the pages the camera hasn't needed before, and the coarse levels barely change, since each of their pages covers
-so much ground. The trees, the rocks and the statues don't get drawn again just because time passed.
+so much ground. The trees and the statue don't get drawn again just because time passed.
 
 The bake became a cache :)
 
@@ -357,7 +359,8 @@ better:
 
 <br />
 
-With everything on and the camera still, it holds a steady 120 fps. Moving around drops it a bit while the new pages come in, and
+All the timings in this chapter come from my MacBook with an M2 Pro. With everything on and the camera still, it holds a
+steady 120 fps. Moving around drops it a bit while the new pages come in, and
 it settles again as soon as I stop. The real test is the sun. With it rotating, every page goes stale every single frame, static
 and dynamic, and the frame rate drops to somewhere between 65 and 90 depending on how high the camera is, then goes straight back
 to 120 when the sun stops.
@@ -392,13 +395,13 @@ it. For me that would mean drawing everything twice, a whole field of GPU grass 
 
 <br />
 
-First things first, the scene gets rendered **once** from the main camera, with the real materials, writing 4 outputs into
-a single render target (MRT), which get used along the way and at the end to put the final frame together:
+First things first, the scene gets rendered **once** from the main camera, with the real materials, writing 4 outputs
+through **MRT** (multiple render targets), which get used along the way and at the end to put the final frame together:
 
 - **Color, all lights** &rarr; the scene lit by every light in it, ambient included, just no shadows.
 - **Color, sun only** &rarr; the same, but with only the sun contributing, no ambient. It tells the last pass how much light
   to subtract from the shadowed pixels of the all-lights color.
-- **Shadow softness** &rarr; a bit of extra control, so I can opt in for softer, blurrier shadows on foliage like the grass,
+- **Shadow softness** &rarr; extra control, so I can opt in for softer, blurrier shadows on foliage like the grass,
   because it simply looks much better and creates less aliasing.
 - **Depth** &rarr; classic depth, nothing more, nothing less.
 
@@ -478,7 +481,7 @@ So the shading itself is still forward, and only the sun's shadow gets applied a
 ### Page requests
 
 The request pass is the first thing that runs once the scene has been drawn, since it needs that frame's depth. Right before it, a
-tiny pass clears all the bits, and from there everything happens in the request pass itself. It doesn't run on every frame though,
+tiny pass clears all the bits, and from there everything happens in the request pass itself. It doesn't run on every frame,
 only when something changes what the camera could be asking for: the camera moving or turning, the sun moving, or a caster being
 added, moved, or removed.
 
@@ -488,9 +491,9 @@ about 115,000 bits, only 14 KiB. A 1 means the page is requested, a 0 means nobo
 For every point visible on screen, the request pass picks its level and works out which page of that level it falls in, as a
 coordinate on the level's page grid in the sun's view.
 
-A point close to the edge of its page needs a bit more though. The shadow filter later reads a few texels around it to soften the edge,
-and some of those can fall on the neighbouring page. If nobody requested that one, it has no depth in it, and the shadow breaks
-right at the border. So the pass also requests every page within 3 texels of the point, which most of the time is just the same
+A point close to the edge of its page needs a bit more. The shadow filter later reads a few texels around it to soften the
+edge, and some of those can fall on the neighbouring page. If nobody requested that one, it has no depth in it, and the shadow
+breaks right at the border. So the pass also requests every page within 3 texels of the point, which most of the time is just the same
 page anyway.
 
 For every requested page, the pass already knows its level and its column and row in that level's grid, and it packs all three
@@ -512,8 +515,8 @@ bit       454 - 14 × 32 = 6, the 7th bit inside it
 
 Setting that bit to 1 is all it takes to request the page. In code, `key.div(32)` gives the number and `key.mod(32)` the bit.
 
-In the sun's view the page grid goes on forever, but a level only covers the 128 &times; 128 pages around the camera, its **clipmap window**.
-A page outside it can't be requested, since its key would wrap around onto a different page.
+In the sun's view the page grid goes on forever, but a level only covers the 128 &times; 128 pages around the camera, its
+**clipmap window**. A page outside it can't be requested, since its key would wrap around onto a different page.
 
 And since thousands of pixels want the same few pages, and GPUs really don't like many threads writing to the same address at
 once, the pass reads the bit first and only writes it when it isn't set yet. For each of those pages, that looks like this:
@@ -568,9 +571,8 @@ that follows the player, so there's always ground under your feet. A flat plane 
 registered it as a static caster. So every frame it moved, and every frame the cache dutifully threw away every page it touched,
 which was basically all of them. The system was doing exactly what I asked it to do...as it always does.
 
-All the timings in this chapter come from my MacBook with an M2 Pro, rolling through the map. Taking the plane off the casters
-made a huge difference, above all on the occasional frames that take much longer than the rest, the ones that feel like a stutter,
-which had been going through the roof.
+Taking the plane off the casters made a huge difference, above all on the occasional frames that take much longer than the rest,
+the ones that feel like a stutter, which had been going through the roof.
 
 <br />
 
@@ -726,7 +728,7 @@ page 455, a pine into 454 as well, and so on, each one a separate order the CPU 
 With a few casters that's fine, but with a whole forest the count explodes. The common way around it is a **multi draw indirect**,
 one single call that runs a whole list of different draws stored in GPU memory.
 
-This is where I hit the first wall, because WebGPU doesn't support it.
+This is where I hit the first obstacle, because WebGPU doesn't support it.
 
 Thankfully it can be done in just a couple of draw calls no matter how many casters there are, within reason, of course, and
 it all starts with a question I never even thought to ask: English or Spanish?
@@ -794,7 +796,7 @@ its own caster would have put it anyway.
 
 <blockquote>
 A side note on the grouping: it's [meshoptimizer](https://github.com/zeux/meshoptimizer) that decides which triangles end up
-together, picking ones that sit close to each other, so every cluster stays a compact patch. Initially I just took them 64 at a 
+together, picking ones that sit close to each other, so every cluster stays a compact patch. Initially I just took them 64 at a
 time in the order the model came with, and the statue looked like confetti:
 
 <br />
@@ -818,7 +820,7 @@ time in the order the model came with, and the statue looked like confetti:
 
 <br />
 
-Switching didn't move the numbers, I wasn't able to measure any real gain in all honesty, but a compact cluster touches fewer
+Honestly, I couldn't measure any real gain from switching, but a compact cluster touches fewer
 pages than one scattered all over the statue, so in theory fewer of them get sent where they draw nothing.
 
 And it's the proven way of building clusters anyway.
@@ -835,8 +837,9 @@ Placing them was up to a much smaller buffer next to it, with one matrix per cas
 changed, never its positions. And since a pine is a pine, its clusters got built once and every pine in the forest read the same
 ones, each through its own matrix.
 
-The draw itself just asked the GPU for a number of copies of 192 vertices. In the vertex shader, the instance index told me which cluster to draw into which page, and the vertex
-index which of its 192 vertices, so the right position could be pulled straight from that buffer.
+The draw itself just asked the GPU for a number of copies of 192 vertices. In the vertex shader, the instance index told me
+which cluster to draw into which page, and the vertex index which of its 192 vertices, so the right position could be pulled
+straight from that buffer.
 
 This is usually referred to as **programmable vertex pulling**, since the vertex shader isn't handed its vertices but
 fetches them from memory by itself.
@@ -847,8 +850,8 @@ draw call.
 
 <br />
 
-In the atlas, each page owned one small tile, while a draw normally fills the whole texture. So after projecting each vertex onto
-its page, the vertex shader scaled and shifted it so the page landed on the correct tile.
+The second obstacle was in the atlas itself. Each page owned one small tile, while a draw normally fills the whole texture. So
+after projecting each vertex onto its page, the vertex shader scaled and shifted it so the page landed on the correct tile.
 
 Triangles near the edge of a page often reached past it, and that part ended up in a neighbouring tile.
 
@@ -858,17 +861,17 @@ would have been handled for free.
 
 Metal, Vulkan, D3D and OpenGL have **viewport arrays** for exactly this, a list of viewports in a single draw where each
 triangle picks its own. WebGPU doesn't. It does allow a different viewport for every draw, but a draw per page would have taken
-me straight back to the "too many draw calls" obstacle.
+me straight back to the "too many draw calls" problem.
 
 So I worked around this one by throwing work away. The triangles got rasterized whole, and the fragment shader discarded every
 pixel outside its tile, so it wouldn't overwrite another page's depth. It worked, but at a price, and it showed as soon as I got
 near the pines, where the pages get finer: the big canopy triangles spilled over so many tiles, all those pixels computed just to
 be discarded, that everything lagged like crazy. I was already holding my nose at that point.
 
-The third wall I simply wasn't able to get around was about **skipping a render pass** based on something only the GPU knows, like
-how many pages just got a slot. WebGPU doesn't have support for this either, and the only way out was for the CPU to read it back, a
-frame late and with another costly round trip. So I didn't, and the pass ran every time the camera moved, loading and storing its
-whole target, 48 MB of depth, even with nothing new to draw... talk about wasted work.
+The third obstacle, the one I simply wasn't able to get around, was about **skipping a render pass** based on something only
+the GPU knows, like how many pages just got a slot. WebGPU doesn't have support for this either, and the only way out was for the
+CPU to read it back, a frame late and with another costly round trip. So I didn't, and the pass ran every time the camera moved,
+loading and storing its whole 48 MiB target, even with nothing new to draw... talk about wasted work.
 
 That was enough render pass for me. I decided to switch to a **compute shader** and rasterize the triangles by hand. After all,
 it's just a bunch of maths...right?
@@ -889,10 +892,10 @@ it's just a bunch of maths...right?
 
 <br />
 
-Mostly, yes, and at least none of those walls.
+Mostly, yes, and at least none of those obstacles.
 
 Every cluster could only write into the texels of its own page, so nothing spilled over anymore, and since the GPU itself works
-out how much there is to draw, a frame without new pages finds an empty list and stops right there. No unnecessary 48 MB to load
+out how much there is to draw, a frame without new pages finds an empty list and stops right there. No unnecessary 48 MiB to load
 and store.
 
 Unreal seems to be doing something similar, at least partly. Nanite rasterizes its small triangles in compute too and leaves the
@@ -902,7 +905,7 @@ Revo has no Nanite, so compute does it all.
 
 <br />
 
-Rasterizing by hand in a compute shader might sound a bit scary, and I can confirm it's not as straightforward as I would have
+Rasterizing by hand in a compute shader might sound scary, and I can confirm it's not as straightforward as I would have
 wished. Nonetheless, with a bit of stubbornness and a lot of overthinking, it can work out, and the idea behind it is actually not
 that hard to grasp.
 
@@ -939,7 +942,7 @@ path for every triangle:
    triangles landing on the same texel can't overwrite each other.
 
 Step 4 is the good ending I promised for the canopy. It used to need a raster pass of its own to check its texture, and now its
-opacity gets baked once into a 256 &times; 256 mask, just 8 KB, so it sits in the same list as everything else. I tried going
+opacity gets baked once into a 256 &times; 256 mask, just 8 KiB, so it sits in the same list as everything else. I tried going
 smaller, but the shadows got visibly blocky, while next to a 1024 one I can barely tell the difference.
 
 Steps 3 and 5 instead took me a while to properly understand, first when I was learning how this works and again now, trying to
@@ -1025,7 +1028,7 @@ depths match there.
 That's one triangle, and a page can get thousands of them, so this is where the GPU's parallelism comes in.
 
 A compute shader runs as many **threads** at the same time, each one a copy of the same code working on its own piece of data.
-Threads come in **workgroups**, small teams that run side by side and share a bit of fast memory only they can see.
+Threads come in **workgroups**, small teams that run side by side and share some fast memory only they can see.
 
 Here's the fourth pass as a whole, stripped down to its bones:
 
@@ -1079,17 +1082,17 @@ every thread filling in its share of the texels. Then everyone waits again befor
 Why not give every triangle its own thread and run them all at once? Because triangles can be very different in size.
 
 One covers a single texel, a big canopy triangle a good part of a page. And GPU threads don't run on their own, they move in
-small groups (32 on my M2) that go through the code together, so a group is only done when its slowest thread is. One thread
+small groups (32 on my M2 Pro) that go through the code together, so a group is only done when its slowest thread is. One thread
 stuck on a big triangle would keep the others in its group waiting, doing nothing.
 
 So the work gets split by texel instead of by triangle: triangles can be any size, but every texel costs the same. The workgroup
 shares every triangle between its 64 threads, so on a big one every thread gets about the same number of texels, and on a tiny one
 most of them sit out a round that's over almost right away, so a mix of big and small triangles like the statue's is fine.
 
-They all need the same vertices though, so each triangle gets projected only once, into `projectedVertices`, a small piece of
+They all need the same vertices, so each triangle gets projected only once, into `projectedVertices`, a small piece of
 memory right on the chip that only that workgroup's threads can see (**workgroup array**).
 
-The innermost loop, `rasterizeTexel` is steps 3, 5 and 6 from the list put together, the inside test, the blend and the write:
+In the innermost loop, `rasterizeTexel` is steps 3, 5 and 6 from the list put together, the inside test, the blend and the write:
 
 ```typescript
 const center = vec2(x, y).add(0.5);
@@ -1114,8 +1117,8 @@ With a normal camera, things further away get squeezed (the far half of a long r
 near half), so blending by screen area alone would get the middle wrong, and the GPU silently fixes the weights for it. On the
 sun's page nothing gets squeezed, so the plain weights are already exact.
 
-With thousands of threads writing depth at the same time, two of them can land on the same texel, and
-there's no telling which one gets there first. So the write is an **atomic min**, which the GPU does as one indivisible step, so
+With thousands of threads writing depth at the same time, two of them can land on the same texel, and there's no telling which
+one gets there first. So the write is an **atomic min**, which the GPU does as one indivisible step, so
 no other thread can sneak in between reading the old value and writing the new one, and it keeps whichever is smaller, the one
 closer to the sun, no matter who comes first.
 
@@ -1147,26 +1150,23 @@ The camera can't see that tree, but the sun can, and only the sun's view matters
 
 <br />
 
-Looking back, switching to compute was a conscious decision.
-
-After all the problems I ran into with the render pass, fixing them
-one by one as they showed up, I took it as a chance to think the design through properly.
+Switching to compute was a conscious decision. After all the problems I ran into with the render pass, fixing them one by one as
+they showed up, I took it as a chance to think the design through properly.
 
 I wanted it to cover every kind of caster, opaque and alpha tested, static and moving, single meshes and `BatchedMesh` instances,
 moved by the CPU or shaped on the GPU, behind one API that's easy to use and feels familiar to me, since `opacityNode` and
 `positionNode` work exactly like they do in a material.
 
-There's one pass less now, it all runs in the same compute call as the rest of the shadow work, and it even came out a bit faster,
-mostly on those slow frames. With thousands of instances positioned on the GPU I did see a drop in performance though, but that
-was more of a curiosity test than something I see Revo getting close to...ever.
+There's one pass less now, it all runs in the same compute call as the rest of the shadow work, and it even came out faster, mostly
+on those slow frames. Only the casters positioned on the GPU got heavier, like in the stress test, but with just the flag doing
+that in Revo, I don't see it becoming a problem...ever.
 
 <br />
 
 Out of all those kinds of casters, the moving ones are the only ones that need something extra.
 
 They live in the dynamic layer from earlier, with its own pool of 64 slots, where nothing stays cached: every frame, each dynamic
-page gets wiped and drawn again, with only the moving casters in it. The static pages around them stay untouched, and the two
-only meet when a pixel reads both.
+page gets wiped and drawn again, with only the moving casters in it.
 
 Before drawing anything, the GPU has to figure out which pages a moving caster is in right now, and it has to do it on its own,
 since the cloth of the flag only gets its shape there. That's what the other three numbers of a page table entry are for, the
@@ -1210,13 +1210,12 @@ Casting was the hard part. Receiving is much simpler, and the whole idea is to r
 The scene pass writes, for every pixel, how much light the sun alone gave it, and the last pass takes that much away wherever
 the shadow says so.
 
-I write that extra value in the same draw, without a second pass. WebGPU can render into several targets at once, **MRT**
-(multiple render targets), and every node material in Three has an `mrtNode` property where it can list custom outputs of its own,
-which get merged into the outputs of the pass it's drawn in.
+I write that extra value in the same draw, without a second pass, since it's just the sun only color from the four MRT outputs
+earlier. Every node material in Three has an `mrtNode` property where it can list custom outputs of its own, which get merged
+into the outputs of the pass it's drawn in.
 
 I added two: `directSun`, the light the sun alone gives, and `softShadow`, a knob that lets a surface ask for
-softer shadows than its distance alone would give it. I use the second one to "force" softer shadows on grass for example, where
-it looks much nicer than the distance based one.
+softer shadows than its distance alone would give it.
 
 The scene pass declares both with a default of zero, so a material that doesn't write them simply has no sun to lose and no extra
 softness.
@@ -1312,13 +1311,12 @@ meters.
 ### Comparison is the thief of joy
 
 Looking back at this whole thing, most of my setup follows what Unreal does: the clipmaps, pages cached between frames, moving
-things kept apart from the still ones, and a moving sun throwing the whole cache away, since every page is tied to the sun's
-direction.
+things kept apart from the still ones, and a moving sun throwing the whole cache away.
 
 <br />
 
-There is also some divergence though, sometimes because WebGPU didn't have what I needed, like with drawing the pages in compute,
-and other times it was simply complexity I didn't need or wanted to introduce.
+There is also some divergence, sometimes because WebGPU didn't have what I needed, like with drawing the pages in compute,
+and other times it was simply complexity I didn't need or want to introduce.
 
 Moving foliage is one of the smaller ones. In Unreal, a material that moves its vertices on the GPU, like foliage in the wind,
 invalidates its cached pages every frame. Here it's just a dynamic caster, like the flag, and the static cache never notices.
@@ -1341,7 +1339,7 @@ and stay with the PCSS from the first chapter.
 <br />
 
 On the complexity front, Unreal does A LOT, and most of it is far from trivial. Very fascinating if you ask me, but bringing it
-in Revo would mostly mean more things to dig into, understand and eventually maintain.
+into Revo would mostly mean more things to dig into, understand and eventually maintain.
 
 Unreal's virtual shadow maps also cover point and spot lights, each with its own set of pages, while Revo only has the sun. And
 Nanite doesn't stop at clusters: it breaks every mesh into a hierarchy of them at different levels of detail, and swaps them on
@@ -1354,19 +1352,16 @@ wanted (nice and performant) shadows :)
 
 ### What it costs
 
-Speaking of performance: on my M2 Pro, moving around the map, the shadow system splits its cost between the resolve, which runs
-every frame, and the page work, which mostly stops as soon as nothing moves.
-
-All in all, moving around the map, a frame takes about 4 to 5 ms, a steady 120 fps.
+Speaking of performance: on my M2 Pro, moving around the map, a frame takes about 4 to 5 ms, a steady 120 fps, and the shadow
+system splits its cost between the resolve, which runs every frame, and the page work, which mostly stops as soon as nothing moves.
 
 Grass is the one thing that doesn't cast. I did try it, every blade drawn into the dynamic pages and moving with the wind, but it
 looked like a field of noisy speckles crawling around with every gust, and it blew way past my budget. I also tried Bend Studio's
 **screen space shadows**, marching through the depth buffer toward the sun, and they came out as dark smudges that didn't read as
 blade shadows at all. So grass only receives.
 
-The real catch is the sun. When it moves, the generation goes up, every page becomes stale and the whole cache gets drawn again.
-Epic's own write-up on shadows in Fortnite says the same: when the light direction changes, all the cached data has to go, because
-the pages themselves land in different places. Revo's sun doesn't move unless I move it, so that one was an easy trade to make.
+The real catch is still the sun: moving it redraws the whole cache, and Epic's own write-up on shadows in Fortnite says the same,
+since the pages themselves land in different places. Revo's sun doesn't move unless I move it, so that one was an easy trade to make.
 
 And even trimmed down like this, it's still a lot of moving parts: requests, slots, tags, generations, clusters and two pools,
 all living on the GPU, where a bug mostly shows up as a shadow in the wrong place, or no shadow at all.
