@@ -3,7 +3,6 @@ import FigureVideo from "@components/blog/FigureVideo.astro";
 import Layout from "@components/blog/Layout.astro";
 import offscreenMain from "../assets/offscreen-main.webp";
 import offscreenOrbit from "../assets/offscreen-orbit.webp";
-import pagesMain from "../assets/pages-main.webp";
 import pagesOrbit720p from "../assets/pages-orbit720p.mp4?url";
 import pagesOrbitPoster from "../assets/posters/pages-orbit.webp";
 import sunViewPages from "../assets/sun-view-pages-final.mp4?url";
@@ -569,8 +568,9 @@ that follows the player, so there's always ground under your feet. A flat plane 
 registered it as a static caster. So every frame it moved, and every frame the cache dutifully threw away every page it touched,
 which was basically all of them. The system was doing exactly what I asked it to do...as it always does.
 
-All the timings in this chapter come from my MacBook with an M2 Pro, rolling through the map. Not
-registering the plane took the average frame from about 9.8 to about 7.15 ms, and the worst frames from 24 ms to about 8.
+All the timings in this chapter come from my MacBook with an M2 Pro, rolling through the map. Taking the plane off the casters
+made a huge difference, above all on the occasional frames that take much longer than the rest, the ones that feel like a stutter,
+which had been going through the roof.
 
 <br />
 
@@ -871,7 +871,7 @@ frame late and with another costly round trip. So I didn't, and the pass ran eve
 whole target, 48 MB of depth, even with nothing new to draw... talk about wasted work.
 
 That was enough render pass for me. I decided to switch to a **compute shader** and rasterize the triangles by hand. After all,
-it's just a bunch of math...right?
+it's just a bunch of maths...right?
 
 <br />
 
@@ -889,7 +889,7 @@ it's just a bunch of math...right?
 
 <br />
 
-Yes it is, and there were no such obstacles.
+Mostly, yes, and at least none of those walls.
 
 Every cluster could only write into the texels of its own page, so nothing spilled over anymore, and since the GPU itself works
 out how much there is to draw, a frame without new pages finds an empty list and stops right there. No unnecessary 48 MB to load
@@ -954,7 +954,7 @@ Checking whether a texel's center is inside a triangle is the same walk, with th
 out, and if there's no turn at all, the point lies on that edge, which counts as inside. That's the whole trick, and it works for
 any shape without dents, so not for an L shape for example, but a triangle never has any.
 
-In math, that turn is a 2D cross product. The 3D one is probably more familiar: it takes two vectors and gives back a third one
+In maths, that turn is a 2D cross product. The 3D one is probably more familiar: it takes two vectors and gives back a third one
 standing perpendicular to both (the right-hand rule, with the thumb, index and middle finger), which is how you usually get the
 normal of a surface from two of its neighbouring points. With two vectors lying flat on a page, that third one can only stick
 straight out of it, towards you or away from you, so everything boils down to a single number. You multiply the vectors
@@ -1013,7 +1013,7 @@ hatches are the three small triangles and the numbers under them are their weigh
 
 <br />
 
-Then the blend: multiply each vertex's depth by its weight and add them up. With `A` at `0.36`, `A`'s depth makes up 36% of the
+Then the blend: multiply each vertex's depth by its weight and add them up. With `A` at `0.32`, `A`'s depth makes up 32% of the
 texel's. If that sounds familiar, it's what the GPU does to every value on its way from the vertex shader to the fragment
 shader. Here I just do it myself.
 
@@ -1120,7 +1120,7 @@ no other thread can sneak in between reading the old value and writing the new o
 closer to the sun, no matter who comes first.
 
 Atomics only work on whole numbers though, so the depth gets scaled up to a 24 bit integer first, that's the `DEPTH_SCALE` in the
-code.
+code. 24 and not 32, since that's as far as a float can turn a whole number back into a depth without rounding it.
 
 <br />
 
@@ -1134,9 +1134,9 @@ Once every entry is drawn, each texel holds whatever is closest to the sun along
   <figure>
     <FigureImage
       src={rasterStaticDepth}
-      alt="Static depth debug view of the same spot, the statue's shadow on the ground drawn in grey as the heights stored above it, darker where higher"
+      alt="Static depth debug view of the same spot, the statue's shadow on the ground drawn in grey, darker where closer to the sun"
     />
-    <figcaption>What the raster stored, darker is higher</figcaption>
+    <figcaption>What the raster stored, darker is closer to the sun</figcaption>
   </figure>
 </Layout>
 
@@ -1157,7 +1157,7 @@ moved by the CPU or shaped on the GPU, behind one API that's easy to use and fee
 `positionNode` work exactly like they do in a material.
 
 There's one pass less now, it all runs in the same compute call as the rest of the shadow work, and it even came out a bit faster,
-mostly on the worst frames. With thousands of instances positioned on the GPU I did see a drop in performance though, but that
+mostly on those slow frames. With thousands of instances positioned on the GPU I did see a drop in performance though, but that
 was more of a curiosity test than something I see Revo getting close to...ever.
 
 <br />
@@ -1205,108 +1205,107 @@ around 0.2 to 0.3 ms. A long static shadow is nearly free, a big moving one coul
 
 ### Receiving the shadow
 
-On the receiving side, it all comes down to the first and the last step of the frame.
+Casting was the hard part. Receiving is much simpler, and the whole idea is to remove sunlight rather than add darkness.
 
-The sun-only color comes from the lit materials, like the terrain, the trees and the statues. They extend Three's own
-`MeshLambertNodeMaterial` and `MeshStandardNodeMaterial`, and swap in a lighting model that measures how much light the sun adds,
-by comparing the direct light before and after the sun's turn:
+The scene pass writes, for every pixel, how much light the sun alone gave it, and the last pass takes that much away wherever
+the shadow says so.
+
+I write that extra value in the same draw, without a second pass. WebGPU can render into several targets at once, **MRT**
+(multiple render targets), and every node material in Three has an `mrtNode` property where it can list custom outputs of its own,
+which get merged into the outputs of the pass it's drawn in.
+
+I added two: `directSun`, the light the sun alone gives, and `softShadow`, a knob that lets a surface ask for
+softer shadows than its distance alone would give it. I use the second one to "force" softer shadows on grass for example, where
+it looks much nicer than the distance based one.
+
+The scene pass declares both with a default of zero, so a material that doesn't write them simply has no sun to lose and no extra
+softness.
+
+Both are defined per material: I extended Three's `MeshLambertNodeMaterial` and `MeshStandardNodeMaterial`, and almost all of it
+is Three's own. Three's lighting model keeps a running total of the light reaching every pixel, in separate buckets for direct
+light, the kind coming straight from a light like the sun, and indirect light, like the ambient one, and adds every light into
+them one after the other. All I do is look at the direct buckets right before and right after the sun gets added, and whatever
+increased in between is the sun's share:
 
 ```typescript
-// simplified, only the sun goes through here
-direct(lightData: DirectLight, builder: LightingBuilder) {
-  const { reflectedLight } = lightData;
-  const diffuseBefore = vec3(reflectedLight.directDiffuse).toVar();
-  super.direct(lightData, builder);
-  const diffuseGain = vec3(reflectedLight.directDiffuse).sub(diffuseBefore);
-  this.directSun.addAssign(diffuseGain);
+class DirectSunPhongLightingModel extends PhongLightingModel {
+  readonly directSun = vec3().toVar("directSun");
+
+  // three.js's own lambert material is the phong model with specular off
+  constructor() {
+    super(false);
+  }
+
+  // three.js calls this once per direct light while it builds the shader
+  direct(lightData: DirectLight, builder: LightingBuilder) {
+    const { lightNode, reflectedLight } = lightData;
+    const isSun = lightNode.light instanceof DirectionalLight;
+    if (!isSun) {
+      super.direct(lightData, builder);
+      return;
+    }
+    // light values before the sun gets added
+    const diffuseBefore = vec3(reflectedLight.directDiffuse).toVar();
+    const specularBefore = vec3(reflectedLight.directSpecular).toVar();
+    // let three.js add the sun as usual
+    super.direct(lightData, builder);
+    // the delta is the sun's share
+    const diffuseGain = vec3(reflectedLight.directDiffuse).sub(diffuseBefore);
+    const specularGain = vec3(reflectedLight.directSpecular).sub(
+      specularBefore,
+    );
+    this.directSun.addAssign(diffuseGain.add(specularGain));
+  }
 }
 ```
 
-Getting that into the render target is the part I didn't know about. Every node material has an `mrtNode`, and whatever outputs it
-lists get merged into the outputs of the pass it's drawn in:
+And then there's the material. For the two lit material types I use, Lambert and Standard, I made an extended version that does
+nothing but swap Three's default lighting model for mine, in `setupLightingModel`, and list the two outputs right there:
 
 ```typescript
-this.mrtNode = mrt({ directSun: vec4(lightingModel.directSun, 1) });
+class VSMReceiverLambertMaterial extends MeshLambertNodeMaterial {
+  setupLightingModel() {
+    const lightingModel = new DirectSunPhongLightingModel();
+    this.mrtNode = mrt({
+      directSun: vec4(lightingModel.directSun, 1),
+      // how much softer a surface wants its shadow, 0 by default, higher reads coarser pages
+      softShadow: vec4(this.softShadowNode),
+    });
+    return lightingModel;
+  }
+}
 ```
 
-The scene pass declares the sun-only output with a default of zero, so any material that doesn't fill it simply has no sun to take
-away. So making something receive the shadow is just a matter of using one of the two materials, or extending it, and there's
-nothing to register.
+The terrain, the pines, the player and the flag extend this one, while the statue, the sword, the axe and the campfire extend its
+Standard twin, which does the exact same thing for Three's physically based lighting.
 
-In the last pass, every point reads its static page and, if there's one, its dynamic page too, and the two results get multiplied,
-so being in either shadow is enough.
+It also means that, unlike casters, receivers have nothing to register: using one of the two materials, or extending it, is all it
+takes.
 
-{/* media, two screenshots side by side, same camera: the "Shadow" debug view (white lit, black shadow, grey penumbra) and the final frame. Pick a spot with a sharp contact shadow and a wide penumbra in view, like the statue on its pedestal. */}
+The grass and the flowers are the exception, since their materials don't take Three's lights. The grass gets lit by my own
+shading, a few cheap tricks, so it works out its sun share along the way. The flowers aren't lit at all, so they simply hand over
+the part of their color the sun would make up, the sun's light against the sky's. Both write it straight into `directSun`.
 
-The filtering is the PCSS from the first chapter: look around the point for blockers, then spread 8 samples around it, rotated a
-little differently on every pixel, and wider the further away the blockers are. A sample crossing a page border looks up the neighbouring page, which is why requests have that margin,
-and when the penumbra is tiny, a cheap 3 &times; 3 filter takes over from the full search.
-
-My first version of it added 1.25 ms on its own. Two small changes brought it down to about 0.33: looking up the center page once
-and sharing it between all the samples, instead of every sample looking it up again, and only sampling the moving shadows where
-there actually are any.
-
-The bias from the first chapter is still there too. Each receiver forgives 3 texels of its own level, plus a bit more on slopes, so
-just like with cascades it grows with the texel size. A caster can also push itself a little further from the sun with its own
-`depthBias`, in meters.
+In the last pass, every pixel finds its page the same way the requests did and reads the static depth, plus the dynamic one if the
+page has any moving shadow. The two results get multiplied, so being in either shadow is enough, and what's left decides how much
+of the sun-only color gets taken away.
 
 <br />
 
-### Grass
+As for `softShadow`, the higher a value set by the material, the coarser the pages it reads, and coarser pages mean a blurrier
+shadow. The grass, the flowers and the pine canopy all use it, since they look much nicer that way and it also helps mitigate
+aliasing.
 
-Grass was one of the main reasons I wanted real shadows in the first place, and it got its own treatment on both sides.
+Everything else gets the PCSS from the first chapter, sharp right next to the caster and softer further away. The only twist with
+pages is that a sample can land on the next one, and then it simply reads that page instead, which is why the requests grab every
+page within 3 texels of a point.
 
-As a caster, I did try it. Every blade drawn into the dynamic pages, moving with the wind. It looked quite bad, even with soft
-shadows: a field of noisy speckles crawling around with every gust. Maybe it needed much, much softer shadows, I'm not sure.
+My first version of the filter cost around 1.25 ms on its own. Two small changes got it down to about 0.33: looking up the page
+under the point once and sharing it with all 8 samples, and only reading the dynamic pool where a page actually has moving shadows.
 
-{/* media, screenshot: the old experiment with every blade casting. It is in git at def874e^, src/content/blog/006-paging-my-shadows/assets/grass-shaded-earlier.png, convert it to webp first (it is 7.6 MB). */}
-
-It was also breaking my performance budget. On my machine the frame went from about 5 milliseconds of GPU time to about 7 with
-every blade casting, and still around 6 after a performance pass. My hard limit is to stay under 6, ideally under 5, at 120 fps,
-and that was for something that looked worse. So grass casting got ditched.
-
-I also looked at how others handle details that small, and found Bend Studio's write-up on **screen space shadows**:
-marching through the depth buffer toward the sun to pick up what the shadow map misses. They used it in _Days Gone_, and they even [published the code](https://www.bendstudio.com/blog/inside-bend-screen-space-shadows/). I've never
-played it myself though, zombies aren't really my kind of thing.
-
-So I tried that as well. It cost about 0.8 ms, and the result was mush: soft dark smudges that didn't read as blade shadows at
-all. Removed too.
-
-<br />
-
-As a receiver though, it stayed, and it works great.
-
-Grass shades itself instead of going through the regular materials, but writes the same direct sun target, so the same resolve
-handles it. It also writes a softness value, and so do the flowers, the pine canopy and the ground under the grass. These **soft
-receivers** read coarser levels than their distance would pick, dithered between two neighbouring ones, so the shadow of a tree
-falls across the blades as a smooth gradient instead of breaking into sharp fragments.
-
-<br />
-
-<Layout class="lg-small">
-  <figure>
-    <FigureImage
-      src={pagesMain}
-      alt="Pages debug view near the statue: the dirt path in one level color, the grass around it speckled with coarser levels"
-    />
-    <figcaption>
-      The path reads its own level, the grass coarser ones, dithered
-    </figcaption>
-  </figure>
-</Layout>
-
-<br />
-
-Thin, noisy surfaces asking for coarser pages also means fewer pages overall, so it helps the pool too.
-
-Out past the edge of the map, where there's nothing but grass, terrain and the ball, the grass was also running its full shadow
-filter on pages with nothing drawn in them, which can only ever say "lit". Now every page remembers whether anything was drawn into
-it, and the filter skips the ones where nothing was, about 0.3 ms less out there.
-
-And with 4x MSAA, a pixel at the edge of a blade can hold both the blade and the ground behind it. For those, the resolve shades
-both surfaces and mixes them by how much of the pixel each one covers, otherwise the shadow ends up on the wrong one.
-
-{/* media, screenshot or short video: a pine shadow falling across a grass field in the regular scene view, showing the soft gradient over the blades. A video with some wind shows that it stays calm in motion. */}
+The bias from the first chapter is still there too. Each receiver forgives 3 texels of its own level, a bit more on slopes, so it
+grows with the texels, just like with cascades. A caster can also push itself further from the sun with its own `depthBias`, in
+meters.
 
 <br />
 
@@ -1355,11 +1354,15 @@ wanted (nice and performant) shadows :)
 
 ### What it costs
 
-Speaking of performant: on my M2 Pro, moving around the map, the whole shadow system costs about 2 ms of GPU time. Roughly
-half of that is the resolve, which runs every frame, and the other half is the page work, which mostly stops as soon as nothing
-moves.
+Speaking of performant: on my M2 Pro, moving around the map, the shadow system splits its cost between the resolve, which runs
+every frame, and the page work, which mostly stops as soon as nothing moves.
 
 All in all, moving around the map, a frame takes about 4 to 5 ms, a steady 120 fps.
+
+Grass is the one thing that doesn't cast. I did try it, every blade drawn into the dynamic pages and moving with the wind, but it
+looked like a field of noisy speckles crawling around with every gust, and it blew way past my budget. I also tried Bend Studio's
+[screen space shadows](https://www.bendstudio.com/blog/inside-bend-screen-space-shadows/), marching through the depth buffer
+toward the sun, and they came out as dark smudges that didn't read as blade shadows at all. So grass only receives.
 
 The real catch is the sun. When it moves, the generation goes up, every page becomes stale and the whole cache gets drawn again.
 Epic's own write-up on shadows in Fortnite says the same: when the light direction changes, all the cached data has to go, because
