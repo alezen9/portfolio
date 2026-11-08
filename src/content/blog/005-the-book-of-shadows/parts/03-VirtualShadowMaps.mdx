@@ -1311,14 +1311,14 @@ meters.
 
 ### Comparison is the thief of joy
 
-Looking back at the whole thing, most of my setup follows what Unreal does: the clipmaps, pages cached between frames, moving
+Looking back at this whole thing, most of my setup follows what Unreal does: the clipmaps, pages cached between frames, moving
 things kept apart from the still ones, and a moving sun throwing the whole cache away, since every page is tied to the sun's
 direction.
 
 <br />
 
-There is some divergence though, sometimes because WebGPU didn't have what I needed, like with drawing the pages in compute,
-and other times it was simply complexity I didn't need.
+There is also some divergence though, sometimes because WebGPU didn't have what I needed, like with drawing the pages in compute,
+and other times it was simply complexity I didn't need or wanted to introduce.
 
 Moving foliage is one of the smaller ones. In Unreal, a material that moves its vertices on the GPU, like foliage in the wind,
 invalidates its cached pages every frame. Here it's just a dynamic caster, like the flag, and the static cache never notices.
@@ -1354,23 +1354,21 @@ wanted (nice and performant) shadows :)
 
 ### What it costs
 
-Speaking of performant: on my M2 Pro, moving around the map, the shadow system splits its cost between the resolve, which runs
+Speaking of performance: on my M2 Pro, moving around the map, the shadow system splits its cost between the resolve, which runs
 every frame, and the page work, which mostly stops as soon as nothing moves.
 
 All in all, moving around the map, a frame takes about 4 to 5 ms, a steady 120 fps.
 
 Grass is the one thing that doesn't cast. I did try it, every blade drawn into the dynamic pages and moving with the wind, but it
 looked like a field of noisy speckles crawling around with every gust, and it blew way past my budget. I also tried Bend Studio's
-[screen space shadows](https://www.bendstudio.com/blog/inside-bend-screen-space-shadows/), marching through the depth buffer
-toward the sun, and they came out as dark smudges that didn't read as blade shadows at all. So grass only receives.
+**screen space shadows**, marching through the depth buffer toward the sun, and they came out as dark smudges that didn't read as
+blade shadows at all. So grass only receives.
 
 The real catch is the sun. When it moves, the generation goes up, every page becomes stale and the whole cache gets drawn again.
 Epic's own write-up on shadows in Fortnite says the same: when the light direction changes, all the cached data has to go, because
 the pages themselves land in different places. Revo's sun doesn't move unless I move it, so that one was an easy trade to make.
 
-{/* media, video (optional): the "Page heat" debug view while dragging "Sun position X" in the debug panel (Light folder), every page turning red at once on each change. */}
-
 And even trimmed down like this, it's still a lot of moving parts: requests, slots, tags, generations, clusters and two pools,
 all living on the GPU, where a bug mostly shows up as a shadow in the wrong place, or no shadow at all.
 
-Still, I can move things around now without ever thinking about a bake again, which is all I wanted when I started :)
+Still, I can move things around now without ever thinking about a bake again, which is pretty neat if you ask me :)
