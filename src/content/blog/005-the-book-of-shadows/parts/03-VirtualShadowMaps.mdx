@@ -292,7 +292,7 @@ graphics.vsmPass.registerCaster(flag, {
 });
 ```
 
-A static page lives in the 512 slot pool from earlier, gets drawn once and stays in its slot for as long as it's needed. Walking
+A static page lives in the 512 slot pool from earlier, gets drawn once and stays in its slot for as long as it's needed. Moving
 around only draws the pages the camera hasn't needed before, and the coarse levels barely change, since each of their pages covers
 so much ground. The trees, the rocks and the statues don't get drawn again just because time passed.
 
@@ -569,7 +569,7 @@ that follows the player, so there's always ground under your feet. A flat plane 
 registered it as a static caster. So every frame it moved, and every frame the cache dutifully threw away every page it touched,
 which was basically all of them. The system was doing exactly what I asked it to do...as it always does.
 
-All the timings in this chapter come from my MacBook with an M2 Pro, on a scripted roll through the map. On that roll/walk, not
+All the timings in this chapter come from my MacBook with an M2 Pro, rolling through the map. Not
 registering the plane took the average frame from about 9.8 to about 7.15 ms, and the worst frames from 24 ms to about 8.
 
 <br />
@@ -611,19 +611,19 @@ const slotMetadata = new StorageBufferAttribute(initialSlotMetadata, 4);
 On the GPU, every entry is read as a `uvec4`:
 
 ```typescript
-const pageTableEntry = uvec4(
-  staticSlot.add(1), // static pool slot + 1, so 0 can mean no slot
-  frame, // a dynamic caster touched this page, if equal to the current frame
-  dynamicSlot, // dynamic pool slot, only valid while the frame above is current
-  frame, // last frame this page was on screen
-);
+const {
+  x: staticSlotPlusOne, // static pool slot + 1, so 0 can mean no slot
+  y: touchedFrame, // last frame a moving caster covered this page
+  z: dynamicSlot, // dynamic pool slot, only valid while touchedFrame is current
+  w: activeFrame, // last frame the camera needed this page
+} = pageTable.element(pageKey);
 
-const slotMetadataEntry = uvec4(
-  pageKey, // the page this slot holds
-  pageTag, // its exact coordinates, since wrapped pages share a key
-  frame, // last frame it was requested, an older one makes the slot reusable
-  pageGeneration, // copy of the pool's counter, stale once the two differ
-);
+const {
+  x: slotPageKey, // the page this slot holds
+  y: slotPageTag, // its exact coordinates, since wrapped pages share a key
+  z: requestedFrame, // last frame it was requested, an older one makes the slot reusable
+  w: slotGeneration, // copy of the pool's counter, stale once the two differ
+} = slotMetadata.element(slot);
 ```
 
 The other three numbers of a page table entry belong to the dynamic layer.
@@ -792,8 +792,50 @@ padded with triangles of zero area, which cover nothing.
 This way, every cluster had exactly 192 vertices, so every cluster was a copy of the same thing, and each vertex simply went where
 its own caster would have put it anyway.
 
-All those vertices got copied into one big buffer, only once at startup, and the draw itself just asked the GPU for a number of
-copies of 192 vertices. In the vertex shader, the instance index told me which cluster to draw into which page, and the vertex
+<blockquote>
+A side note on the grouping: it's [meshoptimizer](https://github.com/zeux/meshoptimizer) that decides which triangles end up
+together, picking ones that sit close to each other, so every cluster stays a compact patch. Initially I just took them 64 at a 
+time in the order the model came with, and the statue looked like confetti:
+
+<br />
+
+<Layout columns={2} gap={2}>
+  <figure>
+    <FigureImage
+      src={rasterBoxesBefore}
+      alt="The statue with every cluster of 64 triangles painted in its own color, scattered patches with big overlapping boxes"
+    />
+    <figcaption>Clusters in the order the model came with</figcaption>
+  </figure>
+  <figure>
+    <FigureImage
+      src={rasterBoxesAfter}
+      alt="The statue with every cluster of 64 triangles painted in its own color, compact patches with small boxes"
+    />
+    <figcaption>Clusters built with meshoptimizer</figcaption>
+  </figure>
+</Layout>
+
+<br />
+
+Switching didn't move the numbers, I wasn't able to measure any real gain in all honesty, but a compact cluster touches fewer
+pages than one scattered all over the statue, so in theory fewer of them get sent where they draw nothing.
+
+And it's the proven way of building clusters anyway.
+
+</blockquote>
+
+All those vertices got copied into one big buffer, only once at startup, exactly as the model was made, before anything places it
+in the world, and that includes the shared ones. A mesh normally stores a vertex once, even when six triangles meet there, and
+lets the triangles point at it through an index, but my clusters give every triangle its own three vertices, so that same vertex
+gets written six times, sometimes in a few different clusters. It's a bit more memory, but every copy goes through the exact same
+maths, so neighbouring triangles still meet perfectly, no cracks, and that's one less headache in this whole thing :)
+
+Placing them was up to a much smaller buffer next to it, with one matrix per caster, so when something moved only its matrix
+changed, never its positions. And since a pine is a pine, its clusters got built once and every pine in the forest read the same
+ones, each through its own matrix.
+
+The draw itself just asked the GPU for a number of copies of 192 vertices. In the vertex shader, the instance index told me which cluster to draw into which page, and the vertex
 index which of its 192 vertices, so the right position could be pulled straight from that buffer.
 
 This is usually referred to as **programmable vertex pulling**, since the vertex shader isn't handed its vertices but
@@ -872,7 +914,7 @@ whatever the slot held before survives.
 The second one works out where every cluster lands as the sun sees it. Each cluster already has a box around its vertices,
 computed once at startup in the caster's own space. The pass transforms the box's eight corners into world space using the
 caster's world matrix, and then projects onto the sun's view keeping the smallest rectangle that holds all eight (like a 2D
-bounding box).
+bounding box). For static casters it only runs again when one of them changes or the sun turns.
 
 The third one matches those rectangles with the new pages. Every new page is a square on that same view, so for every cluster
 the pass checks which of those squares its rectangle overlaps, and each overlap becomes an entry in a list, like "cluster 12 into
@@ -896,7 +938,11 @@ path for every triangle:
 6. Compare that depth with the one already in the texel and keep whichever is nearer the sun, as a single step, so two
    triangles landing on the same texel can't overwrite each other.
 
-Steps 3 and 5 took me a while to properly understand, first when I was learning how this works and again now, trying to
+Step 4 is the good ending I promised for the canopy. It used to need a raster pass of its own to check its texture, and now its
+opacity gets baked once into a 256 &times; 256 mask, just 8 KB, so it sits in the same list as everything else. I tried going
+smaller, but the shadows got visibly blocky, while next to a 1024 one I can barely tell the difference.
+
+Steps 3 and 5 instead took me a while to properly understand, first when I was learning how this works and again now, trying to
 explain them in simple words, so here's an example that I hope makes them easier to picture.
 
 Imagine walking a loop around a tree in a park. Whichever direction you walk, the tree stays on the same side of you the whole
@@ -976,89 +1022,76 @@ depths match there.
 
 <br />
 
-That's one triangle. A page needs every triangle that could land in it, and they all come from the big buffer the render pass
-already used. It holds every caster's vertices\* exactly as the model was made, before anything moves it into the world, and next
-to it sits a much smaller buffer with one matrix per caster, so a moving caster only needs a new matrix, never new positions. A
-pine is a pine, so all the pines share the same clusters, each with its own matrix.
+That's one triangle, and a page can get thousands of them, so this is where the GPU's parallelism comes in.
 
-> \*Including the shared ones. Normally a mesh keeps each vertex only once and its triangles point at it through an index, so a
-> vertex shared by six triangles is stored just once. My clusters don't do that, every triangle keeps its own three vertices, so
-> that same vertex gets written six times, spread across two clusters if it sits on their border. It costs a bit more memory, but
-> every copy is the exact same position going through the exact same maths, so neighbouring triangles still meet perfectly, no
-> cracks.
+A compute shader runs as many **threads** at the same time, each one a copy of the same code working on its own piece of data.
+Threads come in **workgroups**, small teams that run side by side and share a bit of fast memory only they can see.
 
-Every cluster of every caster also gets a small entry of four numbers, which matrix it follows, where its vertices start, which box
-is its own and how many of its 64 triangles are real. That last one means the padding from the render pass days never even gets
-read anymore.
-
-The clusters themselves get cut on the way into that buffer. At first I just took the triangles 64 at a time, in the order the
-model came with, and the clusters ended up scattered all over the statue, with big boxes piled on top of each other. Now they're
-built with [meshoptimizer](https://github.com/zeux/meshoptimizer), which keeps neighbouring triangles together, so their boxes
-stay small.
-
-<br />
-
-<Layout columns={2} gap={2}>
-  <figure>
-    <FigureImage
-      src={rasterBoxesBefore}
-      alt="The statue with every cluster of 64 triangles painted in its own color, scattered patches with big overlapping boxes"
-    />
-    <figcaption>Clusters in the order the model came with</figcaption>
-  </figure>
-  <figure>
-    <FigureImage
-      src={rasterBoxesAfter}
-      alt="The statue with every cluster of 64 triangles painted in its own color, compact patches with small boxes"
-    />
-    <figcaption>Clusters built with meshoptimizer</figcaption>
-  </figure>
-</Layout>
-
-<br />
-
-Smaller boxes touch fewer pages, so fewer clusters get sent to pages their triangles don't even reach. Still, the switch wasn't data
-driven. In Revo the numbers didn't move at all, since static pages rarely get redrawn, it's just a proven way of building clusters.
-
-<br />
-
-With the buffer in place, the passes have everything they need. The boxes of static casters stay the same until a caster changes
-or the sun turns, so for them the second pass only runs then.
-
-The list then goes to the **workgroups**, small teams of threads that run the same code side by side and share a bit of memory.
-Here there are 512 teams of 64, one thread per triangle of the cluster, taking the entries in turns.
-
-Every thread pulls the three vertices of its triangle from the big buffer, places them with its caster's matrix and projects them
-into the sun's view, two coordinates across the page plus a depth for each, and writes them into the team's shared memory. Once
-everyone is done, and they really do have to wait for each other, the team goes through the triangles together, one at a time,
-splitting the texels each triangle could cover between them, a bit like 64 people painting the same wall:
+Here's the fourth pass as a whole, stripped down to its bones:
 
 ```typescript
-// simplified, one team of 64 threads per entry
-// every thread projects the vertices of its own triangle into shared memory
-If(localId.x.lessThan(work.triangleCount), () => {
-  projectTriangle(work, localId.x);
-});
-// wait until all 64 triangles are there
-workgroupBarrier();
+const RASTER_WORKGROUPS = 512;
+const VSM_CLUSTER_TRIANGLES = 64; // one thread per triangle, so this is also the threads per workgroup
+const projectedVertices = workgroupArray("vec3", VSM_CLUSTER_TRIANGLES * 3);
 
-// then the whole team goes through the triangles one at a time
-Loop(work.triangleCount, ({ i: triangle }) => {
-  const { firstTexel, width, texelCount } = getTexelBounds(triangle);
-  // every thread takes every 64th texel of the triangle's box
-  Loop({ start: localId.x, end: texelCount, update: 64 }, ({ i: index }) => {
-    const texel = firstTexel.add(uvec2(index.mod(width), index.div(width)));
-    rasterizeTexel(triangle, texel);
-  });
+const rasterizeClusters = Fn(() => {
+  const threadIndex = localId.x;
+  Loop(
+    { start: workgroupId.x, end: getEntryCount(), update: RASTER_WORKGROUPS },
+    ({ i: entryIndex }) => {
+      const entry = getEntry(entryIndex);
+
+      If(threadIndex.lessThan(entry.triangleCount), () => {
+        projectTriangle(entry, threadIndex, projectedVertices);
+      });
+      workgroupBarrier();
+
+      Loop(entry.triangleCount, ({ i: triangleIndex }) => {
+        const box = getTexelBox(triangleIndex);
+        Loop(
+          {
+            start: threadIndex,
+            end: box.texelCount,
+            update: VSM_CLUSTER_TRIANGLES,
+          },
+          ({ i: texelIndex }) => {
+            const column = texelIndex.mod(box.width);
+            const row = texelIndex.div(box.width);
+            const texel = box.firstTexel.add(uvec2(column, row));
+            rasterizeTexel(entry, triangleIndex, texel);
+          },
+        );
+      });
+      workgroupBarrier();
+    },
+  );
 });
+
+rasterizeClusters().compute(RASTER_WORKGROUPS * VSM_CLUSTER_TRIANGLES, [
+  VSM_CLUSTER_TRIANGLES,
+]);
 ```
 
-One thing I didn't have to deal with is perspective correction. With a regular camera, things further away look smaller, so the
-weights need fixing before they can blend anything. The sun's view is orthographic, every ray parallel, so nothing shrinks and the
-plain weights are already exact:
+So, in short: every workgroup takes an entry, a cluster for one page. Each of its threads projects one triangle of the cluster,
+everyone waits at a **barrier** until all of them are done, and then the whole workgroup goes through the triangles one by one,
+every thread filling in its share of the texels. Then everyone waits again before taking the next entry.
+
+Why not give every triangle its own thread and run them all at once? Because triangles can be very different in size.
+
+One covers a single texel, a big canopy triangle a good part of a page. And GPU threads don't run on their own, they move in
+small groups (32 on my M2) that go through the code together, so a group is only done when its slowest thread is. One thread
+stuck on a big triangle would keep the others in its group waiting, doing nothing.
+
+So the work gets split by texel instead of by triangle: triangles can be any size, but every texel costs the same. The workgroup
+shares every triangle between its 64 threads, so on a big one every thread gets about the same number of texels, and on a tiny one
+most of them sit out a round that's over almost right away, so a mix of big and small triangles like the statue's is fine.
+
+They all need the same vertices though, so each triangle gets projected only once, into `projectedVertices`, a small piece of
+memory right on the chip that only that workgroup's threads can see (**workgroup array**).
+
+The innermost loop, `rasterizeTexel` is steps 3, 5 and 6 from the list put together, the inside test, the blend and the write:
 
 ```typescript
-// simplified, one texel of one triangle
 const center = vec2(x, y).add(0.5);
 const firstWeight = getEdgeValue(second.xy, third.xy, center).div(area);
 const secondWeight = getEdgeValue(third.xy, first.xy, center).div(area);
@@ -1074,30 +1107,26 @@ If(smallestWeight.greaterThanEqual(0), () => {
 });
 ```
 
-With thousands of threads painting at the same time, two of them can land on the same texel, and there's no telling which one gets
-there first. So the write is an **atomic min**, an operation the GPU guarantees won't get mixed up halfway, and it keeps the
-smaller value, the one closer to the sun, whoever comes first. Atomics only work on whole numbers, which is why the depth gets
-scaled up to a 24 bit integer before writing, that's the `DEPTH_SCALE` in the code.
+Those plain weights only work this simply thanks to the sun. Luckily, it behaves like an orthographic camera, so I didn't have
+to deal with **perspective correction**.
+
+With a normal camera, things further away get squeezed (the far half of a long road takes up much less of the screen than the
+near half), so blending by screen area alone would get the middle wrong, and the GPU silently fixes the weights for it. On the
+sun's page nothing gets squeezed, so the plain weights are already exact.
+
+With thousands of threads writing depth at the same time, two of them can land on the same texel, and
+there's no telling which one gets there first. So the write is an **atomic min**, which the GPU does as one indivisible step, so
+no other thread can sneak in between reading the old value and writing the new one, and it keeps whichever is smaller, the one
+closer to the sun, no matter who comes first.
+
+Atomics only work on whole numbers though, so the depth gets scaled up to a 24 bit integer first, that's the `DEPTH_SCALE` in the
+code.
 
 <br />
 
-And here's the good ending I promised for the canopy. Up until recently it had a raster pass of its own, because checking its
-opacity meant bringing its texture along. Now that opacity gets baked once at startup into a small mask, one bit per spot, solid
-or see-through, and the texel blends the texture coordinates of the three vertices with the same weights to find its spot on it.
-If the bit says see-through, nothing gets written. The gaps stay gaps, and the canopy sits in the same list as everything else.
+And that's it.
 
-I started the mask at 1024 &times; 1024 and kept going down. At 512 the needles were still sharp, at 64 they turned to mush, and
-256 sits nicely in between, still needles, at 8 KB a mask. It only works because the canopy's opacity depends on nothing but where
-you are on its texture, which is the case for foliage.
-
-<br />
-
-What gets stored is actually a height rather than a distance. The sun's rays are parallel and come from above, so along each one
-the higher point is always the one the sun meets first, and that's all the comparison needs. It goes from 0 at the top of the
-scene to 1 at the bottom, which is why a wiped texel is 1.
-
-And that's it. Once every entry is drawn, each texel holds whatever is closest to the sun along its ray, which is exactly what a
-shadow map is.
+Once every entry is drawn, each texel holds whatever is closest to the sun along its ray, which is exactly what a shadow map is.
 
 <br />
 
@@ -1111,42 +1140,66 @@ shadow map is.
   </figure>
 </Layout>
 
-The statue's shadow is the grey patch on the left. The dark band at the back is the shadow of a tree off-screen, and it's darker
-because its canopy sits much higher than the statue. The camera can't see that tree, but the sun can, and only the sun's view
-matters here.
+<br />
+
+The dark band at the back is the shadow of a tree off-screen, and it's darker because its canopy sits much higher than the statue.
+The camera can't see that tree, but the sun can, and only the sun's view matters here.
 
 <br />
 
-Compared to the render pass, it's one pass less, and it runs in the same compute call as the rest of the shadow work. On the
-scripted walk, the average frame went from about 7.15 to about 7 ms, and the worst ones from about 8.1 to about 7.5, so the bigger
-win was in the spikes.
+Looking back, switching to compute was a conscious decision.
 
-It also means one rasterizer for every kind of caster: static meshes, `BatchedMesh` instances, things the CPU moves around and
-things whose shape only exists on the GPU. Rigid moving casters cost the same as with the render pass. Only thousands of instances
-positioned on the GPU came out slower, by about a quarter of a millisecond, and Revo doesn't get anywhere near that many.
+After all the problems I ran into with the render pass, fixing them
+one by one as they showed up, I took it as a chance to think the design through properly.
 
-The clusters also fixed one of the weirdest bugs of the whole thing. In an early stress test, a sphere was casting a cube shaped
-shadow. Seeing that is a special kind of confusing :) The objects were packed into a `BatchedMesh`, and every instance was drawing
-the whole packed geometry, so they all cast each other's shapes. The pines had the same problem, just less obvious. Clusters only
-ever point at the triangles of their own instance, so it went away with them.
+I wanted it to cover every kind of caster, opaque and alpha tested, static and moving, single meshes and `BatchedMesh` instances,
+moved by the CPU or shaped on the GPU, behind one API that's easy to use and feels familiar to me, since `opacityNode` and
+`positionNode` work exactly like they do in a material.
+
+There's one pass less now, it all runs in the same compute call as the rest of the shadow work, and it even came out a bit faster,
+mostly on the worst frames. With thousands of instances positioned on the GPU I did see a drop in performance though, but that
+was more of a curiosity test than something I see Revo getting close to...ever.
 
 <br />
 
-Dynamic casters go through the same steps, just every frame. Here the rectangle does one more job: each of their clusters uses it
-to mark the on-screen pages it covers, directly on the GPU, and only those pages get a dynamic slot and a fresh draw.
+Out of all those kinds of casters, the moving ones are the only ones that need something extra.
 
-Those marks go into the three page table numbers I skipped earlier. Every frame, each page on screen gets the current frame number
-written into its last number, and the clusters then write it into the second number of the on-screen pages they cover. Those pages
-then get a dynamic slot, stored in the third. A page has a moving shadow only when its second number matches the current frame, so
-old marks simply stop counting and nothing ever needs clearing.
+They live in the dynamic layer from earlier, with its own pool of 64 slots, where nothing stays cached: every frame, each dynamic
+page gets wiped and drawn again, with only the moving casters in it. The static pages around them stay untouched, and the two
+only meet when a pixel reads both.
 
-Moving things come in two flavours. Things moved from the CPU, like the player, are caught when their world matrix changes. Things
-whose shape only exists on the GPU, like the cloth of the flag, pass a `positionNode`, so the compute raster reads the same
-positions the simulation wrote, and nothing has to come back to the CPU.
+Before drawing anything, the GPU has to figure out which pages a moving caster is in right now, and it has to do it on its own,
+since the cloth of the flag only gets its shape there. That's what the other three numbers of a page table entry are for, the
+same entry from the page pool by the way:
 
-Moving shadows aren't free though. A static page gets drawn once, a dynamic one gets cleared and drawn again every single frame,
-all 128 &times; 128 texels of it. The ball covers a handful of pages, the flag about 20, and the flag alone costs around 0.2 to 0.3 ms.
-A long static shadow is nearly free, a big moving one is not.
+```typescript
+const {
+  x: staticSlotPlusOne, // static pool slot + 1, so 0 can mean no slot
+  y: touchedFrame, // last frame a moving caster covered this page
+  z: dynamicSlot, // dynamic pool slot, only valid while touchedFrame is current
+  w: activeFrame, // last frame the camera needed this page
+} = pageTable.element(pageKey);
+```
+
+Say it's frame 1300 and the ball is rolling over page 454. Every frame goes like this:
+
+1. Every page the camera needs right now gets 1300 as its `activeFrame`. Page 454 is one of them.
+2. Every cluster of a moving caster takes its rectangle from the second pass, the 2D box around it as the sun sees it, and goes
+   through the pages it covers. The ones with an `activeFrame` of 1300 get 1300 as their `touchedFrame` too, so entry 454 now
+   says 1300 twice.
+3. Every page with a `touchedFrame` of 1300 gets a `dynamicSlot`, finer levels first, just like in the static pool. If the 64
+   slots run out, the coarse pages go without.
+4. The rest goes just like in the static pool, the pages get wiped, the list gets built and the raster draws them, only with the
+   moving casters.
+
+Frame numbers instead of a simple yes or no mean there's nothing to clean up afterwards. A yes would have to be turned back into a
+no at some point, in an entry for every page that could exist. A frame number only counts while it's the current one, so when the
+ball rolls away from 454, or 454 leaves the screen, its numbers just stop matching on the next frame, and only the pages the
+camera needs ever get written.
+
+That redraw is also what makes them expensive. A static page gets drawn once, while a dynamic one gets all of its 128 &times; 128
+texels drawn again every single frame. The ball only covers a handful of pages, but the flag covers about 20, and that alone costs
+around 0.2 to 0.3 ms. A long static shadow is nearly free, a big moving one could get freaking expensive.
 
 <br />
 
@@ -1302,9 +1355,11 @@ wanted (nice and performant) shadows :)
 
 ### What it costs
 
-Speaking of performant: on my M2 Pro, walking through the map, the whole shadow system costs about 2 ms of GPU time. Roughly
+Speaking of performant: on my M2 Pro, moving around the map, the whole shadow system costs about 2 ms of GPU time. Roughly
 half of that is the resolve, which runs every frame, and the other half is the page work, which mostly stops as soon as nothing
 moves.
+
+All in all, moving around the map, a frame takes about 4 to 5 ms, a steady 120 fps.
 
 The real catch is the sun. When it moves, the generation goes up, every page becomes stale and the whole cache gets drawn again.
 Epic's own write-up on shadows in Fortnite says the same: when the light direction changes, all the cached data has to go, because

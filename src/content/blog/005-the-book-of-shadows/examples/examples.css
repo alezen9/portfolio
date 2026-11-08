@@ -88,7 +88,7 @@
     stroke-dasharray: none;
   }
 
-  & :is(.edge-sign, .vertex-label) {
+  & :is(.vertex-label, .edge-sign) {
     dominant-baseline: central;
     font-weight: 500;
   }
@@ -107,11 +107,6 @@
     background: transparent;
     cursor: grab;
     touch-action: none;
-  }
-
-  & .handle:focus-visible {
-    outline: 1px solid color-mix(in oklab, currentColor 50%, transparent);
-    outline-offset: -1px;
   }
 
   &.is-dragging,

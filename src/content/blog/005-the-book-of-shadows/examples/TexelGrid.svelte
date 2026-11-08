@@ -70,23 +70,15 @@
     triangle: Triangle;
     vertexColors?: readonly [string, string, string];
     point?: Point;
-    edgeSign?: string;
     isFilled?: boolean;
     setupOverlay?: (scene: GridScene) => void;
   };
 
-  const KEY_OFFSETS = new Map([
-    ["ArrowLeft", { x: -1, y: 0 }],
-    ["ArrowRight", { x: 1, y: 0 }],
-    ["ArrowUp", { x: 0, y: -1 }],
-    ["ArrowDown", { x: 0, y: 1 }],
-  ]);
   let {
     label,
     triangle = $bindable(),
     vertexColors,
     point = $bindable(),
-    edgeSign,
     isFilled,
     setupOverlay,
   }: Props = $props();
@@ -177,7 +169,6 @@
     setupOverlay?.(scene);
 
     const handles = screenGeometry(scene);
-    const labels = screenDimensions(scene);
     scene.draw(() => {
       for (const index of VERTEX_INDICES) {
         const { x, y } = triangle[index];
@@ -196,17 +187,6 @@
         stroke: "currentColor",
       });
       circle(probe, x * CELL, y * CELL, PROBE_RADIUS);
-      if (!edgeSign) return;
-      const signPosition = toDimensionSpace(point);
-      labels
-        .dimension()
-        .textAtAbs(
-          signPosition.x,
-          signPosition.y,
-          edgeSign,
-          "middle",
-          "edge-sign",
-        );
     });
   };
 
@@ -276,22 +256,6 @@
     if (drag?.pointerId !== event.pointerId) return;
     drag = null;
   };
-
-  const onKeyDown = (
-    event: KeyboardEvent,
-    handle: HandleId,
-    position: Point,
-  ) => {
-    const offset = KEY_OFFSETS.get(event.key);
-    if (!offset) return;
-    event.preventDefault();
-    const step = event.shiftKey ? 0.5 : 0.1;
-    moveHandle(
-      handle,
-      position.x + offset.x * step,
-      position.y + offset.y * step,
-    );
-  };
 </script>
 
 <div
@@ -307,30 +271,23 @@
     {@html initialDrawing}
   </div>
   {#each VERTEX_INDICES as index (index)}
-    {@render handle(
-      index,
-      triangle[index],
-      `${VERTEX_NAMES[index]} vertex`,
-      vertexColors?.[index],
-    )}
+    {@render handle(index, triangle[index], `${VERTEX_NAMES[index]} vertex`)}
   {/each}
   {#if point}
-    {@render handle("point", point, `point, edge sign ${edgeSign}`)}
+    {@render handle("point", point, "point")}
   {/if}
 </div>
 
-{#snippet handle(id: HandleId, position: Point, label: string, color?: string)}
+{#snippet handle(id: HandleId, position: Point, label: string)}
   {@const { x, y } = position}
   <button
     type="button"
     class="handle"
     data-handle={id}
-    aria-label={`${label}, drag it or move it with the arrow keys`}
-    style:color
+    aria-label={label}
     style:left={`${(x / COLUMNS) * 100}%`}
     style:top={`${(y / ROWS) * 100}%`}
     style:width={`${(HIT_RADIUS * 200) / WIDTH}%`}
     onpointerdown={(event) => onPointerDown(event, id, position)}
-    onkeydown={(event) => onKeyDown(event, id, position)}
   ></button>
 {/snippet}

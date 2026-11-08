@@ -141,6 +141,8 @@
             "vertex-label",
           );
       }
+      const { x, y } = toDimensionSpace(point);
+      dimensions.dimension().textAtAbs(x, y, edgeSign, "middle", "edge-sign");
       drawArrow(dimensions, first, second, VERTEX_RADIUS + 1, "edge-arrow");
       drawArrow(dimensions, first, point, PROBE_RADIUS + 2, "point-arrow");
     });
@@ -153,7 +155,6 @@
     bind:triangle
     bind:point
     vertexColors={[firstHatch.color, secondHatch.color, thirdHatch.color]}
-    {edgeSign}
     {setupOverlay}
   />
 
