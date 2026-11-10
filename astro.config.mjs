@@ -13,6 +13,7 @@ export default defineConfig({
   site: "https://aleksandargjoreski.dev",
   base: "/",
   trailingSlash: "ignore",
+  compressHTML: true,
   markdown: {
     processor: unified({
       rehypePlugins: [rehypeScopedH3Ids, rehypeTargetBlank, rehypeKatex],

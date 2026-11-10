@@ -48,19 +48,19 @@ const articleStructuredData = {
     />
     {state === "Draft" && <meta name="robots" content="noindex" />}
     <meta property="article:published_time" content={pubDate.toISOString()} />
-    {
-      updatedDate && (
-        <meta
-          property="article:modified_time"
-          content={updatedDate.toISOString()}
-        />
-      )
-    }
+    {updatedDate && (
+      <meta
+        property="article:modified_time"
+        content={updatedDate.toISOString()}
+      />
+    )}
     <meta
       property="article:author"
       content={new URL("/about-me/", Astro.site).href}
     />
-    {tags.map((tag) => <meta property="article:tag" content={tag} />)}
+    {tags.map((tag) => (
+      <meta property="article:tag" content={tag} />
+    ))}
     <script
       type="application/ld+json"
       set:html={JSON.stringify(articleStructuredData)}

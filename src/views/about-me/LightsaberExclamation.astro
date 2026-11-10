@@ -116,7 +116,8 @@ const rotationDirection = !rotate ? 0 : rotate === "clockwise" ? 1 : -1;
     <path
       class="secondary"
       d="M33.8936 13L31.1025 93H15.8975L13.1064 13H33.8936Z"
-      stroke-width="6"></path>
+      stroke-width="6"
+    ></path>
   </g>
   <defs>
     <filter
@@ -133,8 +134,11 @@ const rotationDirection = !rotate ? 0 : rotate === "clockwise" ? 1 : -1;
         mode="normal"
         in="SourceGraphic"
         in2="BackgroundImageFix"
-        result="shape"></feBlend>
-      <feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_192_31"
+        result="shape"
+      ></feBlend>
+      <feGaussianBlur
+        stdDeviation="5"
+        result="effect1_foregroundBlur_192_31"
       ></feGaussianBlur>
     </filter>
   </defs>

@@ -21,17 +21,17 @@ if (absImageSrc && !absImageSrc.startsWith(Astro.url.origin)) {
 }
 ---
 
-<!-- Cloudflare Web Analytics -->{
-  isProd && CF_TOKEN && (
-    <script
-      is:inline
-      defer
-      src="https://static.cloudflareinsights.com/beacon.min.js"
-      data-cf-beacon={JSON.stringify({ token: CF_TOKEN })}
-    />
-  )
-}
-<!-- End Cloudflare Web Analytics --><!-- Global Metadata -->
+<!-- Cloudflare Web Analytics -->
+{isProd && CF_TOKEN && (
+  <script
+    is:inline
+    defer
+    src="https://static.cloudflareinsights.com/beacon.min.js"
+    data-cf-beacon={JSON.stringify({ token: CF_TOKEN })}
+  />
+)}
+<!-- End Cloudflare Web Analytics -->
+<!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <!-- Favicons -->

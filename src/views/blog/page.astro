@@ -60,18 +60,14 @@ const posts = (await getCollection("blog"))
 
 <Layout>
   <ul>
-    {
-      posts.map((post) => (
-        <li>
-          <a href={getPostHref(post)}>
-            <h2 class="title">{post.data.title}</h2>
-            <h3 class="subtitle">{post.data.subtitle}</h3>
-            <p class="date">
-              <FormattedDate date={post.data.pubDate} />
-            </p>
-          </a>
-        </li>
-      ))
-    }
+    {posts.map((post) => <li>
+      <a href={getPostHref(post)}>
+        <h2 class="title">{post.data.title}</h2>
+        <h3 class="subtitle">{post.data.subtitle}</h3>
+        <p class="date">
+          <FormattedDate date={post.data.pubDate} />
+        </p>
+      </a>
+    </li>)}
   </ul>
 </Layout>

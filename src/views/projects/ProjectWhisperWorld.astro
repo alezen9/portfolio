@@ -27,11 +27,11 @@ import Rune from "./Rune.svelte";
   <Fragment slot="year">2024</Fragment>
   <Fragment slot="description">
     WhisperWorld is a client-server chat app written in <code>C</code>, built to
-    dive deeper into systems programming and TCP/IP. Powered by <code
-      >libuv</code
-    > for async I/O and <code>CMake</code> for builds, it gave me hands-on practice
-    with memory management, networking, and modular design. The original idea was
-    to rebuild it in other languages to compare ecosystems and approaches.
+    dive deeper into systems programming and TCP/IP. Powered by
+    <code>libuv</code> for async I/O and <code>CMake</code> for builds, it gave
+    me hands-on practice with memory management, networking, and modular design.
+    The original idea was to rebuild it in other languages to compare ecosystems
+    and approaches.
   </Fragment>
   <Fragment slot="tags">
     <span class="tag">C</span>
@@ -41,23 +41,23 @@ import Rune from "./Rune.svelte";
   </Fragment>
   <Fragment slot="highlights">
     <li>
-      <span class="highlight">Built</span> a multi-client chat server and client in
-      <code>C</code> with broadcasting and connection management.
+      <span class="highlight">Built</span> a multi-client chat server and client
+      in <code>C</code> with broadcasting and connection management.
     </li>
     <li>
       <span class="highlight">Integrated</span>
-      <code>libuv</code> for non-blocking, event-driven I/O, replacing the initial
-      <code>select()</code> implementation.
+      <code>libuv</code> for non-blocking, event-driven I/O, replacing the
+      initial <code>select()</code> implementation.
     </li>
     <li>
       <span class="highlight">Migrated</span> build setup from a simple
-      <code>Makefile</code> to <code>CMake</code> with auto-fetched dependencies and
-      cross-platform support.
+      <code>Makefile</code> to <code>CMake</code> with auto-fetched dependencies
+      and cross-platform support.
     </li>
     <li>
-      <span class="highlight">Explored</span> edge cases like partial reads, oversize
-      payloads, and connection drops, while planning next steps such as an event queue
-      and custom protocol abstraction.
+      <span class="highlight">Explored</span> edge cases like partial reads,
+      oversize payloads, and connection drops, while planning next steps such as
+      an event queue and custom protocol abstraction.
     </li>
   </Fragment>
   <Fragment slot="footer">
@@ -74,7 +74,7 @@ import Rune from "./Rune.svelte";
   </Fragment>
 
   <Fragment slot="mosaic">
-    <figure class="tilt main" style="grid-area: a;" title="Local chat example">
+    <figure class="tilt main" style="grid-area: a" title="Local chat example">
       <img
         src="/projects/whisper-world/a.webp"
         alt="Whisper World - Local chat example"
